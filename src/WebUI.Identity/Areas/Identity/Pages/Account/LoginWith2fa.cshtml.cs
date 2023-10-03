@@ -2,23 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
-using Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace WebUI.Identity.Areas.Identity.Pages.Account
 {
     public class LoginWith2faModel : PageModel
     {
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<LoginWith2faModel> _logger;
 
         public LoginWith2faModel(
-            SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager,
+            SignInManager<IdentityUser> signInManager,
+            UserManager<IdentityUser> userManager,
             ILogger<LoginWith2faModel> logger)
         {
             _signInManager = signInManager;

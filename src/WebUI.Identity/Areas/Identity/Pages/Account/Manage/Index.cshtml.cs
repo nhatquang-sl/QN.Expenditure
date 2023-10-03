@@ -2,22 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
-using Infrastructure.Identity;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Encodings.Web;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.ComponentModel.DataAnnotations;
 
 namespace WebUI.Identity.Areas.Identity.Pages.Account.Manage
 {
     public class IndexModel : PageModel
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
 
         public IndexModel(
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager)
+            UserManager<IdentityUser> userManager,
+            SignInManager<IdentityUser> signInManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -58,7 +60,7 @@ namespace WebUI.Identity.Areas.Identity.Pages.Account.Manage
             public string PhoneNumber { get; set; }
         }
 
-        private async Task LoadAsync(ApplicationUser user)
+        private async Task LoadAsync(IdentityUser user)
         {
             var userName = await _userManager.GetUserNameAsync(user);
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);

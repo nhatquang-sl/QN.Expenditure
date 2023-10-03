@@ -4,7 +4,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>aspnet-WebUI.Identity-8c6d4117-9e16-46ac-a712-6e3ca498dd5d</UserSecretsId>
+    <UserSecretsId>aspnet-WebUI.Identity-9d07185e-1655-4c8a-ab6f-a3e1961409c0</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,10 +15,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.11" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="7.0.9" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
