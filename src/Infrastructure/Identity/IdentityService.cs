@@ -4,6 +4,7 @@ using Application.Common.Configs;
 using Application.Common.Exceptions;
 using Application.Common.Logging;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Text;
@@ -63,6 +64,26 @@ namespace Infrastructure.Identity
                 $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
             return user.Id;
+        }
+
+        public async Task<bool> ConfirmEmailAsync(string userId, string code)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                var logEntry = new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), $"Unable to load user with ID '{userId}'.");
+                _logTrace.Log(logEntry);
+                throw new NotFoundException(logEntry.Message);
+            }
+
+            code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+            var result = await _userManager.ConfirmEmailAsync(user, code);
+            if (!result.Succeeded)
+            {
+                _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), result.Errors));
+            }
+
+            return result.Succeeded;
         }
 
         private static string Base64UrlEncode(string input)

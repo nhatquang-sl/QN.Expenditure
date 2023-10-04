@@ -5,7 +5,7 @@ namespace Application.Common.Logging
     public class LogEntry
     {
         public LogLevel Level { get; set; }
-        public object Data { get; set; }
+        public object? Data { get; set; }
         public string Message { get; set; }
 
         public LogEntry(LogLevel level, string message, object data)

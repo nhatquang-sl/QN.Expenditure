@@ -1,4 +1,5 @@
-﻿using Application.Auth.Commands.Register;
+﻿using Application.Auth.Commands.ConfirmEmail;
+using Application.Auth.Commands.Register;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,7 +15,7 @@ namespace WebAPI.Controllers
             _sender = sender;
         }
 
-        [Route("register")]
+        [HttpPost("register")]
         public async Task<RegisterResult> Register(RegisterCommand registerCommand)
         {
             var result = await _sender.Send(registerCommand);
@@ -22,10 +23,11 @@ namespace WebAPI.Controllers
             return result;
         }
 
-        [Route("confirm-email")]
+        [HttpGet("confirm-email")]
         public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
-            return Ok(new { userId, code });
+            var succeeded = await _sender.Send(new ConfirmEmailCommand(userId, code));
+            return Ok(new { succeeded });
         }
     }
 }
