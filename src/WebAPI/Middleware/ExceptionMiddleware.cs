@@ -1,6 +1,5 @@
 ﻿using Application.Common.Exceptions;
 using System.Net;
-using System.Text;
 
 namespace WebAPI.Middleware
 {
@@ -22,7 +21,6 @@ namespace WebAPI.Middleware
             catch (Exception ex)
             {
                 var type = ex.GetType();
-                var exMessage = Encoding.UTF8.GetBytes(ex.Message);
 
                 if (type == typeof(ConflictException))
                 {

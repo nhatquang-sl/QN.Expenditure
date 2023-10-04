@@ -21,5 +21,11 @@ namespace WebAPI.Controllers
 
             return result;
         }
+
+        [Route("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string code)
+        {
+            return Ok(new { userId, code });
+        }
     }
 }
