@@ -1,5 +1,7 @@
 ﻿using Application.Auth.Commands.ConfirmEmail;
+using Application.Auth.Commands.Login;
 using Application.Auth.Commands.Register;
+using Application.Auth.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,6 +30,14 @@ namespace WebAPI.Controllers
         {
             var succeeded = await _sender.Send(new ConfirmEmailCommand(userId, code));
             return Ok(new { succeeded });
+        }
+
+        [HttpPost("login")]
+        public async Task<UserAuthDto> Login(LoginCommand loginCommand)
+        {
+            var result = await _sender.Send(loginCommand);
+
+            return result;
         }
     }
 }

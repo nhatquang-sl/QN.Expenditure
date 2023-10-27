@@ -1,4 +1,5 @@
 ﻿using Application.Auth.Commands.Register;
+using Application.Auth.DTOs;
 using Application.Common.Abstractions;
 using Application.Common.Configs;
 using Application.Common.Exceptions;
@@ -19,12 +20,16 @@ namespace Infrastructure.Identity
         private readonly IEmailService _emailSender;
         private readonly ApplicationConfig _applicationConfig;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
 
-        public IdentityService(UserManager<ApplicationUser> userManager, IEmailService emailSender, IOptions<ApplicationConfig> applicationConfig, LogTraceBase logTrace)
+        public IdentityService(UserManager<ApplicationUser> userManager, IEmailService emailSender
+            , IOptions<ApplicationConfig> applicationConfig, LogTraceBase logTrace
+            , SignInManager<ApplicationUser> signInManager)
         {
             _logTrace = logTrace;
             _emailSender = emailSender;
             _userManager = userManager;
+            _signInManager = signInManager;
             _applicationConfig = applicationConfig.Value;
         }
 
@@ -57,7 +62,7 @@ namespace Infrastructure.Identity
 
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            code = Base64UrlEncode(code);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
             var callbackUrl = $"{_applicationConfig.Endpoint}/api/auth/confirm-email?userId={userId}&code={code}";
 
             await _emailSender.SendEmailAsync(request.Email, "Confirm your email",
@@ -86,14 +91,40 @@ namespace Infrastructure.Identity
             return result.Succeeded;
         }
 
-        private static string Base64UrlEncode(string input)
+        public async Task<UserProfileDto> LoginAsync(string email, string password, bool rememberMe)
         {
-            var inputBytes = Encoding.UTF8.GetBytes(input);
-            // Special "url-safe" base64 encode.
-            return Convert.ToBase64String(inputBytes)
-              .Replace('+', '-')
-              .Replace('/', '_')
-              .Replace("=", "");
+            // This doesn't count login failures towards account lockout
+            // To enable password failures to trigger account lockout, set lockoutOnFailure: true
+            var result = await _signInManager.PasswordSignInAsync(email, password, rememberMe, lockoutOnFailure: false);
+            if (result.Succeeded)
+            {
+                _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), "User logged in."));
+                var user = await _userManager.FindByEmailAsync(email);
+                return user == null
+                    ? throw new NotFoundException($"{email} is not found!")
+                    : new UserProfileDto
+                    {
+                        Id = user.Id,
+                        Email = email,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName
+                    };
+            }
+            if (result.RequiresTwoFactor)
+            {
+                // return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
+                throw new BadRequestException("Requires Two Factor.");
+            }
+            if (result.IsLockedOut)
+            {
+                _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), "User account locked out."));
+                throw new BadRequestException("User account locked out.");
+            }
+
+            _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), "Invalid login attempt."));
+            throw new BadRequestException("Email or Password incorrect.");
+
+
         }
     }
 }

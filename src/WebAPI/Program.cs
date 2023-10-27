@@ -1,4 +1,5 @@
 using Infrastructure;
+using Infrastructure.Data;
 using WebAPI.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,11 @@ builder.Services.AddHttpClient();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    await app.InitializeDatabaseAsync();
+}
 
 app.UseHttpsRedirection();
 
