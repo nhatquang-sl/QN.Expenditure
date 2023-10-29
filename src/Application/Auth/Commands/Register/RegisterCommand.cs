@@ -25,11 +25,13 @@ namespace Application.Auth.Commands.Register
 
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterResult>
     {
+        private readonly IPublisher _publisher;
         private readonly LogTraceBase _logTrace;
         private readonly IIdentityService _identityService;
 
-        public RegisterCommandHandler(LogTraceBase logTrace, IIdentityService identityService)
+        public RegisterCommandHandler(IPublisher publisher, LogTraceBase logTrace, IIdentityService identityService)
         {
+            _publisher = publisher;
             _logTrace = logTrace;
             _identityService = identityService;
         }
@@ -40,6 +42,7 @@ namespace Application.Auth.Commands.Register
 
             _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), new { user.Id }));
 
+            await _publisher.Publish(new RegisterSuccessEvent(user, code), cancellationToken);
             return new RegisterResult(user.Id);
         }
     }

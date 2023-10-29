@@ -1,13 +1,11 @@
 ﻿using Application.Auth.Commands.Register;
 using Application.Auth.DTOs;
 using Application.Common.Abstractions;
-using Application.Common.Configs;
 using Application.Common.Exceptions;
 using Application.Common.Logging;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,21 +16,16 @@ namespace Infrastructure.Identity
     {
         private readonly IMapper _mapper;
         private readonly LogTraceBase _logTrace;
-        private readonly IEmailService _emailSender;
-        private readonly ApplicationConfig _applicationConfig;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
 
-        public IdentityService(UserManager<ApplicationUser> userManager, IEmailService emailSender
-            , IOptions<ApplicationConfig> applicationConfig, LogTraceBase logTrace
+        public IdentityService(UserManager<ApplicationUser> userManager, LogTraceBase logTrace
             , SignInManager<ApplicationUser> signInManager, IMapper mapper)
         {
             _mapper = mapper;
             _logTrace = logTrace;
-            _emailSender = emailSender;
             _userManager = userManager;
             _signInManager = signInManager;
-            _applicationConfig = applicationConfig.Value;
         }
 
         public async Task<(UserProfileDto, string)> CreateUserAsync(RegisterCommand request)
@@ -58,10 +51,6 @@ namespace Infrastructure.Identity
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            //var callbackUrl = $"{_applicationConfig.Endpoint}/api/auth/confirm-email?userId={userId}&code={code}";
-
-            //await _emailSender.SendEmailAsync(request.Email, "Confirm your email",
-            //    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
             return (_mapper.Map<UserProfileDto>(user), code);
         }
