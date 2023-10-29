@@ -4,18 +4,19 @@ using Application.Common.Abstractions;
 using Application.Common.Configs;
 using Application.Common.Exceptions;
 using Application.Common.Logging;
+using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 
 namespace Infrastructure.Identity
 {
     public class IdentityService : IIdentityService
     {
+        private readonly IMapper _mapper;
         private readonly LogTraceBase _logTrace;
         private readonly IEmailService _emailSender;
         private readonly ApplicationConfig _applicationConfig;
@@ -24,8 +25,9 @@ namespace Infrastructure.Identity
 
         public IdentityService(UserManager<ApplicationUser> userManager, IEmailService emailSender
             , IOptions<ApplicationConfig> applicationConfig, LogTraceBase logTrace
-            , SignInManager<ApplicationUser> signInManager)
+            , SignInManager<ApplicationUser> signInManager, IMapper mapper)
         {
+            _mapper = mapper;
             _logTrace = logTrace;
             _emailSender = emailSender;
             _userManager = userManager;
@@ -33,16 +35,9 @@ namespace Infrastructure.Identity
             _applicationConfig = applicationConfig.Value;
         }
 
-        public async Task<string> CreateUserAsync(RegisterCommand request)
+        public async Task<(UserProfileDto, string)> CreateUserAsync(RegisterCommand request)
         {
-            var user = new ApplicationUser
-            {
-                UserName = request.Email,
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-            };
-
+            var user = _mapper.Map<ApplicationUser>(request);
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
@@ -63,12 +58,12 @@ namespace Infrastructure.Identity
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            var callbackUrl = $"{_applicationConfig.Endpoint}/api/auth/confirm-email?userId={userId}&code={code}";
+            //var callbackUrl = $"{_applicationConfig.Endpoint}/api/auth/confirm-email?userId={userId}&code={code}";
 
-            await _emailSender.SendEmailAsync(request.Email, "Confirm your email",
-                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+            //await _emailSender.SendEmailAsync(request.Email, "Confirm your email",
+            //    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
-            return user.Id;
+            return (_mapper.Map<UserProfileDto>(user), code);
         }
 
         public async Task<bool> ConfirmEmailAsync(string userId, string code)
@@ -76,13 +71,15 @@ namespace Infrastructure.Identity
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                var logEntry = new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), $"Unable to load user with ID '{userId}'.");
+                var message = $"Unable to load user with ID '{userId}'.";
+                var logEntry = new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), message);
                 _logTrace.Log(logEntry);
-                throw new NotFoundException(logEntry.Message);
+                throw new NotFoundException(message);
             }
 
             code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
             var result = await _userManager.ConfirmEmailAsync(user, code);
+
             if (!result.Succeeded)
             {
                 _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), result.Errors));
@@ -123,8 +120,6 @@ namespace Infrastructure.Identity
 
             _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), "Invalid login attempt."));
             throw new BadRequestException("Email or Password incorrect.");
-
-
         }
     }
 }

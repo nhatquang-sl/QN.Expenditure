@@ -36,11 +36,11 @@ namespace Application.Auth.Commands.Register
 
         public async Task<RegisterResult> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
-            var userId = await _identityService.CreateUserAsync(request);
+            var (user, code) = await _identityService.CreateUserAsync(request);
 
-            _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), new { userId }));
+            _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), new { user.Id }));
 
-            return new RegisterResult(userId);
+            return new RegisterResult(user.Id);
         }
     }
 }

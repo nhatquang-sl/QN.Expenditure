@@ -18,13 +18,23 @@ namespace Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddApplicationServices();
-
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            Console.WriteLine(connectionString);
-            services.AddDbContext<ApplicationDbContext>((options) =>
+            var environment = configuration.GetValue<string>("Environment");
+            if (environment?.ToLower() == "test")
             {
-                options.UseSqlServer(connectionString);
-            });
+                services.AddDbContext<ApplicationDbContext>((options) =>
+                {
+                    options.UseInMemoryDatabase(Guid.NewGuid().ToString());
+                });
+            }
+            else
+            {
+                var connectionString = configuration.GetConnectionString("DefaultConnection");
+                Console.WriteLine(connectionString);
+                services.AddDbContext<ApplicationDbContext>((options) =>
+                {
+                    options.UseSqlServer(connectionString);
+                });
+            }
 
             services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
             services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
@@ -49,6 +59,8 @@ namespace Infrastructure
                 var apiSecret = configuration.GetValue<string>("Email:ApiKeyPrivate");
                 client.UseBasicAuthentication(apiKey, apiSecret);
             });
+
+            services.AddAutoMapper(typeof(MappingProfile));
 
             return services;
         }
