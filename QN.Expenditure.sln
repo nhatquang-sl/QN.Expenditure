@@ -14,7 +14,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebAPI", "src\WebAPI\WebAPI.csproj", "{CAB53465-BA8A-4C24-AD50-F90813A29508}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebUI.Identity", "src\WebUI.Identity\WebUI.Identity.csproj", "{10FA776D-9C4E-4E9F-9A98-52556CDCDB90}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebUI.Identity", "src\WebUI.Identity\WebUI.Identity.csproj", "{10FA776D-9C4E-4E9F-9A98-52556CDCDB90}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{3C099BFE-5E70-4FA9-8DFC-4AC1D3C4F0EC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application.UnitTests", "test\Application.UnitTests\Application.UnitTests.csproj", "{3937FDDB-A315-494E-BB4B-E6AB5F68E62A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.IntegrationTests", "test\Infrastructure.IntegrationTests\Infrastructure.IntegrationTests.csproj", "{B22E95AA-D376-43EB-8139-9B9538C3563C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,9 +44,21 @@ Global
 		{10FA776D-9C4E-4E9F-9A98-52556CDCDB90}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10FA776D-9C4E-4E9F-9A98-52556CDCDB90}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10FA776D-9C4E-4E9F-9A98-52556CDCDB90}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3937FDDB-A315-494E-BB4B-E6AB5F68E62A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3937FDDB-A315-494E-BB4B-E6AB5F68E62A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3937FDDB-A315-494E-BB4B-E6AB5F68E62A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3937FDDB-A315-494E-BB4B-E6AB5F68E62A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B22E95AA-D376-43EB-8139-9B9538C3563C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B22E95AA-D376-43EB-8139-9B9538C3563C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B22E95AA-D376-43EB-8139-9B9538C3563C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B22E95AA-D376-43EB-8139-9B9538C3563C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3937FDDB-A315-494E-BB4B-E6AB5F68E62A} = {3C099BFE-5E70-4FA9-8DFC-4AC1D3C4F0EC}
+		{B22E95AA-D376-43EB-8139-9B9538C3563C} = {3C099BFE-5E70-4FA9-8DFC-4AC1D3C4F0EC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {287FCC55-8B80-4737-A2E0-4D5F3A0390B7}
