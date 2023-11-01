@@ -9,10 +9,10 @@ namespace Infrastructure.IntegrationTests.Identity
 {
     public class IdentityServiceTests : DependencyInjectionFixture
     {
-        private readonly RegisterCommand _registerCommand = new()
+        private readonly RegisterCommand _command = new()
         {
             Email = "sunlight@yopmail.com",
-            Password = "P@ssw0rd",
+            Password = "123456x@X",
             FirstName = "First",
             LastName = "Last"
         };
@@ -29,7 +29,7 @@ namespace Infrastructure.IntegrationTests.Identity
         public async void CreateUserAsync_Should_Success()
         {
             // Act
-            var (user, code) = await _identityService.CreateUserAsync(_registerCommand);
+            var (user, code) = await _identityService.CreateUserAsync(_command);
 
             // Assert
             user.Id.ShouldNotBeNullOrWhiteSpace();
@@ -40,8 +40,8 @@ namespace Infrastructure.IntegrationTests.Identity
         public async void CreateUserAsync_ThrowConflictException()
         {
             // Act
-            var (user, code) = await _identityService.CreateUserAsync(_registerCommand);
-            var exception = await Should.ThrowAsync<ConflictException>(() => _identityService.CreateUserAsync(_registerCommand));
+            var (user, code) = await _identityService.CreateUserAsync(_command);
+            var exception = await Should.ThrowAsync<ConflictException>(() => _identityService.CreateUserAsync(_command));
 
             // Assert
             user.Id.ShouldNotBeNullOrWhiteSpace();
@@ -53,10 +53,10 @@ namespace Infrastructure.IntegrationTests.Identity
         public async void CreateUserAsync_ThrowUnHandleException()
         {
             // Arrange
-            _registerCommand.Email = "";
+            _command.Email = "";
 
             // Act
-            var exception = await Should.ThrowAsync<Exception>(() => _identityService.CreateUserAsync(_registerCommand));
+            var exception = await Should.ThrowAsync<Exception>(() => _identityService.CreateUserAsync(_command));
 
             // Assert
             exception.Message.ShouldBe("UnhandledException: IdentityService");
@@ -66,7 +66,7 @@ namespace Infrastructure.IntegrationTests.Identity
         public async void ConfirmEmailAsync_Should_Success()
         {
             // Arrange
-            var (user, code) = await _identityService.CreateUserAsync(_registerCommand);
+            var (user, code) = await _identityService.CreateUserAsync(_command);
 
             // Act
             var success = await _identityService.ConfirmEmailAsync(user.Id, code);

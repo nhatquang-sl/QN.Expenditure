@@ -7,9 +7,9 @@ using MediatR;
 using Moq;
 using Shouldly;
 
-namespace Application.UnitTests.Auth.Commands
+namespace Application.UnitTests.Auth.Commands.Register
 {
-    public class RegisterCommandHandlerTests : IDisposable
+    public class HandlerTests : IDisposable
     {
         private readonly RegisterCommand _registerCommand = new()
         {
@@ -23,7 +23,7 @@ namespace Application.UnitTests.Auth.Commands
         private readonly Mock<IPublisher> _publisher;
 
         // setup
-        public RegisterCommandHandlerTests()
+        public HandlerTests()
         {
             _logTraceMock = new Mock<LogTraceBase>();
             _identityServiceMock = new Mock<IIdentityService>();
@@ -37,7 +37,7 @@ namespace Application.UnitTests.Auth.Commands
         }
 
         [Fact]
-        public async void NewUserId_Should_Success()
+        public async void SucceedsWithNewUserId()
         {
             // Arrange
             var userId = Guid.NewGuid().ToString();
@@ -64,7 +64,7 @@ namespace Application.UnitTests.Auth.Commands
         }
 
         [Fact]
-        public async void ThrowConflictException_WhenEmailIsDuplicate()
+        public async void ThrowConflictException_IfEmailIsDuplicate()
         {
             // Arrange
             _identityServiceMock.Setup(x => x.CreateUserAsync(_registerCommand))

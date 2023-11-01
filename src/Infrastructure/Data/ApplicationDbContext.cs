@@ -25,6 +25,8 @@ namespace Infrastructure.Data
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.ToTable(name: "Users");
+                entity.Property(e => e.FirstName).HasMaxLength(50);
+                entity.Property(e => e.LastName).HasMaxLength(50);
             });
 
             builder.Entity<IdentityRole>(entity =>

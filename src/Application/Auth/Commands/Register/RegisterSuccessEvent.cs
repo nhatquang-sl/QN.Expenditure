@@ -2,6 +2,7 @@
 using Application.Common.Abstractions;
 using Application.Common.Configs;
 using MediatR;
+using Microsoft.Extensions.Options;
 using System.Text.Encodings.Web;
 
 namespace Application.Auth.Commands.Register
@@ -13,10 +14,10 @@ namespace Application.Auth.Commands.Register
         private readonly IEmailService _emailSender;
         private readonly ApplicationConfig _applicationConfig;
 
-        public SendRegisterConfirmEmailEventHandler(IEmailService emailSender, ApplicationConfig applicationConfig)
+        public SendRegisterConfirmEmailEventHandler(IEmailService emailSender, IOptions<ApplicationConfig> applicationConfig)
         {
             _emailSender = emailSender;
-            _applicationConfig = applicationConfig;
+            _applicationConfig = applicationConfig.Value;
         }
 
         public async Task Handle(RegisterSuccessEvent notification, CancellationToken cancellationToken)
