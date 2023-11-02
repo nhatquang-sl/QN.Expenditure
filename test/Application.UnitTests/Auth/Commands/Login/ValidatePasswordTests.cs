@@ -1,19 +1,17 @@
-﻿using Application.Auth.Commands.Register;
+﻿using Application.Auth.Commands.Login;
 using Application.Common.Exceptions;
 using MediatR;
 using Shouldly;
 
-namespace Application.UnitTests.Auth.Commands.Register
+namespace Application.UnitTests.Auth.Commands.Login
 {
     public class ValidatePasswordTests : DependencyInjectionFixture
     {
         private readonly ISender _sender;
-        private RegisterCommand _command = new()
+        private LoginCommand _command = new()
         {
             Email = "sunligh@yopmail.com",
-            Password = "",
-            FirstName = "First",
-            LastName = "Last"
+            Password = ""
         };
         public ValidatePasswordTests() : base()
         {
@@ -33,7 +31,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""password"":""Password must be at least 6 characters.""}");
+            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
         }
 
         [Theory]
@@ -48,7 +46,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""password"":""Password must have at least one uppercase (\u0027A\u0027-\u0027Z\u0027).""}");
+            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
         }
 
         [Theory]
@@ -63,7 +61,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""password"":""Password must contain at least one number.""}");
+            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
         }
 
         [Theory]
@@ -78,7 +76,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""password"":""Password must contain at least one number.""}");
+            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
         }
 
         [Theory]
@@ -90,7 +88,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             _command.Password = input;
 
             // Act
-            var validator = new RegisterCommandValidator();
+            var validator = new LoginCommandValidator();
             var result = await validator.ValidateAsync(_command);
 
             // Assert

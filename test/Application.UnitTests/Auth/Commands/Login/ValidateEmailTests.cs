@@ -1,17 +1,15 @@
-﻿using Application.Auth.Commands.Register;
+﻿using Application.Auth.Commands.Login;
 using Application.Common.Exceptions;
 using MediatR;
 using Shouldly;
 
-namespace Application.UnitTests.Auth.Commands.Register
+namespace Application.UnitTests.Auth.Commands.Login
 {
     public class ValidateEmailTests : DependencyInjectionFixture
     {
-        private RegisterCommand _command = new()
+        private LoginCommand _command = new()
         {
-            Password = "P@ssw0rd",
-            FirstName = "First",
-            LastName = "Last"
+            Password = "P@ssw0rd"
         };
         private readonly ISender _sender;
         public ValidateEmailTests() : base()
@@ -29,7 +27,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""email"":""Email is required.""}");
+            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
         }
 
         [Fact]
@@ -42,7 +40,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""email"":""Email is invalid.""}");
+            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
         }
 
         [Fact]
@@ -56,7 +54,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""email"":""Email has reached a maximum of 255 characters.""}");
+            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
         }
     }
 }
