@@ -25,7 +25,7 @@ namespace Application.UnitTests.Auth.Commands.Register
         public async void ThrowBadRequestException_IfMissing()
         {
             // Arrange
-            _command.LastName = "";
+            _command.LastName = string.Empty;
 
             // Act
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
@@ -38,7 +38,7 @@ namespace Application.UnitTests.Auth.Commands.Register
         public async void ThrowBadRequestException_IfTooLong()
         {
             // Arrange
-            _command.LastName = "";
+            _command.LastName = string.Empty;
             for (var i = 0; i < 51; i++) _command.LastName += "a";
 
             // Act

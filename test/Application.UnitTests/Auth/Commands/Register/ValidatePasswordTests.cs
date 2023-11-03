@@ -11,7 +11,6 @@ namespace Application.UnitTests.Auth.Commands.Register
         private RegisterCommand _command = new()
         {
             Email = "sunligh@yopmail.com",
-            Password = "",
             FirstName = "First",
             LastName = "Last"
         };

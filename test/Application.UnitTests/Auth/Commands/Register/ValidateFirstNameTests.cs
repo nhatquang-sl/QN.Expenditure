@@ -11,7 +11,6 @@ namespace Application.UnitTests.Auth.Commands.Register
         {
             Email = "sunligh@yopmail.com",
             Password = "123456x@X",
-            FirstName = "",
             LastName = "Last"
         };
         private readonly ISender _sender;
@@ -25,7 +24,7 @@ namespace Application.UnitTests.Auth.Commands.Register
         public async void ThrowBadRequestException_IfMissing()
         {
             // Arrange
-            _command.FirstName = "";
+            _command.FirstName = string.Empty;
 
             // Act
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
@@ -53,7 +52,7 @@ namespace Application.UnitTests.Auth.Commands.Register
         public async void ThrowBadRequestException_IfTooLong()
         {
             // Arrange
-            _command.FirstName = "";
+            _command.FirstName = string.Empty;
             for (var i = 0; i < 51; i++) _command.FirstName += "a";
 
             // Act

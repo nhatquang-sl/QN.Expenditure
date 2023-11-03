@@ -23,7 +23,7 @@ namespace Application.UnitTests.Auth.Commands.Register
         public async void ThrowBadRequestException_IfMissing()
         {
             // Arrange
-            _command.Email = "";
+            _command.Email = string.Empty;
 
             // Act
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
@@ -49,7 +49,7 @@ namespace Application.UnitTests.Auth.Commands.Register
         public async void ThrowBadRequestException_IfReachedMaximumLength()
         {
             // Arrange
-            _command.Email = "";
+            _command.Email = string.Empty;
             for (var i = 0; i < 256; i++) _command.Email += "a";
 
             // Act

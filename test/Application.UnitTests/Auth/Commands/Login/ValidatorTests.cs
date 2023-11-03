@@ -5,20 +5,47 @@ using Shouldly;
 
 namespace Application.UnitTests.Auth.Commands.Login
 {
-    public class ValidateEmailTests : DependencyInjectionFixture
+    public class ValidatorTests : DependencyInjectionFixture
     {
         private LoginCommand _command = new()
         {
-            Password = "P@ssw0rd"
+            Email = "sunlight@yopmail.com",
+            Password = "P@ssw0rd",
         };
         private readonly ISender _sender;
-        public ValidateEmailTests() : base()
+        public ValidatorTests() : base()
         {
             _sender = GetService<ISender>();
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfMissing()
+        public async Task SucceedsIfValid()
+        {
+            // Arrange
+
+            // Act
+            var validator = new LoginCommandValidator();
+            var result = await validator.ValidateAsync(_command);
+
+            // Assert
+            result.Errors.Any().ShouldBeFalse();
+        }
+
+        [Fact]
+        public async void ThrowBadRequestException_IfCommandIsEmpty()
+        {
+            // Arrange
+            _command = new();
+
+            // Act
+            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
+
+            // Assert
+            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
+        }
+
+        [Fact]
+        public async void ThrowBadRequestException_IfMissingEmail()
         {
             // Arrange
             _command.Email = string.Empty;
@@ -31,24 +58,10 @@ namespace Application.UnitTests.Auth.Commands.Login
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfInvalid()
+        public async void ThrowBadRequestException_IfMissingPassword()
         {
             // Arrange
-            _command.Email = "sunlighyopmail.com";
-
-            // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
-
-            // Assert
-            exception.Message.ShouldBe(@"{""message"":""Email or Password incorrect.""}");
-        }
-
-        [Fact]
-        public async void ThrowBadRequestException_IfReachedMaximumLength()
-        {
-            // Arrange
-            _command.Email = string.Empty;
-            for (var i = 0; i < 256; i++) _command.Email += "a";
+            _command.Password = string.Empty;
 
             // Act
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));

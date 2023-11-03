@@ -10,8 +10,7 @@ namespace Application.UnitTests.Auth.Commands.Login
         private readonly ISender _sender;
         private LoginCommand _command = new()
         {
-            Email = "sunligh@yopmail.com",
-            Password = ""
+            Email = "sunligh@yopmail.com"
         };
         public ValidatePasswordTests() : base()
         {

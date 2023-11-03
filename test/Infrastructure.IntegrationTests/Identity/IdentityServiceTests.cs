@@ -53,7 +53,7 @@ namespace Infrastructure.IntegrationTests.Identity
         public async void CreateUserAsync_ThrowUnHandleException()
         {
             // Arrange
-            _command.Email = "";
+            _command.Email = string.Empty;
 
             // Act
             var exception = await Should.ThrowAsync<Exception>(() => _identityService.CreateUserAsync(_command));
