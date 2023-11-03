@@ -12,7 +12,9 @@ namespace Application
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             services.AddAutoMapper(Assembly.GetExecutingAssembly());
+
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+            ValidatorOptions.Global.DefaultRuleLevelCascadeMode = CascadeMode.Stop;
 
             services.AddMediatR(cfg =>
             {

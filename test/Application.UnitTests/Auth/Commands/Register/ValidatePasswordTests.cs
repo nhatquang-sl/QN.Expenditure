@@ -21,10 +21,9 @@ namespace Application.UnitTests.Auth.Commands.Register
         }
 
         [Theory]
-        [InlineData("")]
-        [InlineData("abc")]
-        [InlineData("abcde")]
-        public async Task FailsIfTooShortTests(string input)
+        [InlineData("abCdef")]
+        [InlineData("aaAaaaaaaaa")]
+        public async Task FailsIfMissingNonAlphaNumeric(string input)
         {
             // Arrange
             _command.Password = input;
@@ -33,22 +32,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""password"":""Password must be at least 6 characters.""}");
-        }
-
-        [Theory]
-        [InlineData("abcdef")]
-        [InlineData("aaaaaaaaaaa")]
-        public async Task FailsIfMissingUpper(string input)
-        {
-            // Arrange
-            _command.Password = input;
-
-            // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
-
-            // Assert
-            exception.Message.ShouldBe(@"{""password"":""Password must have at least one uppercase (\u0027A\u0027-\u0027Z\u0027).""}");
+            exception.Message.ShouldBe(@"{""password"":""Password must contain at least one number.""}");
         }
 
         [Theory]
@@ -67,9 +51,9 @@ namespace Application.UnitTests.Auth.Commands.Register
         }
 
         [Theory]
-        [InlineData("abCdef")]
-        [InlineData("aaAaaaaaaaa")]
-        public async Task FailsIfMissingNonAlphaNumeric(string input)
+        [InlineData("abcdef")]
+        [InlineData("aaaaaaaaaaa")]
+        public async Task FailsIfMissingUpper(string input)
         {
             // Arrange
             _command.Password = input;
@@ -78,7 +62,22 @@ namespace Application.UnitTests.Auth.Commands.Register
             var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
 
             // Assert
-            exception.Message.ShouldBe(@"{""password"":""Password must contain at least one number.""}");
+            exception.Message.ShouldBe(@"{""password"":""Password must have at least one uppercase (\u0027A\u0027-\u0027Z\u0027).""}");
+        }
+
+        [Theory]
+        [InlineData("abc")]
+        [InlineData("abcde")]
+        public async Task FailsIfTooShortTests(string input)
+        {
+            // Arrange
+            _command.Password = input;
+
+            // Act
+            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
+
+            // Assert
+            exception.Message.ShouldBe(@"{""password"":""Password must be at least 6 characters.""}");
         }
 
         [Theory]

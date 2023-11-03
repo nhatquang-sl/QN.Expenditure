@@ -34,6 +34,20 @@ namespace Application.UnitTests.Auth.Commands.Register
             exception.Message.ShouldBe(@"{""lastName"":""Last Name is required.""}");
         }
 
+        [Fact]
+        public async void ThrowBadRequestException_IfTooLong()
+        {
+            // Arrange
+            _command.LastName = "";
+            for (var i = 0; i < 51; i++) _command.LastName += "a";
+
+            // Act
+            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
+
+            // Assert
+            exception.Message.ShouldBe(@"{""lastName"":""Last Name has reached a maximum of 50 characters.""}");
+        }
+
         [Theory]
         [InlineData("a")]
         [InlineData("b")]
@@ -47,20 +61,6 @@ namespace Application.UnitTests.Auth.Commands.Register
 
             // Assert
             exception.Message.ShouldBe(@"{""lastName"":""Last Name must be at least 2 characters.""}");
-        }
-
-        [Fact]
-        public async void ThrowBadRequestException_IfTooLong()
-        {
-            // Arrange
-            _command.LastName = "";
-            for (var i = 0; i < 51; i++) _command.LastName += "a";
-
-            // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command, default));
-
-            // Assert
-            exception.Message.ShouldBe(@"{""lastName"":""Last Name has reached a maximum of 50 characters.""}");
         }
 
         [Theory]
