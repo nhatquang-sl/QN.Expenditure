@@ -82,10 +82,11 @@ namespace Infrastructure.Identity
             // This doesn't count login failures towards account lockout
             // To enable password failures to trigger account lockout, set lockoutOnFailure: true
             var result = await _signInManager.PasswordSignInAsync(email, password, rememberMe, lockoutOnFailure: false);
-            if (result.Succeeded)
+            if (result.Succeeded || result.IsNotAllowed)
             {
                 _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), "User logged in."));
                 var user = await _userManager.FindByEmailAsync(email);
+
                 return user == null
                     ? throw new NotFoundException($"{email} is not found!")
                     : new UserProfileDto
@@ -93,7 +94,8 @@ namespace Infrastructure.Identity
                         Id = user.Id,
                         Email = email,
                         FirstName = user.FirstName,
-                        LastName = user.LastName
+                        LastName = user.LastName,
+                        EmailConfirmed = user.EmailConfirmed
                     };
             }
             if (result.RequiresTwoFactor)

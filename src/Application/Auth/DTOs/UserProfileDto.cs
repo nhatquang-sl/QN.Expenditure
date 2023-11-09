@@ -1,13 +1,15 @@
-﻿using Application.Common.Mappings;
+﻿using Application.Common.Abstractions;
+using Application.Common.Mappings;
 
 namespace Application.Auth.DTOs
 {
-    public class UserProfileDto
+    public class UserProfileDto : ICurrentUserService
     {
         public string Id { get; set; }
         public string Email { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public bool EmailConfirmed { get; set; }
     }
 
     public class UserAuthDto : UserProfileDto, IMapFrom<UserProfileDto>

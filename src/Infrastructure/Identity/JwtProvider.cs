@@ -1,4 +1,5 @@
-﻿using Application.Common.Abstractions;
+﻿using Application.Auth.DTOs;
+using Application.Common.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -16,22 +17,22 @@ namespace Infrastructure.Identity
             _jwtConfig = jwtConfig.Value;
         }
 
-        public (string accessToken, string refreshToken) GenerateTokens(TokenParam tokenInfo)
+        public (string accessToken, string refreshToken) GenerateTokens(UserProfileDto userProfile)
         {
-            var accessToken = GenerateToken(tokenInfo, _jwtConfig.AccessTokenSecretKey, DateTime.UtcNow.AddHours(1));
-            var refreshToken = GenerateToken(tokenInfo, _jwtConfig.RefreshTokenSecretKey, DateTime.UtcNow.AddHours(24));
+            var accessToken = GenerateToken(userProfile, _jwtConfig.AccessTokenSecretKey, DateTime.UtcNow.AddHours(1));
+            var refreshToken = GenerateToken(userProfile, _jwtConfig.RefreshTokenSecretKey, DateTime.UtcNow.AddHours(24));
 
             return (accessToken, refreshToken);
         }
 
-        private string GenerateToken(TokenParam tokenInfo, string secretKey, DateTime expires)
+        private string GenerateToken(UserProfileDto userProfile, string secretKey, DateTime expires)
         {
             var claims = new Claim[] {
-                new Claim(JwtRegisteredClaimNames.Sub, tokenInfo.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, tokenInfo.EmailAddress.ToString()),
-                new Claim(JwtRegisteredClaimNames.Name, $"{tokenInfo.FirstName} {tokenInfo.LastName}"),
-            //new Claim(JwtRegisteredClaimNames.Role, tokenInfo.Roles.ToString()),
-            //new Claim(JwtRegisteredClaimNames.Sub, tokenInfo.LastName.ToString()),
+                new(JwtClaimNames.Id, userProfile.Id),
+                new(JwtClaimNames.Email, userProfile.Email),
+                new(JwtClaimNames.FirstName, userProfile.FirstName),
+                new(JwtClaimNames.LastName, userProfile.LastName),
+                new(JwtClaimNames.EmailConfirmed, userProfile.EmailConfirmed.ToString())
             };
 
             var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)), SecurityAlgorithms.HmacSha256);
@@ -39,5 +40,14 @@ namespace Infrastructure.Identity
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+    }
+
+    public struct JwtClaimNames
+    {
+        public const string Id = "id";
+        public const string Email = "emailCus";
+        public const string FirstName = "firstName";
+        public const string LastName = "lastName";
+        public const string EmailConfirmed = "emailConfirmed";
     }
 }

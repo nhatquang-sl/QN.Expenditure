@@ -1,6 +1,10 @@
+using Application.Common.Abstractions;
 using Infrastructure;
 using Infrastructure.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using WebAPI;
 using WebAPI.Middleware;
+using WebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile($"QN.Expenditure.Credentials/appsettings.json");
@@ -8,7 +12,14 @@ builder.Configuration.AddJsonFile($"QN.Expenditure.Credentials/appsettings.json"
 
 builder.Services.AddControllers();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
 builder.Services.AddHttpClient();
+
+builder.Services.ConfigureOptions<JwtBearerSetup>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 var app = builder.Build();
 

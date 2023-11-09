@@ -32,13 +32,7 @@ namespace Application.Auth.Commands.Login
         {
             var userProfile = await _identityService.LoginAsync(request.Email, request.Password, request.RememberMe);
 
-            var (accessToken, refreshToken) = _jwtService.GenerateTokens(new TokenParam
-            {
-                Id = userProfile.Id,
-                EmailAddress = userProfile.Email,
-                FirstName = userProfile.FirstName,
-                LastName = userProfile.LastName
-            });
+            var (accessToken, refreshToken) = _jwtService.GenerateTokens(userProfile);
 
             var userAuth = _mapper.Map<UserAuthDto>(userProfile);
             userAuth.AccessToken = accessToken;
