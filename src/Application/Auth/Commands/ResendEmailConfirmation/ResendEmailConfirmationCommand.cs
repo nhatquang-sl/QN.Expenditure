@@ -14,10 +14,10 @@ namespace Application.Auth.Commands.ResendEmailConfirmation
     {
         private readonly IMapper _mapper;
         private readonly IPublisher _publisher;
-        private readonly ICurrentUserService _currentUser;
+        private readonly ICurrentUser _currentUser;
 
         public ResendEmailConfirmationCommandHandler(IMapper mapper, IPublisher publisher
-            , ICurrentUserService currentUser)
+            , ICurrentUser currentUser)
         {
             _mapper = mapper;
             _publisher = publisher;

@@ -1,13 +1,13 @@
-﻿using System.Security.Claims;
-using Application.Common.Abstractions;
+﻿using Application.Common.Abstractions;
 using Infrastructure.Identity;
+using System.Security.Claims;
 
 namespace WebAPI.Services
 {
-    public class CurrentUserService : ICurrentUserService
+    public class CurrentUser : ICurrentUser
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public CurrentUserService(IHttpContextAccessor httpContextAccessor)
+        public CurrentUser(IHttpContextAccessor httpContextAccessor)
         {
             _httpContextAccessor = httpContextAccessor;
 

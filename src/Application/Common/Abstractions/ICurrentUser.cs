@@ -1,6 +1,6 @@
 ﻿namespace Application.Common.Abstractions
 {
-    public interface ICurrentUserService
+    public interface ICurrentUser
     {
         public string Id { get; set; }
         public string Email { get; set; }

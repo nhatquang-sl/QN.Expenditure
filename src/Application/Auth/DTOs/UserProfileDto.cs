@@ -3,7 +3,7 @@ using Application.Common.Mappings;
 
 namespace Application.Auth.DTOs
 {
-    public class UserProfileDto : ICurrentUserService
+    public class UserProfileDto : ICurrentUser
     {
         public string Id { get; set; }
         public string Email { get; set; }

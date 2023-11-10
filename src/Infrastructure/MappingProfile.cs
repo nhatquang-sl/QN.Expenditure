@@ -14,7 +14,7 @@ namespace Infrastructure
                 .ForMember(x => x.UserName, opt => opt.MapFrom(x => x.Email));
             CreateMap<ApplicationUser, UserProfileDto>();
 
-            CreateMap<ICurrentUserService, UserProfileDto>().ReverseMap();
+            CreateMap<ICurrentUser, UserProfileDto>().ReverseMap();
         }
     }
 }
