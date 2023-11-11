@@ -1,4 +1,5 @@
-﻿using Application.Auth.Commands.ConfirmEmail;
+﻿using Application.Auth.Commands.ChangePassword;
+using Application.Auth.Commands.ConfirmEmail;
 using Application.Auth.Commands.Login;
 using Application.Auth.Commands.Register;
 using Application.Auth.Commands.ResendEmailConfirmation;
@@ -47,6 +48,15 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> ResendEmailConfirmation()
         {
             await _sender.Send(new ResendEmailConfirmationCommand());
+
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordCommand command)
+        {
+            await _sender.Send(command);
 
             return Ok();
         }

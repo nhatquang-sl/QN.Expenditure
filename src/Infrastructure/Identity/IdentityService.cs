@@ -1,4 +1,5 @@
-﻿using Application.Auth.Commands.Register;
+﻿using Application.Auth.Commands.ChangePassword;
+using Application.Auth.Commands.Register;
 using Application.Auth.DTOs;
 using Application.Common.Abstractions;
 using Application.Common.Exceptions;
@@ -111,6 +112,21 @@ namespace Infrastructure.Identity
 
             _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), "Invalid login attempt."));
             throw new BadRequestException("Email or Password incorrect.");
+        }
+
+        public async Task<string> ChangePassword(string userId, ChangePasswordCommand request)
+        {
+            var user = await _userManager.FindByIdAsync(userId) ?? throw new NotFoundException($"User is not found!");
+            var changePasswordResult = await _userManager.ChangePasswordAsync(user, request.OldPassword, request.NewPassword);
+            if (!changePasswordResult.Succeeded)
+            {
+                _logTrace.Log(LogLevel.Error, MethodBase.GetCurrentMethod(), changePasswordResult);
+                throw new BadRequestException(changePasswordResult.Errors.First().Description);
+            }
+
+            await _signInManager.RefreshSignInAsync(user);
+            _logTrace.Log(LogLevel.Information, MethodBase.GetCurrentMethod(), "User changed their password successfully.");
+            return "Your password has been changed.";
         }
     }
 }

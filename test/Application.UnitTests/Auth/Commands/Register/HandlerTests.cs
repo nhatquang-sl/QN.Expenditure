@@ -9,7 +9,7 @@ using Shouldly;
 
 namespace Application.UnitTests.Auth.Commands.Register
 {
-    public class HandlerTests : IDisposable
+    public class HandlerTests
     {
         private readonly RegisterCommand _registerCommand = new()
         {
@@ -28,12 +28,6 @@ namespace Application.UnitTests.Auth.Commands.Register
             _logTraceMock = new Mock<LogTraceBase>();
             _identityServiceMock = new Mock<IIdentityService>();
             _publisher = new Mock<IPublisher>();
-        }
-
-        // teardown
-        public void Dispose()
-        {
-            //throw new NotImplementedException();
         }
 
         [Fact]

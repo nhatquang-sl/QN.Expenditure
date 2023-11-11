@@ -1,4 +1,5 @@
-﻿using Application.Auth.Commands.Register;
+﻿using Application.Auth.Commands.ChangePassword;
+using Application.Auth.Commands.Register;
 using Application.Auth.DTOs;
 
 namespace Application.Common.Abstractions
@@ -8,5 +9,6 @@ namespace Application.Common.Abstractions
         Task<(UserProfileDto, string)> CreateUserAsync(RegisterCommand request);
         Task<bool> ConfirmEmailAsync(string userId, string code);
         Task<UserProfileDto> LoginAsync(string email, string password, bool rememberMe);
+        Task<string> ChangePassword(string userId, ChangePasswordCommand request);
     }
 }

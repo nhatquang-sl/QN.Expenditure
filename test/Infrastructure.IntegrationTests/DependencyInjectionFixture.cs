@@ -19,7 +19,7 @@ namespace Infrastructure.IntegrationTests
             _scope = serviceProvider.CreateScope();
         }
 
-        public T GetService<T>()
+        public T GetService<T>() where T : notnull
         {
             return _scope.ServiceProvider.GetRequiredService<T>();
         }
