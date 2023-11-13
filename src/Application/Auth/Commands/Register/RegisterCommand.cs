@@ -42,7 +42,7 @@ namespace Application.Auth.Commands.Register
 
             _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), new { user.Id }));
 
-            await _publisher.Publish(new RegisterSuccessEvent(user, code), cancellationToken);
+            await _publisher.Publish(new RegisterEvent(user, code), cancellationToken);
             return new RegisterResult(user.Id);
         }
     }

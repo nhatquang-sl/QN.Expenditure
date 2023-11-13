@@ -53,7 +53,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             // Assert
             result.UserId.ShouldBe(userId);
             _publisher.Verify(c => c.Publish(
-                It.Is<RegisterSuccessEvent>(x => x.User == user && x.Code == code)
+                It.Is<RegisterEvent>(x => x.User == user && x.Code == code)
                 , It.IsAny<CancellationToken>()), Times.Once());
         }
 
@@ -71,7 +71,7 @@ namespace Application.UnitTests.Auth.Commands.Register
             // Assert
             exception.Message.ShouldBe("{\"message\":\"sunlight@yopmail.com is duplicate!\"}");
             _publisher.Verify(c => c.Publish(
-                It.IsAny<RegisterSuccessEvent>()
+                It.IsAny<RegisterEvent>()
                 , It.IsAny<CancellationToken>()), Times.Never());
         }
     }

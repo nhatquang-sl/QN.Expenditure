@@ -1,4 +1,6 @@
-﻿using Application.Auth.Commands.ChangePassword;
+﻿using Application.Auth.Commands.ChangeEmail;
+using Application.Auth.Commands.ChangePassword;
+using Application.Auth.Commands.ConfirmEmailChange;
 using Application.Auth.Commands.Register;
 using Application.Auth.DTOs;
 using Application.Common.Abstractions;
@@ -78,6 +80,33 @@ namespace Infrastructure.Identity
             return result.Succeeded;
         }
 
+        public async Task<string> ConfirmEmailChangeAsync(ConfirmEmailChangeCommand request)
+        {
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+            {
+                throw new NotFoundException($"Unable to load user with ID '{request.UserId}'.");
+            }
+
+            var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Code));
+            var result = await _userManager.ChangeEmailAsync(user, request.Email, code);
+            if (!result.Succeeded)
+            {
+                throw new BadRequestException("Error changing email.");
+            }
+
+            // In our UI email and user name are one and the same, so when we update the email
+            // we need to update the user name.
+            var setUserNameResult = await _userManager.SetUserNameAsync(user, request.Email);
+            if (!setUserNameResult.Succeeded)
+            {
+                throw new BadRequestException("Error changing user name.");
+            }
+
+            await _signInManager.RefreshSignInAsync(user);
+            return "Thank you for confirming your email change.";
+        }
+
         public async Task<UserProfileDto> LoginAsync(string email, string password, bool rememberMe)
         {
             // This doesn't count login failures towards account lockout
@@ -127,6 +156,21 @@ namespace Infrastructure.Identity
             await _signInManager.RefreshSignInAsync(user);
             _logTrace.Log(LogLevel.Information, MethodBase.GetCurrentMethod(), "User changed their password successfully.");
             return "Your password has been changed.";
+        }
+
+        public async Task<string> ChangeEmail(string userId, ChangeEmailCommand request)
+        {
+            var user = await _userManager.FindByIdAsync(userId) ?? throw new NotFoundException($"User is not found!");
+
+            if (request.NewEmail != user.Email)
+            {
+                var code = await _userManager.GenerateChangeEmailTokenAsync(user, request.NewEmail);
+                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+                return code;
+            }
+
+            throw new BadRequestException("Your email is unchanged.");
         }
     }
 }

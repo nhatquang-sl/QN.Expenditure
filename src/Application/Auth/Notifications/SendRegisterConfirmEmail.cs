@@ -1,4 +1,5 @@
-﻿using Application.Auth.Commands.ResendEmailConfirmation;
+﻿using Application.Auth.Commands.Register;
+using Application.Auth.Commands.ResendEmailConfirmation;
 using Application.Auth.DTOs;
 using Application.Common.Abstractions;
 using Application.Common.Configs;
@@ -6,22 +7,20 @@ using MediatR;
 using Microsoft.Extensions.Options;
 using System.Text.Encodings.Web;
 
-namespace Application.Auth.Commands.Register
+namespace Application.Auth.Notifications
 {
-    public record RegisterSuccessEvent(UserProfileDto User, string Code) : INotification;
-
-    public class SendRegisterConfirmEmailEventHandler : INotificationHandler<RegisterSuccessEvent>, INotificationHandler<ResendEmailConfirmationEvent>
+    public class SendRegisterConfirmEmail : INotificationHandler<RegisterEvent>, INotificationHandler<ResendEmailConfirmationEvent>
     {
         private readonly IEmailService _emailSender;
         private readonly ApplicationConfig _applicationConfig;
 
-        public SendRegisterConfirmEmailEventHandler(IEmailService emailSender, IOptions<ApplicationConfig> applicationConfig)
+        public SendRegisterConfirmEmail(IEmailService emailSender, IOptions<ApplicationConfig> applicationConfig)
         {
             _emailSender = emailSender;
             _applicationConfig = applicationConfig.Value;
         }
 
-        public Task Handle(RegisterSuccessEvent notification, CancellationToken cancellationToken)
+        public Task Handle(RegisterEvent notification, CancellationToken cancellationToken)
             => SendEmailAsync(notification.User, notification.Code);
 
         public Task Handle(ResendEmailConfirmationEvent notification, CancellationToken cancellationToken)
