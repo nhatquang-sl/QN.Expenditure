@@ -1,5 +1,7 @@
-﻿using Application.Auth.Commands.ChangePassword;
+﻿using Application.Auth.Commands.ChangeEmail;
+using Application.Auth.Commands.ChangePassword;
 using Application.Auth.Commands.ConfirmEmail;
+using Application.Auth.Commands.ConfirmEmailChange;
 using Application.Auth.Commands.Login;
 using Application.Auth.Commands.Register;
 using Application.Auth.Commands.ResendEmailConfirmation;
@@ -35,6 +37,18 @@ namespace WebAPI.Controllers
             return Ok(new { succeeded });
         }
 
+        [HttpGet("confirm-email-change")]
+        public async Task<IActionResult> ConfirmEmailChange(string userId, string code, string email)
+        {
+            var message = await _sender.Send(new ConfirmEmailChangeCommand()
+            {
+                UserId = userId,
+                Code = code,
+                Email = email
+            });
+            return Ok(new { message });
+        }
+
         [HttpPost("login")]
         public async Task<UserAuthDto> Login(LoginCommand loginCommand)
         {
@@ -59,6 +73,15 @@ namespace WebAPI.Controllers
             await _sender.Send(command);
 
             return Ok();
+        }
+
+        [Authorize]
+        [HttpPost("change-email")]
+        public async Task<IActionResult> ChangeEmail(ChangeEmailCommand command)
+        {
+            var message = await _sender.Send(command);
+
+            return Ok(new { message });
         }
     }
 }
