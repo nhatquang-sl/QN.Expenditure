@@ -1,7 +1,9 @@
 ﻿using Application.Auth.Commands.ChangeEmail;
 using Application.Auth.Commands.ChangePassword;
 using Application.Auth.Commands.ConfirmEmailChange;
+using Application.Auth.Commands.ForgotPassword;
 using Application.Auth.Commands.Register;
+using Application.Auth.Commands.ResetPassword;
 using Application.Auth.DTOs;
 using Application.Common.Abstractions;
 using Application.Common.Exceptions;
@@ -130,7 +132,7 @@ namespace Infrastructure.Identity
             }
             if (result.RequiresTwoFactor)
             {
-                // return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
+                // return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = request.RememberMe });
                 throw new BadRequestException("Requires Two Factor.");
             }
             if (result.IsLockedOut)
@@ -162,15 +164,39 @@ namespace Infrastructure.Identity
         {
             var user = await _userManager.FindByIdAsync(userId) ?? throw new NotFoundException($"User is not found!");
 
-            if (request.NewEmail != user.Email)
-            {
-                var code = await _userManager.GenerateChangeEmailTokenAsync(user, request.NewEmail);
-                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            if (request.NewEmail == user.Email) throw new BadRequestException("Your email is unchanged.");
 
-                return code;
+            var code = await _userManager.GenerateChangeEmailTokenAsync(user, request.NewEmail);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+            return code;
+        }
+
+        public async Task<string> ForgotPasswordAsync(ForgotPasswordCommand request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            {
+                // Don't reveal that the user does not exist or is not confirmed
+                throw new NotFoundException("User does not exist or is not confirmed.");
             }
 
-            throw new BadRequestException("Your email is unchanged.");
+            // For more information on how to enable account confirmation and password reset please
+            // visit https://go.microsoft.com/fwlink/?LinkID=532713
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+            return code;
+        }
+
+        public async Task ResetPasswordAsync(ResetPasswordCommand request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email) ?? throw new NotFoundException($"User is not found!");
+            var result = await _userManager.ResetPasswordAsync(user, request.Code, request.Password);
+            if (!result.Succeeded)
+            {
+                throw new BadRequestException(result.Errors.First().Description);
+            }
         }
     }
 }

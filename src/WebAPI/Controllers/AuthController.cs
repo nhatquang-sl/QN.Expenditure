@@ -2,9 +2,11 @@
 using Application.Auth.Commands.ChangePassword;
 using Application.Auth.Commands.ConfirmEmail;
 using Application.Auth.Commands.ConfirmEmailChange;
+using Application.Auth.Commands.ForgotPassword;
 using Application.Auth.Commands.Login;
 using Application.Auth.Commands.Register;
 using Application.Auth.Commands.ResendEmailConfirmation;
+using Application.Auth.Commands.ResetPassword;
 using Application.Auth.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -82,6 +84,22 @@ namespace WebAPI.Controllers
             var message = await _sender.Send(command);
 
             return Ok(new { message });
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordCommand command)
+        {
+            await _sender.Send(command);
+
+            return Ok();
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordCommand command)
+        {
+            await _sender.Send(command);
+
+            return Ok();
         }
     }
 }
