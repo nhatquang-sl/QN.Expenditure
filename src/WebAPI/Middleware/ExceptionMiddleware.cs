@@ -1,4 +1,5 @@
 ﻿using Application.Common.Exceptions;
+using Application.Common.Logging;
 using System.Net;
 
 namespace WebAPI.Middleware
@@ -12,7 +13,7 @@ namespace WebAPI.Middleware
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task InvokeAsync(HttpContext context, LogTraceBase logTrace)
         {
             try
             {
@@ -41,6 +42,10 @@ namespace WebAPI.Middleware
                 }
 
                 await context.Response.WriteAsync(context.Response.StatusCode != (int)HttpStatusCode.InternalServerError ? ex.Message : "Internal Server Error");
+            }
+            finally
+            {
+                logTrace.Flush();
             }
         }
     }
