@@ -14,8 +14,28 @@
     transform: translate(100%, -100%);
   }
 
+  .txt-light {
+    @apply text-gray-900;
+  }
+
+  .txt-dark {
+    @apply text-slate-100;
+  }
+
+  .txt-primary {
+    @apply text-indigo-700;
+  }
+
+  .bg-primary {
+    @apply bg-indigo-700;
+  }
+
+  .bg-primary-light {
+    @apply bg-indigo-500;
+  }
+
   .auth-animation {
-    @apply transition ease-in-out duration-700;
+    @apply transition ease-in-out duration-1000;
   }
 }
 
@@ -36,9 +56,9 @@
 }
 
 .register-form-container {
-  @apply rounded-t-3xl absolute;
+  @apply rounded-t-3xl txt-dark absolute;
 
-  @apply lg:translateX lg:z-0 lg:h-full lg:w-1/2;
+  @apply lg:translateX lg:z-0 lg:h-full lg:w-1/2 lg:txt-light;
 
   transform: translateY(calc(100% - 48px));
 
@@ -60,7 +80,7 @@
 }
 
 .overlay {
-  @apply relative w-full h-full;
+  @apply relative w-full h-full bg-slate-800;
 
   .overlay-panel {
     @apply text-slate-100 absolute w-full top-1/3 text-center auth-animation;

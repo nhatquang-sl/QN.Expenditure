@@ -14,8 +14,11 @@ namespace Infrastructure.Services
 
         public override void Flush()
         {
+            if (!_entries.Any()) return;
+
             Console.WriteLine(_entries);
-            _logger.LogInformation("{@entries}", _entries);
+            var logLevel = _entries.Max(x => x.Level);
+            _logger.Log(logLevel, "{@Entries}", _entries.Select(x => new { Message = $"[{x.Level}] {x.Message}", x.Data }));
         }
     }
 }

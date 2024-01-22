@@ -6,7 +6,7 @@ using System.Dynamic;
 namespace Application.Common.Behaviors
 {
     public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-     where TRequest : notnull
+        where TRequest : notnull
     {
         private readonly IEnumerable<IValidator<TRequest>> _validators;
 

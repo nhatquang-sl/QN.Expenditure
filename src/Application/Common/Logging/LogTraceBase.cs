@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Microsoft.Extensions.Logging;
+using System.Reflection;
 
 namespace Application.Common.Logging
 {
@@ -11,9 +12,9 @@ namespace Application.Common.Logging
             _entries.Add(entry);
         }
 
-        public void Log(LogLevel level, MethodBase? methodBase, object? data)
+        public void Log(LogLevel level, object data, MethodBase methodBase)
         {
-            _entries.Add(new LogEntry(level, methodBase, data));
+            _entries.Add(new LogEntry(level, data, methodBase));
         }
 
         public abstract void Flush();

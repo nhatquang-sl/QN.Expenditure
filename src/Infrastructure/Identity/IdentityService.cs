@@ -11,6 +11,7 @@ using Application.Common.Logging;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -39,7 +40,7 @@ namespace Infrastructure.Identity
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
-                _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), result.Errors));
+                _logTrace.Log(new LogEntry(LogLevel.Error, result.Errors, MethodBase.GetCurrentMethod()));
 
                 var duplicateErr = result.Errors.FirstOrDefault(x => x.Code == "DuplicateUserName");
                 if (duplicateErr != null)
@@ -51,7 +52,7 @@ namespace Infrastructure.Identity
                 throw new Exception($"UnhandledException: {GetType().Name}");
             }
 
-            _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), "User created a new account with password."));
+            _logTrace.Log(new LogEntry(LogLevel.Information, "User created a new account with password.", MethodBase.GetCurrentMethod()));
 
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -66,7 +67,7 @@ namespace Infrastructure.Identity
             if (user == null)
             {
                 var message = $"Unable to load user with ID '{userId}'.";
-                var logEntry = new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), message);
+                var logEntry = new LogEntry(LogLevel.Error, message, MethodBase.GetCurrentMethod());
                 _logTrace.Log(logEntry);
                 throw new NotFoundException(message);
             }
@@ -76,7 +77,7 @@ namespace Infrastructure.Identity
 
             if (!result.Succeeded)
             {
-                _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), result.Errors));
+                _logTrace.Log(new LogEntry(LogLevel.Error, result.Errors, MethodBase.GetCurrentMethod()));
             }
 
             return result.Succeeded;
@@ -116,7 +117,8 @@ namespace Infrastructure.Identity
             var result = await _signInManager.PasswordSignInAsync(email, password, rememberMe, lockoutOnFailure: false);
             if (result.Succeeded || result.IsNotAllowed)
             {
-                _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), "User logged in."));
+                _logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", MethodBase.GetCurrentMethod()));
+                //_logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", new { email }, MethodBase.GetCurrentMethod()));
                 var user = await _userManager.FindByEmailAsync(email);
 
                 return user == null
@@ -137,11 +139,11 @@ namespace Infrastructure.Identity
             }
             if (result.IsLockedOut)
             {
-                _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), "User account locked out."));
+                _logTrace.Log(new LogEntry(LogLevel.Error, "User account locked out.", MethodBase.GetCurrentMethod()));
                 throw new BadRequestException("User account locked out.");
             }
 
-            _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), "Invalid login attempt."));
+            _logTrace.Log(new LogEntry(LogLevel.Error, "Invalid login attempt.", MethodBase.GetCurrentMethod()));
             throw new BadRequestException("Email or Password incorrect.");
         }
 
@@ -151,12 +153,12 @@ namespace Infrastructure.Identity
             var changePasswordResult = await _userManager.ChangePasswordAsync(user, request.OldPassword, request.NewPassword);
             if (!changePasswordResult.Succeeded)
             {
-                _logTrace.Log(LogLevel.Error, MethodBase.GetCurrentMethod(), changePasswordResult);
+                _logTrace.Log(LogLevel.Error, changePasswordResult, MethodBase.GetCurrentMethod());
                 throw new BadRequestException(changePasswordResult.Errors.First().Description);
             }
 
             await _signInManager.RefreshSignInAsync(user);
-            _logTrace.Log(LogLevel.Information, MethodBase.GetCurrentMethod(), "User changed their password successfully.");
+            _logTrace.Log(LogLevel.Information, "User changed their password successfully.", MethodBase.GetCurrentMethod());
             return "Your password has been changed.";
         }
 

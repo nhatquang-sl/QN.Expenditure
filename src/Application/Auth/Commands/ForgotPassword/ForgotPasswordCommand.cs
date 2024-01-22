@@ -1,6 +1,7 @@
 ﻿using Application.Common.Abstractions;
 using Application.Common.Logging;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace Application.Auth.Commands.ForgotPassword
@@ -24,7 +25,7 @@ namespace Application.Auth.Commands.ForgotPassword
         {
             var code = await _identityService.ForgotPasswordAsync(request);
 
-            _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), new { request.Email }));
+            _logTrace.Log(new LogEntry(LogLevel.Information, "", new { request.Email }, MethodBase.GetCurrentMethod()));
 
             await _publisher.Publish(new ForgotPasswordEvent(request.Email, code), cancellationToken);
         }

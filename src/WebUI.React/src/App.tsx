@@ -7,16 +7,11 @@ import './App.css';
 import NotFound from 'components/errors/not-found';
 import Landing from 'features/landing';
 import Login from 'features/auth/login';
-import Register from 'features/auth/register';
 
 const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
-  },
-  {
-    path: '/register',
-    element: <Register />,
   },
   {
     path: '/',

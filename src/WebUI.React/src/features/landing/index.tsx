@@ -3,7 +3,7 @@ function Landing() {
     <>
       <section
         id="hero"
-        className="flex flex-col-reverse justify-center sm:flex-row p-6 items-center gap-8 mb-12 scroll-mt-40 tallscreen:section-min-height widescreen:section-min-height"
+        className="flex flex-col-reverse justify-center sm:flex-row p-6 items-center gap-8 mb-12 scroll-mt-40 section-min-height"
       >
         <article className="sm:w-1/2">
           <h2 className="max-w-md text-4xl font-bold text-center sm:text-5xl sm:text-left text-slate-900 dark:text-white">
@@ -22,10 +22,7 @@ function Landing() {
         <img src="./src/assets/img/rocketdab.png" alt="Rocket Dab" className="w-1/2" />
       </section>
       <hr className="mx-auto bg-black dark:bg-white w-1/2" />
-      <section
-        id="rockets"
-        className="p-6 my-12 scroll-mt-20 tallscreen:section-min-height widescreen:section-min-height"
-      >
+      <section id="rockets" className="p-6 my-12 scroll-mt-20 section-min-height">
         <h2 className="text-4xl font-bold text-center sm:text-5xl mb-6 text-slate-900 dark:text-white">
           Our Rockets
         </h2>
@@ -65,10 +62,7 @@ function Landing() {
 
       <hr className="mx-auto bg-black dark:bg-white w-1/2" />
 
-      <section
-        id="testimonials"
-        className="p-6 my-12 scroll-mt-20 tallscreen:section-min-height widescreen:section-min-height"
-      >
+      <section id="testimonials" className="p-6 my-12 scroll-mt-20 section-min-height">
         <h2 className="text-4xl font-bold text-center sm:text-5xl mb-6 text-slate-900 dark:text-white">
           Testimonials
         </h2>
@@ -113,10 +107,7 @@ function Landing() {
 
       <hr className="mx-auto bg-black dark:bg-white w-1/2" />
 
-      <section
-        id="contact"
-        className="p-6 my-12 scroll-mt-16 widescreen:section-min-height tallscreen:section-min-height"
-      >
+      <section id="contact" className="p-6 my-12 scroll-mt-16 section-min-height">
         <h2 className="text-4xl font-bold text-center sm:text-5xl mb-6 text-slate-900 dark:text-white">
           Contact Us
         </h2>

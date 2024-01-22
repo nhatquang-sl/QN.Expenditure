@@ -4,6 +4,7 @@ using Mailjet.Client;
 using Mailjet.Client.Resources;
 using Mailjet.Client.TransactionalEmails;
 using Mailjet.Client.TransactionalEmails.Response;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -54,9 +55,9 @@ namespace Infrastructure.Services
 
             var res = await _mailClient.PostAsync(request);
             if (!res.IsSuccessStatusCode)
-                _logTrace.Log(new LogEntry(LogLevel.Error, MethodBase.GetCurrentMethod(), res.Content));
+                _logTrace.Log(new LogEntry(LogLevel.Error, res.Content, MethodBase.GetCurrentMethod()));
             else
-                _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), res.Content.ToObject<TransactionalEmailResponse>()?.Messages.FirstOrDefault()));
+                _logTrace.Log(new LogEntry(LogLevel.Information, res.Content.ToObject<TransactionalEmailResponse>()?.Messages.FirstOrDefault() ?? new MessageResult(), MethodBase.GetCurrentMethod()));
         }
     }
 

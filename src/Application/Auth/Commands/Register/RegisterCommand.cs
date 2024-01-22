@@ -1,6 +1,7 @@
 ﻿using Application.Common.Abstractions;
 using Application.Common.Logging;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace Application.Auth.Commands.Register
@@ -40,7 +41,7 @@ namespace Application.Auth.Commands.Register
         {
             var (user, code) = await _identityService.CreateUserAsync(request);
 
-            _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), new { user.Id }));
+            _logTrace.Log(new LogEntry(LogLevel.Information, new { user.Id }, MethodBase.GetCurrentMethod()));
 
             await _publisher.Publish(new RegisterEvent(user, code), cancellationToken);
             return new RegisterResult(user.Id);
