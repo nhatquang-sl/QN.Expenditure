@@ -9,9 +9,9 @@ namespace Application.Common.Behaviors
         where TRequest : notnull
     {
         private readonly Stopwatch _timer;
-        private readonly LogTraceBase _logTrace;
+        private readonly ILogTrace _logTrace;
 
-        public PerformanceBehavior(LogTraceBase logTrace)
+        public PerformanceBehavior(ILogTrace logTrace)
         {
             _timer = new Stopwatch();
             _logTrace = logTrace;

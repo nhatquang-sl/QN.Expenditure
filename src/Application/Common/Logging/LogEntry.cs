@@ -16,15 +16,15 @@ namespace Application.Common.Logging
             Data = data;
         }
 
-        public LogEntry(LogLevel level, string message, object? data, MethodBase methodBase)
+        public LogEntry(LogLevel level, string message, object? data, MethodBase? methodBase)
         {
             Level = level;
             Message = $"{methodBase?.ReflectedType?.ReflectedType?.Name}.{methodBase?.ReflectedType?.Name}{(string.IsNullOrWhiteSpace(message) ? "" : $" - {message}")}";
             Data = data;
         }
 
-        public LogEntry(LogLevel level, object? data, MethodBase methodBase) : this(level, "", data, methodBase) { }
+        public LogEntry(LogLevel level, object? data, MethodBase? methodBase) : this(level, "", data, methodBase) { }
 
-        public LogEntry(LogLevel level, string message, MethodBase methodBase) : this(level, message, null, methodBase) { }
+        public LogEntry(LogLevel level, string message, MethodBase? methodBase) : this(level, message, null, methodBase) { }
     }
 }

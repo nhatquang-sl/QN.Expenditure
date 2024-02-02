@@ -23,11 +23,11 @@ namespace Infrastructure.Services
                 new StringEnumConverter()
             }
         });
-        private readonly LogTraceBase _logTrace;
+        private readonly ILogTrace _logTrace;
         private readonly EmailConfig _emailConfig;
         private readonly IMailjetClient _mailClient;
 
-        public EmailService(IMailjetClient mailClient, IOptions<EmailConfig> emailConfig, LogTraceBase logTrace)
+        public EmailService(IMailjetClient mailClient, IOptions<EmailConfig> emailConfig, ILogTrace logTrace)
         {
             _logTrace = logTrace;
             _mailClient = mailClient;

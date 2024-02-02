@@ -11,10 +11,10 @@ namespace Application.Auth.Commands.ForgotPassword
     public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand>
     {
         private readonly IPublisher _publisher;
-        private readonly LogTraceBase _logTrace;
+        private readonly ILogTrace _logTrace;
         private readonly IIdentityService _identityService;
 
-        public ForgotPasswordCommandHandler(IPublisher publisher, LogTraceBase logTrace, IIdentityService identityService)
+        public ForgotPasswordCommandHandler(IPublisher publisher, ILogTrace logTrace, IIdentityService identityService)
         {
             _publisher = publisher;
             _logTrace = logTrace;
@@ -25,7 +25,7 @@ namespace Application.Auth.Commands.ForgotPassword
         {
             var code = await _identityService.ForgotPasswordAsync(request);
 
-            _logTrace.Log(new LogEntry(LogLevel.Information, "", new { request.Email }, MethodBase.GetCurrentMethod()));
+            _logTrace.Log(new LogEntry(LogLevel.Information, new { request.Email }, MethodBase.GetCurrentMethod()));
 
             await _publisher.Publish(new ForgotPasswordEvent(request.Email, code), cancellationToken);
         }

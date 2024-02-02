@@ -13,7 +13,7 @@ namespace WebAPI.Middleware
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context, LogTraceBase logTrace)
+        public async Task InvokeAsync(HttpContext context, ILogTrace logTrace)
         {
             try
             {

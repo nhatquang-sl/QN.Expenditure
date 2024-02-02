@@ -21,11 +21,11 @@ namespace Infrastructure.Identity
     public class IdentityService : IIdentityService
     {
         private readonly IMapper _mapper;
-        private readonly LogTraceBase _logTrace;
+        private readonly ILogTrace _logTrace;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
 
-        public IdentityService(UserManager<ApplicationUser> userManager, LogTraceBase logTrace
+        public IdentityService(UserManager<ApplicationUser> userManager, ILogTrace logTrace
             , SignInManager<ApplicationUser> signInManager, IMapper mapper)
         {
             _mapper = mapper;
@@ -120,6 +120,7 @@ namespace Infrastructure.Identity
                 _logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", MethodBase.GetCurrentMethod()));
                 //_logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", new { email }, MethodBase.GetCurrentMethod()));
                 var user = await _userManager.FindByEmailAsync(email);
+                _logTrace.AddProperty("UserId", user?.Id ?? "");
 
                 return user == null
                     ? throw new NotFoundException($"{email} is not found!")
@@ -153,12 +154,12 @@ namespace Infrastructure.Identity
             var changePasswordResult = await _userManager.ChangePasswordAsync(user, request.OldPassword, request.NewPassword);
             if (!changePasswordResult.Succeeded)
             {
-                _logTrace.Log(LogLevel.Error, changePasswordResult, MethodBase.GetCurrentMethod());
+                _logTrace.LogError("ChangePassword()", changePasswordResult, MethodBase.GetCurrentMethod());
                 throw new BadRequestException(changePasswordResult.Errors.First().Description);
             }
 
             await _signInManager.RefreshSignInAsync(user);
-            _logTrace.Log(LogLevel.Information, "User changed their password successfully.", MethodBase.GetCurrentMethod());
+            _logTrace.LogInformation("User changed their password successfully.");
             return "Your password has been changed.";
         }
 

@@ -16,11 +16,11 @@ namespace Application.Auth.Commands.Login
     public class LoginCommandHandler : IRequestHandler<LoginCommand, UserAuthDto>
     {
         private readonly IMapper _mapper;
-        private readonly LogTraceBase _logTrace;
+        private readonly ILogTrace _logTrace;
         private readonly IJwtProvider _jwtService;
         private readonly IIdentityService _identityService;
 
-        public LoginCommandHandler(IMapper mapper, LogTraceBase logTrace, IIdentityService identityService, IJwtProvider jwtService)
+        public LoginCommandHandler(IMapper mapper, ILogTrace logTrace, IIdentityService identityService, IJwtProvider jwtService)
         {
             _mapper = mapper;
             _logTrace = logTrace;

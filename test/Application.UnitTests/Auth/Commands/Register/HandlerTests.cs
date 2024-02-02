@@ -18,14 +18,14 @@ namespace Application.UnitTests.Auth.Commands.Register
             FirstName = "First",
             LastName = "Last"
         };
-        private readonly Mock<LogTraceBase> _logTraceMock;
+        private readonly Mock<ILogTrace> _logTraceMock;
         private readonly Mock<IIdentityService> _identityServiceMock;
         private readonly Mock<IPublisher> _publisher;
 
         // setup
         public HandlerTests()
         {
-            _logTraceMock = new Mock<LogTraceBase>();
+            _logTraceMock = new Mock<ILogTrace>();
             _identityServiceMock = new Mock<IIdentityService>();
             _publisher = new Mock<IPublisher>();
         }

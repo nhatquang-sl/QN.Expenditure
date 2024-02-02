@@ -54,7 +54,7 @@ namespace Infrastructure
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IJwtProvider, JwtProvider>();
 
-            services.AddScoped<LogTraceBase, LogTrace>();
+            services.AddScoped<ILogTrace, LogTrace>();
 
             services.AddScoped<ApplicationDbContextInitializer>();
 

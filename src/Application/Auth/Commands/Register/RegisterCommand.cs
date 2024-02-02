@@ -27,10 +27,10 @@ namespace Application.Auth.Commands.Register
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterResult>
     {
         private readonly IPublisher _publisher;
-        private readonly LogTraceBase _logTrace;
+        private readonly ILogTrace _logTrace;
         private readonly IIdentityService _identityService;
 
-        public RegisterCommandHandler(IPublisher publisher, LogTraceBase logTrace, IIdentityService identityService)
+        public RegisterCommandHandler(IPublisher publisher, ILogTrace logTrace, IIdentityService identityService)
         {
             _publisher = publisher;
             _logTrace = logTrace;
