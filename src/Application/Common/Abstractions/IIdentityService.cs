@@ -11,6 +11,7 @@ namespace Application.Common.Abstractions
     public interface IIdentityService
     {
         Task<(UserProfileDto, string)> CreateUserAsync(RegisterCommand request);
+        Task<string> GenerateEmailConfirmCode(string userId);
         Task<bool> ConfirmEmailAsync(string userId, string code);
         Task<string> ConfirmEmailChangeAsync(ConfirmEmailChangeCommand request);
         Task<UserProfileDto> LoginAsync(string email, string password, bool rememberMe);

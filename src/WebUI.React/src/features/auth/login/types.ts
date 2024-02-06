@@ -30,7 +30,7 @@ export const RegisterDataSchema = LoginDataSchema.extend({
     .trim()
     .min(2, { message: 'Last Name must be at least 2 characters.' })
     .max(50, { message: 'Last Name has reached a maximum of 50 characters.' }),
-  confirmPassword: z.string().trim(),
+  confirmPassword: z.string().min(1, { message: "Confirm Password don't match" }).trim(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Confirm Password don't match",
   path: ['confirmPassword'],

@@ -28,7 +28,7 @@ namespace Application.Auth.Notifications
 
         async Task SendEmailAsync(UserProfileDto user, string code)
         {
-            var callbackUrl = $"{_applicationConfig.Endpoint}/api/auth/confirm-email?userId={user.Id}&code={code}";
+            var callbackUrl = $"{_applicationConfig.Endpoint}/register-confirm?userId={user.Id}&code={code}";
 
             await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
                 $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");

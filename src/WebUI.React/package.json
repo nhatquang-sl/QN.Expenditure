@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build-dev": "NODE_ENV=development vite build --mode development",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "gen-api-client": "nswag run ../WebAPI/nswag.nswag"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
@@ -15,8 +17,11 @@
     "@fontsource/roboto": "^5.0.8",
     "@hookform/resolvers": "^3.3.2",
     "@mui/icons-material": "^5.14.18",
-    "@mui/material": "^5.14.18",
+    "@mui/lab": "^5.0.0-alpha.163",
+    "@mui/material": "^5.15.7",
     "@reduxjs/toolkit": "^1.9.7",
+    "axios": "^1.6.7",
+    "jwt-decode": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
@@ -34,6 +39,7 @@
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
+    "nswag": "^14.0.2",
     "postcss": "^8.4.31",
     "postcss-nested": "^6.0.1",
     "tailwindcss": "^3.3.5",

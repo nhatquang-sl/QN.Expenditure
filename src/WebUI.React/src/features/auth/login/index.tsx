@@ -6,9 +6,10 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import ConsecutiveSnackBars from 'components/snackbar';
+import './index.css';
 import LoginForm from './login-form';
 import RegisterForm from './register-form';
-import './index.css';
 
 const darkTheme = createTheme({
   palette: {
@@ -42,8 +43,12 @@ function Login() {
               <Typography sx={{ marginY: 2 }}>
                 Enter your personal info and start journey with us
               </Typography>
-              <Button variant="outlined">
-                <label htmlFor="chk" aria-hidden="true">
+              <Button variant="outlined" sx={{ padding: 0 }}>
+                <label
+                  htmlFor="chk"
+                  aria-hidden="true"
+                  style={{ width: '100px', lineHeight: '36.5px' }}
+                >
                   Register
                 </label>
               </Button>
@@ -53,8 +58,12 @@ function Login() {
               <Typography sx={{ mb: 2 }}>
                 Keep connect with us please login with your personal info
               </Typography>
-              <Button variant="outlined">
-                <label htmlFor="chk" aria-hidden="true">
+              <Button variant="outlined" sx={{ padding: 0 }}>
+                <label
+                  htmlFor="chk"
+                  aria-hidden="true"
+                  style={{ width: '80px', lineHeight: '36.5px' }}
+                >
                   Log in
                 </label>
               </Button>
@@ -62,6 +71,7 @@ function Login() {
           </div>
         </div>
       </ThemeProvider>
+      <ConsecutiveSnackBars />
     </main>
   );
 }

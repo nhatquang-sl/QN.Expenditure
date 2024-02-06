@@ -1,17 +1,27 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
+import NotFound from 'components/errors/not-found';
+import Footer from 'components/footer';
 import Header from 'components/header';
 import Main from 'components/main';
-import Footer from 'components/footer';
-import './App.css';
-import NotFound from 'components/errors/not-found';
-import Landing from 'features/landing';
 import Login from 'features/auth/login';
+import RegisterConfirm from 'features/auth/register-confirm';
+import RequestActivateEmail from 'features/auth/request-activate-email';
+import Landing from 'features/landing';
+import './App.css';
 
 const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+  {
+    path: '/request-activate-email',
+    element: <RequestActivateEmail />,
+  },
+  {
+    path: '/register-confirm',
+    element: <RegisterConfirm />,
   },
   {
     path: '/',

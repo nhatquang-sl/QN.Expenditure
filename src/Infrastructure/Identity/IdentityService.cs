@@ -46,7 +46,7 @@ namespace Infrastructure.Identity
                 if (duplicateErr != null)
                 {
                     var regex = new Regex(Regex.Escape("Username"));
-                    throw new ConflictException(new { email = regex.Replace(duplicateErr.Description, "Email", 1) });
+                    throw new ConflictException(regex.Replace(duplicateErr.Description, "Email", 1));
                 }
 
                 throw new Exception($"UnhandledException: {GetType().Name}");
@@ -59,6 +59,14 @@ namespace Infrastructure.Identity
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
             return (_mapper.Map<UserProfileDto>(user), code);
+        }
+
+        public async Task<string> GenerateEmailConfirmCode(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            return code;
         }
 
         public async Task<bool> ConfirmEmailAsync(string userId, string code)

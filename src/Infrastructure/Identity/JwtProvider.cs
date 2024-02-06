@@ -32,7 +32,8 @@ namespace Infrastructure.Identity
                 new(JwtClaimNames.Email, userProfile.Email),
                 new(JwtClaimNames.FirstName, userProfile.FirstName),
                 new(JwtClaimNames.LastName, userProfile.LastName),
-                new(JwtClaimNames.EmailConfirmed, userProfile.EmailConfirmed.ToString())
+                new(JwtClaimNames.EmailConfirmed, userProfile.EmailConfirmed.ToString()),
+                new("type", userProfile.EmailConfirmed?TokenType.Login:TokenType.NeedActivate)
             };
 
             var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)), SecurityAlgorithms.HmacSha256);

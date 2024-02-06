@@ -48,6 +48,16 @@ namespace WebAPI.Middleware
         }
     }
 
+    public class BadRequest
+    {
+        public string Message { get; set; }
+    }
+
+    public class Conflict
+    {
+        public string Message { get; set; }
+    }
+
     public static class ExceptionMiddlewareExtensions
     {
         public static IApplicationBuilder UseExceptionMiddleware(

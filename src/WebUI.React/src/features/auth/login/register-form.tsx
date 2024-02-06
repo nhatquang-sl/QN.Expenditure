@@ -1,8 +1,15 @@
-import { Avatar, Box, Button, Grid, TextField, Typography } from '@mui/material';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { SubmitHandler, useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { RegisterDataSchema, RegisterData } from './types';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { LoadingButton } from '@mui/lab';
+import { Avatar, Box, Grid, TextField, Typography } from '@mui/material';
+import { showSnackbar } from 'components/snackbar/slice';
+import { useState } from 'react';
+import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { authClient } from 'store';
+import { Conflict, RegisterCommand } from 'store/api-client';
+import { RegisterData, RegisterDataSchema } from './types';
 
 function RegisterForm() {
   const {
@@ -13,10 +20,24 @@ function RegisterForm() {
   } = useForm<RegisterData>({
     resolver: zodResolver(RegisterDataSchema),
   });
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   console.log(errors);
-  const onSubmit: SubmitHandler<RegisterData> = (data) => {
-    console.log(data);
+  const onSubmit: SubmitHandler<RegisterData> = async (data) => {
+    setLoading(true);
+    try {
+      await authClient.register(new RegisterCommand(data));
+      navigate('/request-activate-email', { replace: true });
+    } catch (err: any) {
+      if (err instanceof Conflict) {
+        dispatch(showSnackbar(err.message, 'error', 'top', 'left'));
+      }
+    }
+    // console.log(result);
+    console.log({ data });
+    setLoading(false);
   };
 
   return (
@@ -113,16 +134,37 @@ function RegisterForm() {
               )}
             />
           </Grid>
+          <Grid item xs={12}>
+            <Controller
+              control={control}
+              name="confirmPassword"
+              defaultValue=""
+              render={({ field }) => (
+                <TextField
+                  required
+                  fullWidth
+                  {...field}
+                  id="confirmPassword"
+                  type="password"
+                  label="Confirm Password"
+                  autoComplete="new-password"
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword ? errors.confirmPassword?.message : ''}
+                />
+              )}
+            />
+          </Grid>
         </Grid>
-        <Button
+        <LoadingButton
           type="submit"
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
           onClick={() => trigger()}
+          loading={loading}
         >
           Sign Up
-        </Button>
+        </LoadingButton>
       </form>
     </Box>
   );

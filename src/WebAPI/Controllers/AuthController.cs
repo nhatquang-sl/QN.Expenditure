@@ -11,6 +11,7 @@ using Application.Auth.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebAPI.Middleware;
 
 namespace WebAPI.Controllers
 {
@@ -25,6 +26,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("register")]
+        [ProducesResponseType(typeof(Conflict), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(RegisterResult), StatusCodes.Status200OK)]
         public async Task<RegisterResult> Register(RegisterCommand registerCommand)
         {
             var result = await _sender.Send(registerCommand);
@@ -52,6 +55,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(typeof(BadRequest), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(UserAuthDto), StatusCodes.Status200OK)]
         public async Task<UserAuthDto> Login(LoginCommand loginCommand)
         {
             var result = await _sender.Send(loginCommand);
