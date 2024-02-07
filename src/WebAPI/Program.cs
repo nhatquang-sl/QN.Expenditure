@@ -10,12 +10,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
-    policy =>
-    {
-        policy.WithOrigins("http://localhost:5173", "http://quangnn.somee.com", "https://quangnn.somee.com")
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-    });
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173", "http://quangnn.somee.com", "https://quangnn.somee.com")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+        });
 });
 
 

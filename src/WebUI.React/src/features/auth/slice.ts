@@ -9,7 +9,7 @@ export enum TokenType {
 }
 
 export class TokenData {
-  id: number = 0;
+  id: string = '';
   firstName: string = '';
   lastName: string = '';
   emailAddress: string = '';
@@ -20,7 +20,7 @@ export class TokenData {
 }
 
 type AuthState = {
-  id: number;
+  id?: string;
   accessToken: string;
   firstName: string;
   lastName: string;
@@ -32,7 +32,6 @@ type AuthState = {
 };
 
 const initialState: AuthState = {
-  id: -1,
   accessToken: '',
   firstName: '',
   lastName: '',
@@ -51,7 +50,7 @@ export const authSlice = createSlice({
       const accessToken = action.payload;
       const tokenData = (accessToken ? jwtDecode(accessToken) : {}) as TokenData;
 
-      state.id = isNaN(tokenData?.id) ? -1 : parseInt(tokenData?.id + '');
+      state.id = tokenData?.id;
       state.accessToken = accessToken ?? '';
       state.firstName = tokenData?.firstName ?? '';
       state.lastName = tokenData?.lastName ?? '';

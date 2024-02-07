@@ -8,6 +8,8 @@ using Application.Auth.Commands.Register;
 using Application.Auth.Commands.ResendEmailConfirmation;
 using Application.Auth.Commands.ResetPassword;
 using Application.Auth.DTOs;
+using Application.Auth.Queries.GetUserLoginHistories;
+using Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,19 +19,17 @@ namespace WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController(ISender sender) : ControllerBase
     {
-        private readonly ISender _sender;
-        public AuthController(ISender sender)
-        {
-            _sender = sender;
-        }
+        private readonly ISender _sender = sender;
 
         [HttpPost("register")]
         [ProducesResponseType(typeof(Conflict), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(RegisterResult), StatusCodes.Status200OK)]
         public async Task<RegisterResult> Register(RegisterCommand registerCommand)
         {
+            var IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
+            var UserAgent = Request.Headers.UserAgent.ToString();
             var result = await _sender.Send(registerCommand);
 
             return result;
@@ -59,6 +59,8 @@ namespace WebAPI.Controllers
         [ProducesResponseType(typeof(UserAuthDto), StatusCodes.Status200OK)]
         public async Task<UserAuthDto> Login(LoginCommand loginCommand)
         {
+            loginCommand.IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
+            loginCommand.UserAgent = Request.Headers.UserAgent.ToString();
             var result = await _sender.Send(loginCommand);
 
             return result;
@@ -106,5 +108,10 @@ namespace WebAPI.Controllers
 
             return Ok();
         }
+
+        [HttpGet("login-histories")]
+        public Task<List<UserLoginHistory>> GetLoginHistories(int page = 1, int size = 10)
+            => _sender.Send(new GetUserLoginHistoriesQuery(page, size));
+
     }
 }
