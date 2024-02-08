@@ -22,6 +22,7 @@ namespace Application.Auth.Queries.GetUserLoginHistories
         public Task<List<UserLoginHistory>> Handle(GetUserLoginHistoriesQuery request, CancellationToken cancellationToken)
             => _dbContext.UserLoginHistories
                     .Where(x => x.UserId == _currentUser.Id)
+                    .OrderByDescending(x => x.Id)
                     .Skip((request.Page - 1) * request.Size)
                     .Take(request.Size)
                     .ToListAsync(cancellationToken);

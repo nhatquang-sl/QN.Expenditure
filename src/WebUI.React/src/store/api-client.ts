@@ -548,6 +548,69 @@ export class AuthClient {
         }
         return Promise.resolve<FileResponse>(null as any);
     }
+
+    getLoginHistories(page: number | undefined, size: number | undefined, cancelToken?: CancelToken): Promise<UserLoginHistory[]> {
+        let url_ = this.baseUrl + "/api/Auth/login-histories?";
+        if (page === null)
+            throw new Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (size === null)
+            throw new Error("The parameter 'size' cannot be null.");
+        else if (size !== undefined)
+            url_ += "size=" + encodeURIComponent("" + size) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetLoginHistories(_response);
+        });
+    }
+
+    protected processGetLoginHistories(response: AxiosResponse): Promise<UserLoginHistory[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(UserLoginHistory.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<UserLoginHistory[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<UserLoginHistory[]>(null as any);
+    }
 }
 
 export class ValuesClient {
@@ -935,6 +998,8 @@ export class LoginCommand implements ILoginCommand {
     email?: string;
     password?: string;
     rememberMe?: boolean;
+    ipAddress?: string | undefined;
+    userAgent?: string | undefined;
 
     constructor(data?: ILoginCommand) {
         if (data) {
@@ -950,6 +1015,8 @@ export class LoginCommand implements ILoginCommand {
             this.email = _data["email"];
             this.password = _data["password"];
             this.rememberMe = _data["rememberMe"];
+            this.ipAddress = _data["ipAddress"];
+            this.userAgent = _data["userAgent"];
         }
     }
 
@@ -965,6 +1032,8 @@ export class LoginCommand implements ILoginCommand {
         data["email"] = this.email;
         data["password"] = this.password;
         data["rememberMe"] = this.rememberMe;
+        data["ipAddress"] = this.ipAddress;
+        data["userAgent"] = this.userAgent;
         return data;
     }
 }
@@ -973,6 +1042,8 @@ export interface ILoginCommand {
     email?: string;
     password?: string;
     rememberMe?: boolean;
+    ipAddress?: string | undefined;
+    userAgent?: string | undefined;
 }
 
 export class ChangePasswordCommand implements IChangePasswordCommand {
@@ -1137,6 +1208,66 @@ export interface IResetPasswordCommand {
     password?: string;
     confirmPassword?: string;
     code?: string;
+}
+
+export class UserLoginHistory implements IUserLoginHistory {
+    id?: number;
+    userId?: string;
+    ipAddress?: string | undefined;
+    userAgent?: string | undefined;
+    accessToken?: string;
+    refreshToken?: string;
+    createdAt?: Date;
+
+    constructor(data?: IUserLoginHistory) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.userId = _data["userId"];
+            this.ipAddress = _data["ipAddress"];
+            this.userAgent = _data["userAgent"];
+            this.accessToken = _data["accessToken"];
+            this.refreshToken = _data["refreshToken"];
+            this.createdAt = _data["createdAt"] ? new Date(_data["createdAt"].toString()) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): UserLoginHistory {
+        data = typeof data === 'object' ? data : {};
+        let result = new UserLoginHistory();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["userId"] = this.userId;
+        data["ipAddress"] = this.ipAddress;
+        data["userAgent"] = this.userAgent;
+        data["accessToken"] = this.accessToken;
+        data["refreshToken"] = this.refreshToken;
+        data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IUserLoginHistory {
+    id?: number;
+    userId?: string;
+    ipAddress?: string | undefined;
+    userAgent?: string | undefined;
+    accessToken?: string;
+    refreshToken?: string;
+    createdAt?: Date;
 }
 
 export class WeatherForecast implements IWeatherForecast {

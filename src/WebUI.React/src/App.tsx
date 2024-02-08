@@ -1,15 +1,19 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
+import { Box, CssBaseline } from '@mui/material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import NotFound from 'components/errors/not-found';
-import Footer from 'components/footer';
-import Header from 'components/header';
-import Main from 'components/main';
+
 import Login from 'features/auth/login';
+import LoginHistory from 'features/auth/login-history';
 import RegisterConfirm from 'features/auth/register-confirm';
 import RequestActivateEmail from 'features/auth/request-activate-email';
 import Landing from 'features/landing';
+import Header from 'features/layout/header';
+import Main from 'features/layout/main';
+import Sidebar from 'features/layout/sidebar';
 import './App.css';
-
+const defaultTheme = createTheme();
 const router = createBrowserRouter([
   {
     path: '/login',
@@ -26,14 +30,23 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: (
-      <>
-        <Header />
-        <Main />
-        <Footer />
-      </>
+      <ThemeProvider theme={defaultTheme}>
+        <Box sx={{ display: 'flex' }}>
+          <CssBaseline />
+          <Header />
+          <Sidebar />
+          <Main />
+        </Box>
+      </ThemeProvider>
     ),
     errorElement: <NotFound />,
-    children: [{ index: true, element: <Landing /> }],
+    children: [
+      { index: true, element: <Landing /> },
+      {
+        path: 'login-history',
+        element: <LoginHistory />,
+      },
+    ],
   },
 ]);
 

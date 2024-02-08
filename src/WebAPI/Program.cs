@@ -40,6 +40,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     await app.InitializeDatabaseAsync();
+    builder.Configuration.AddJsonFile($"appsettings.{app.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 }
 
 // Add OpenAPI 3.0 document serving middleware

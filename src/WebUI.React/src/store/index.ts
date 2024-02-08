@@ -3,6 +3,7 @@ import axios from 'axios';
 import snackbarSlice from 'components/snackbar/slice';
 import authReducer from 'features/auth/slice';
 import counterReducer from 'features/counter/slice';
+import layoutReducer from 'features/layout/slice';
 import { AuthClient } from './api-client';
 import { API_ENDPOINT } from './constants';
 
@@ -11,6 +12,7 @@ export const store = configureStore({
     counter: counterReducer,
     auth: authReducer,
     snackbar: snackbarSlice,
+    layout: layoutReducer,
   },
 });
 

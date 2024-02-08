@@ -40,7 +40,7 @@ function LoginForm() {
     console.log({ authType });
     switch (authType) {
       case TokenType.Login:
-        const from = location.state?.from?.pathname ?? '/';
+        const from = location.state?.from?.pathname ?? '/login-history';
         navigate(from, { replace: true });
         break;
       case TokenType.NeedActivate:
