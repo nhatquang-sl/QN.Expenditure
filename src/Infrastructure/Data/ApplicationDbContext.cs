@@ -12,6 +12,12 @@ namespace Infrastructure.Data
     {
         public DbSet<UserLoginHistory> UserLoginHistories => Set<UserLoginHistory>();
 
+        public DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings => Set<SpotOrderSyncSetting>();
+
+        public DbSet<SpotOrder> SpotOrders => Set<SpotOrder>();
+
+        public DbSet<BnbSetting> BnbSettings => Set<BnbSetting>();
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder builder)

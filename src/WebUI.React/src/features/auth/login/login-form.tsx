@@ -52,7 +52,7 @@ function LoginForm() {
   const onSubmit: SubmitHandler<LoginData> = async (data) => {
     setLoading(true);
     try {
-      var res = await authClient.login(new LoginCommand(data));
+      var res = await authClient.login(data as LoginCommand);
 
       dispatch(setAuth(res.accessToken ?? ''));
     } catch (err: any) {

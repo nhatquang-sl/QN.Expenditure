@@ -1,4 +1,7 @@
-﻿using AutoMapper;
+﻿using Application.Common.ExServices.Bnb.Models;
+using Application.Common.Extensions;
+using AutoMapper;
+using Domain.Entities;
 using System.Reflection;
 
 namespace Application.Common.Mappings
@@ -8,6 +11,11 @@ namespace Application.Common.Mappings
         public MappingProfile()
         {
             ApplyMappingsFromAssembly(Assembly.GetExecutingAssembly());
+
+            CreateMap<SpotOrderRaw, SpotOrder>()
+               .ForMember(x => x.Time, opt => opt.MapFrom(x => x.Time.ToDateTimeFromMilliseconds()))
+               .ForMember(x => x.UpdateTime, opt => opt.MapFrom(x => x.UpdateTime.ToDateTimeFromMilliseconds()))
+               .ForMember(x => x.WorkingTime, opt => opt.MapFrom(x => x.WorkingTime.ToDateTimeFromMilliseconds()));
         }
 
         private void ApplyMappingsFromAssembly(Assembly assembly)
@@ -24,7 +32,7 @@ namespace Application.Common.Mappings
                 var methodInfo = type.GetMethod("Mapping")
                     ?? type.GetInterface("IMapFrom`1")?.GetMethod("Mapping");
 
-                methodInfo?.Invoke(instance, new object[] { this });
+                methodInfo?.Invoke(instance, [this]);
 
             }
         }

@@ -19,7 +19,7 @@ namespace Infrastructure.Identity
 
         public (string accessToken, string refreshToken) GenerateTokens(UserProfileDto userProfile)
         {
-            var accessToken = GenerateToken(userProfile, _jwtConfig.AccessTokenSecretKey, DateTime.UtcNow.AddHours(1));
+            var accessToken = GenerateToken(userProfile, _jwtConfig.AccessTokenSecretKey, DateTime.UtcNow.AddYears(1));
             var refreshToken = GenerateToken(userProfile, _jwtConfig.RefreshTokenSecretKey, DateTime.UtcNow.AddHours(24));
 
             return (accessToken, refreshToken);

@@ -613,6 +613,240 @@ export class AuthClient {
     }
 }
 
+export class BnbSpotClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5228";
+
+    }
+
+    getSyncSettings( cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto[]> {
+        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetSyncSettings(_response);
+        });
+    }
+
+    protected processGetSyncSettings(response: AxiosResponse): Promise<SpotOrderSyncSettingDto[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(SpotOrderSyncSettingDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<SpotOrderSyncSettingDto[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderSyncSettingDto[]>(null as any);
+    }
+
+    createSyncSetting(request: CreateSyncSettingCommand, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
+        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "POST",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processCreateSyncSetting(_response);
+        });
+    }
+
+    protected processCreateSyncSetting(response: AxiosResponse): Promise<SpotOrderSyncSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 409) {
+            const _responseText = response.data;
+            let result409: any = null;
+            let resultData409  = _responseText;
+            result409 = Conflict.fromJS(resultData409);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result409);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotOrderSyncSettingDto.fromJS(resultData200);
+            return Promise.resolve<SpotOrderSyncSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderSyncSettingDto>(null as any);
+    }
+
+    updateSyncSetting(symbol: string, request: SpotOrderSyncSettingUpdateDto, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
+        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings/{symbol}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "PUT",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processUpdateSyncSetting(_response);
+        });
+    }
+
+    protected processUpdateSyncSetting(response: AxiosResponse): Promise<SpotOrderSyncSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotOrderSyncSettingDto.fromJS(resultData200);
+            return Promise.resolve<SpotOrderSyncSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderSyncSettingDto>(null as any);
+    }
+
+    deleteSyncSetting(symbol: string, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
+        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings/{symbol}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "DELETE",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processDeleteSyncSetting(_response);
+        });
+    }
+
+    protected processDeleteSyncSetting(response: AxiosResponse): Promise<SpotOrderSyncSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotOrderSyncSettingDto.fromJS(resultData200);
+            return Promise.resolve<SpotOrderSyncSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderSyncSettingDto>(null as any);
+    }
+}
+
 export class ValuesClient {
     protected instance: AxiosInstance;
     protected baseUrl: string;
@@ -750,7 +984,7 @@ export class WeatherForecastClient {
 }
 
 export class Conflict implements IConflict {
-    message?: string;
+    message!: string;
 
     constructor(data?: IConflict) {
         if (data) {
@@ -782,11 +1016,11 @@ export class Conflict implements IConflict {
 }
 
 export interface IConflict {
-    message?: string;
+    message: string;
 }
 
 export class RegisterResult implements IRegisterResult {
-    userId?: string;
+    userId!: string;
 
     constructor(data?: IRegisterResult) {
         if (data) {
@@ -818,14 +1052,14 @@ export class RegisterResult implements IRegisterResult {
 }
 
 export interface IRegisterResult {
-    userId?: string;
+    userId: string;
 }
 
 export class RegisterCommand implements IRegisterCommand {
-    email?: string;
-    password?: string;
-    firstName?: string;
-    lastName?: string;
+    email!: string;
+    password!: string;
+    firstName!: string;
+    lastName!: string;
 
     constructor(data?: IRegisterCommand) {
         if (data) {
@@ -863,14 +1097,14 @@ export class RegisterCommand implements IRegisterCommand {
 }
 
 export interface IRegisterCommand {
-    email?: string;
-    password?: string;
-    firstName?: string;
-    lastName?: string;
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
 }
 
 export class BadRequest implements IBadRequest {
-    message?: string;
+    message!: string;
 
     constructor(data?: IBadRequest) {
         if (data) {
@@ -902,15 +1136,15 @@ export class BadRequest implements IBadRequest {
 }
 
 export interface IBadRequest {
-    message?: string;
+    message: string;
 }
 
 export class UserProfileDto implements IUserProfileDto {
-    id?: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    emailConfirmed?: boolean;
+    id!: string;
+    email!: string;
+    firstName!: string;
+    lastName!: string;
+    emailConfirmed!: boolean;
 
     constructor(data?: IUserProfileDto) {
         if (data) {
@@ -950,16 +1184,16 @@ export class UserProfileDto implements IUserProfileDto {
 }
 
 export interface IUserProfileDto {
-    id?: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    emailConfirmed?: boolean;
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    emailConfirmed: boolean;
 }
 
 export class UserAuthDto extends UserProfileDto implements IUserAuthDto {
-    accessToken?: string;
-    refreshToken?: string;
+    accessToken!: string;
+    refreshToken!: string;
 
     constructor(data?: IUserAuthDto) {
         super(data);
@@ -990,16 +1224,16 @@ export class UserAuthDto extends UserProfileDto implements IUserAuthDto {
 }
 
 export interface IUserAuthDto extends IUserProfileDto {
-    accessToken?: string;
-    refreshToken?: string;
+    accessToken: string;
+    refreshToken: string;
 }
 
 export class LoginCommand implements ILoginCommand {
-    email?: string;
-    password?: string;
-    rememberMe?: boolean;
-    ipAddress?: string | undefined;
-    userAgent?: string | undefined;
+    email!: string;
+    password!: string;
+    rememberMe!: boolean;
+    ipAddress!: string | undefined;
+    userAgent!: string | undefined;
 
     constructor(data?: ILoginCommand) {
         if (data) {
@@ -1039,17 +1273,17 @@ export class LoginCommand implements ILoginCommand {
 }
 
 export interface ILoginCommand {
-    email?: string;
-    password?: string;
-    rememberMe?: boolean;
-    ipAddress?: string | undefined;
-    userAgent?: string | undefined;
+    email: string;
+    password: string;
+    rememberMe: boolean;
+    ipAddress: string | undefined;
+    userAgent: string | undefined;
 }
 
 export class ChangePasswordCommand implements IChangePasswordCommand {
-    oldPassword?: string;
-    newPassword?: string;
-    confirmPassword?: string;
+    oldPassword!: string;
+    newPassword!: string;
+    confirmPassword!: string;
 
     constructor(data?: IChangePasswordCommand) {
         if (data) {
@@ -1085,13 +1319,13 @@ export class ChangePasswordCommand implements IChangePasswordCommand {
 }
 
 export interface IChangePasswordCommand {
-    oldPassword?: string;
-    newPassword?: string;
-    confirmPassword?: string;
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
 }
 
 export class ChangeEmailCommand implements IChangeEmailCommand {
-    newEmail?: string;
+    newEmail!: string;
 
     constructor(data?: IChangeEmailCommand) {
         if (data) {
@@ -1123,11 +1357,11 @@ export class ChangeEmailCommand implements IChangeEmailCommand {
 }
 
 export interface IChangeEmailCommand {
-    newEmail?: string;
+    newEmail: string;
 }
 
 export class ForgotPasswordCommand implements IForgotPasswordCommand {
-    email?: string;
+    email!: string;
 
     constructor(data?: IForgotPasswordCommand) {
         if (data) {
@@ -1159,14 +1393,14 @@ export class ForgotPasswordCommand implements IForgotPasswordCommand {
 }
 
 export interface IForgotPasswordCommand {
-    email?: string;
+    email: string;
 }
 
 export class ResetPasswordCommand implements IResetPasswordCommand {
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-    code?: string;
+    email!: string;
+    password!: string;
+    confirmPassword!: string;
+    code!: string;
 
     constructor(data?: IResetPasswordCommand) {
         if (data) {
@@ -1204,20 +1438,20 @@ export class ResetPasswordCommand implements IResetPasswordCommand {
 }
 
 export interface IResetPasswordCommand {
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-    code?: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    code: string;
 }
 
 export class UserLoginHistory implements IUserLoginHistory {
-    id?: number;
-    userId?: string;
-    ipAddress?: string | undefined;
-    userAgent?: string | undefined;
-    accessToken?: string;
-    refreshToken?: string;
-    createdAt?: Date;
+    id!: number;
+    userId!: string;
+    ipAddress!: string | undefined;
+    userAgent!: string | undefined;
+    accessToken!: string;
+    refreshToken!: string;
+    createdAt!: Date;
 
     constructor(data?: IUserLoginHistory) {
         if (data) {
@@ -1261,20 +1495,136 @@ export class UserLoginHistory implements IUserLoginHistory {
 }
 
 export interface IUserLoginHistory {
-    id?: number;
-    userId?: string;
-    ipAddress?: string | undefined;
-    userAgent?: string | undefined;
-    accessToken?: string;
-    refreshToken?: string;
-    createdAt?: Date;
+    id: number;
+    userId: string;
+    ipAddress: string | undefined;
+    userAgent: string | undefined;
+    accessToken: string;
+    refreshToken: string;
+    createdAt: Date;
+}
+
+export class SpotOrderSyncSettingDto implements ISpotOrderSyncSettingDto {
+    symbol!: string;
+    lastSyncAt!: number;
+
+    constructor(data?: ISpotOrderSyncSettingDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.lastSyncAt = _data["lastSyncAt"];
+        }
+    }
+
+    static fromJS(data: any): SpotOrderSyncSettingDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SpotOrderSyncSettingDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["lastSyncAt"] = this.lastSyncAt;
+        return data;
+    }
+}
+
+export interface ISpotOrderSyncSettingDto {
+    symbol: string;
+    lastSyncAt: number;
+}
+
+export class CreateSyncSettingCommand implements ICreateSyncSettingCommand {
+    symbol!: string;
+    lastSyncAt!: number;
+
+    constructor(data?: ICreateSyncSettingCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.lastSyncAt = _data["lastSyncAt"];
+        }
+    }
+
+    static fromJS(data: any): CreateSyncSettingCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateSyncSettingCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["lastSyncAt"] = this.lastSyncAt;
+        return data;
+    }
+}
+
+export interface ICreateSyncSettingCommand {
+    symbol: string;
+    lastSyncAt: number;
+}
+
+export class SpotOrderSyncSettingUpdateDto implements ISpotOrderSyncSettingUpdateDto {
+    lastSyncAt!: number;
+
+    constructor(data?: ISpotOrderSyncSettingUpdateDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.lastSyncAt = _data["lastSyncAt"];
+        }
+    }
+
+    static fromJS(data: any): SpotOrderSyncSettingUpdateDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SpotOrderSyncSettingUpdateDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["lastSyncAt"] = this.lastSyncAt;
+        return data;
+    }
+}
+
+export interface ISpotOrderSyncSettingUpdateDto {
+    lastSyncAt: number;
 }
 
 export class WeatherForecast implements IWeatherForecast {
-    date?: Date;
-    temperatureC?: number;
-    temperatureF?: number;
-    summary?: string | undefined;
+    date!: Date;
+    temperatureC!: number;
+    temperatureF!: number;
+    summary!: string | undefined;
 
     constructor(data?: IWeatherForecast) {
         if (data) {
@@ -1312,10 +1662,10 @@ export class WeatherForecast implements IWeatherForecast {
 }
 
 export interface IWeatherForecast {
-    date?: Date;
-    temperatureC?: number;
-    temperatureF?: number;
-    summary?: string | undefined;
+    date: Date;
+    temperatureC: number;
+    temperatureF: number;
+    summary: string | undefined;
 }
 
 function formatDate(d: Date) {

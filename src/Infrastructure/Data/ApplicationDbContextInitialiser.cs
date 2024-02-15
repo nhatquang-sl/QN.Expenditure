@@ -40,11 +40,12 @@ namespace Infrastructure.Data
         {
             try
             {
+                var conn = _context.Database.GetConnectionString();
                 await _context.Database.MigrateAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while initialising the database.");
+                _logger.LogError(ex, "An error occurred while initializing the database.");
                 throw;
             }
         }

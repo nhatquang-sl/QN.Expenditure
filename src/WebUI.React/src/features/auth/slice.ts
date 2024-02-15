@@ -31,16 +31,18 @@ type AuthState = {
   iat: number;
 };
 
-const initialState: AuthState = {
-  accessToken: '',
-  firstName: '',
-  lastName: '',
-  emailAddress: '',
-  roles: [],
-  type: null,
-  exp: 0,
-  iat: 0,
-};
+const initialState: AuthState = JSON.parse(localStorage.getItem('AUTH') ?? '{}') as AuthState;
+// {
+//   accessToken: '',
+//   firstName: '',
+//   lastName: '',
+//   emailAddress: '',
+//   roles: [],
+//   type: null,
+//   exp: 0,
+//   iat: 0,
+// };
+console.log({ initialState });
 
 export const authSlice = createSlice({
   name: 'auth',
@@ -59,6 +61,7 @@ export const authSlice = createSlice({
       state.roles = tokenData?.roles ?? [];
       state.exp = tokenData?.exp ?? 0;
       state.iat = tokenData?.iat ?? 0;
+      localStorage.setItem('AUTH', JSON.stringify(state));
       console.log(tokenData);
     },
   },
