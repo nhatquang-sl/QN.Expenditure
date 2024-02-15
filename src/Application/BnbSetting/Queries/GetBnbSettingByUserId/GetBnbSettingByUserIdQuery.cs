@@ -1,22 +1,25 @@
-﻿using Application.Common.Abstractions;
+﻿using Application.BnbSetting.DTOs;
+using Application.Common.Abstractions;
+using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.BnbSetting.Queries.GetBnbSettingByUserId
 {
-    public record GetBnbSettingByUserIdQuery() : IRequest<Domain.Entities.BnbSetting>;
+    public record GetBnbSettingByUserIdQuery() : IRequest<BnbSettingDto>;
 
-    public class GetBnbSettingByUserIdQueryHandler(ICurrentUser currentUser, IApplicationDbContext applicationDbContext)
-        : IRequestHandler<GetBnbSettingByUserIdQuery, Domain.Entities.BnbSetting>
+    public class GetBnbSettingByUserIdQueryHandler(IMapper mapper, ICurrentUser currentUser, IApplicationDbContext applicationDbContext)
+        : IRequestHandler<GetBnbSettingByUserIdQuery, BnbSettingDto>
     {
+        private readonly IMapper _mapper = mapper;
         private readonly ICurrentUser _currentUser = currentUser;
         private readonly IApplicationDbContext _applicationDbContext = applicationDbContext;
 
-        public async Task<Domain.Entities.BnbSetting> Handle(GetBnbSettingByUserIdQuery request, CancellationToken cancellationToken)
+        public async Task<BnbSettingDto> Handle(GetBnbSettingByUserIdQuery request, CancellationToken cancellationToken)
         {
             var entity = await _applicationDbContext.BnbSettings.FirstOrDefaultAsync(x => x.UserId == _currentUser.Id, cancellationToken);
 
-            return entity ?? default;
+            return _mapper.Map<BnbSettingDto>(entity) ?? new BnbSettingDto();
         }
     }
 }

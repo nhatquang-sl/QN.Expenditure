@@ -20,8 +20,9 @@ builder.Services.AddCors(options =>
 });
 
 
-builder.Configuration.AddJsonFile($"QN.Expenditure.Credentials/appsettings.json")
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+builder.Configuration
+    .AddJsonFile($"QN.Expenditure.Credentials/appsettings.json");
+//.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ReadFrom.Configuration(context.Configuration)

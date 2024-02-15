@@ -52,7 +52,7 @@ const BnbSpotOrdersSyncSettings = () => {
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <TableContainer sx={{ flex: 1 }}>
               <Typography component="h2" variant="h6" color="primary" gutterBottom>
-                Login Histories
+                Sync Settings
               </Typography>
 
               <AddSyncSetting onAddNew={addNewSyncSettingCallback}></AddSyncSetting>

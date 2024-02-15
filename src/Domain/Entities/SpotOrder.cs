@@ -2,6 +2,7 @@
 {
     public class SpotOrder
     {
+        public string UserId { get; set; }
         public string Symbol { get; set; }
         public long OrderId { get; set; }
         public int OrderListId { get; set; } //Unless OCO, the value will always be -1

@@ -11,6 +11,6 @@ namespace Application.Common.ExServices.Bnb
 
         //https://binance-docs.github.io/apidocs/spot/en/#all-orders-user_data
         [Get("/api/v3/allOrders")]
-        Task<List<SpotOrderRaw>> OpenOrders([Header("X-MBX-APIKEY")] string authorization, AllOrdersRequest request);
+        Task<List<SpotOrderRaw>> AllOrders([Header("X-MBX-APIKEY")] string authorization, AllOrdersRequest request);
     }
 }

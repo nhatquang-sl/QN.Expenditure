@@ -29,11 +29,13 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("ApiKey")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("SecretKey")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("UserId");
 
@@ -43,10 +45,7 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.SpotOrder", b =>
                 {
                     b.Property<long>("OrderId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("OrderId"));
 
                     b.Property<string>("ClientOrderId")
                         .IsRequired()
@@ -54,16 +53,16 @@ namespace Infrastructure.Migrations
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<decimal>("CummulativeQuoteQty")
-                        .HasPrecision(10, 8)
-                        .HasColumnType("decimal(10,8)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<decimal>("ExecutedQty")
-                        .HasPrecision(10, 8)
-                        .HasColumnType("decimal(10,8)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<decimal>("IcebergQty")
-                        .HasPrecision(10, 8)
-                        .HasColumnType("decimal(10,8)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<bool>("IsWorking")
                         .HasColumnType("bit");
@@ -72,21 +71,21 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("OrigQty")
-                        .HasPrecision(10, 8)
-                        .HasColumnType("decimal(10,8)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<decimal>("OrigQuoteOrderQty")
-                        .HasPrecision(10, 8)
-                        .HasColumnType("decimal(10,8)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<decimal>("Price")
-                        .HasPrecision(10, 8)
-                        .HasColumnType("decimal(10,8)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<string>("SelfTradePreventionMode")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Side")
                         .IsRequired()
@@ -99,8 +98,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<decimal>("StopPrice")
-                        .HasPrecision(10, 8)
-                        .HasColumnType("decimal(10,8)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<string>("Symbol")
                         .IsRequired()
@@ -122,6 +121,11 @@ namespace Infrastructure.Migrations
 
                     b.Property<DateTime>("UpdateTime")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
 
                     b.Property<DateTime>("WorkingTime")
                         .HasColumnType("datetime2");
@@ -151,11 +155,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.UserLoginHistory", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<string>("AccessToken")
                         .IsRequired()

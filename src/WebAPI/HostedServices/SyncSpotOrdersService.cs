@@ -1,40 +1,39 @@
-﻿using MediatR;
+﻿using Application.BnbSpotOrder.Commands.SyncSpotOrders;
+using Infrastructure;
+using MediatR;
 
 namespace WebAPI.HostedServices
 {
-    public class SyncSpotOrdersService : IHostedService, IDisposable
+    public class SyncSpotOrdersService(IConfiguration configuration) : BackgroundService
     {
-        private int executionCount = 0;
-        private Timer? _timer = null;
-        private readonly IMediator _mediator;
+        private readonly IConfiguration _configuration = configuration;
 
-        public SyncSpotOrdersService(IMediator mediator)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _mediator = mediator;
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddInfrastructureServices(_configuration);
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            await Task.Factory.StartNew(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        using (var scope = serviceProvider.CreateScope())
+                        {
+                            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+                            await mediator.Send(new SyncSpotOrdersCommand());
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                    await Task.Delay(60 * 1000);
+                }
+            });
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
-        {
-
-            _timer = new Timer(DoWork, executionCount, TimeSpan.Zero,
-                TimeSpan.FromSeconds(5));
-
-            return Task.CompletedTask;
-
-        }
-
-        void DoWork(object? state)
-        {
-            var count = Interlocked.Increment(ref executionCount);
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            _timer?.Change(Timeout.Infinite, 0);
-
-            return Task.CompletedTask;
-        }
-
-        public void Dispose() => _timer?.Dispose();
     }
 }

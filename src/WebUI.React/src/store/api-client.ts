@@ -613,6 +613,120 @@ export class AuthClient {
     }
 }
 
+export class BnbSettingClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5228";
+
+    }
+
+    getSetting( cancelToken?: CancelToken): Promise<BnbSettingDto> {
+        let url_ = this.baseUrl + "/api/BnbSetting";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetSetting(_response);
+        });
+    }
+
+    protected processGetSetting(response: AxiosResponse): Promise<BnbSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = BnbSettingDto.fromJS(resultData200);
+            return Promise.resolve<BnbSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<BnbSettingDto>(null as any);
+    }
+
+    updateSetting(request: UpdateBnbSettingCommand, cancelToken?: CancelToken): Promise<BnbSettingDto> {
+        let url_ = this.baseUrl + "/api/BnbSetting";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "PUT",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processUpdateSetting(_response);
+        });
+    }
+
+    protected processUpdateSetting(response: AxiosResponse): Promise<BnbSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = BnbSettingDto.fromJS(resultData200);
+            return Promise.resolve<BnbSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<BnbSettingDto>(null as any);
+    }
+}
+
 export class BnbSpotClient {
     protected instance: AxiosInstance;
     protected baseUrl: string;
@@ -1502,6 +1616,90 @@ export interface IUserLoginHistory {
     accessToken: string;
     refreshToken: string;
     createdAt: Date;
+}
+
+export class BnbSettingDto implements IBnbSettingDto {
+    userId!: string;
+    apiKey!: string;
+    secretKey!: string;
+
+    constructor(data?: IBnbSettingDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.userId = _data["userId"];
+            this.apiKey = _data["apiKey"];
+            this.secretKey = _data["secretKey"];
+        }
+    }
+
+    static fromJS(data: any): BnbSettingDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new BnbSettingDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["userId"] = this.userId;
+        data["apiKey"] = this.apiKey;
+        data["secretKey"] = this.secretKey;
+        return data;
+    }
+}
+
+export interface IBnbSettingDto {
+    userId: string;
+    apiKey: string;
+    secretKey: string;
+}
+
+export class UpdateBnbSettingCommand implements IUpdateBnbSettingCommand {
+    apiKey!: string;
+    secretKey!: string;
+
+    constructor(data?: IUpdateBnbSettingCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.apiKey = _data["apiKey"];
+            this.secretKey = _data["secretKey"];
+        }
+    }
+
+    static fromJS(data: any): UpdateBnbSettingCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateBnbSettingCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["apiKey"] = this.apiKey;
+        data["secretKey"] = this.secretKey;
+        return data;
+    }
+}
+
+export interface IUpdateBnbSettingCommand {
+    apiKey: string;
+    secretKey: string;
 }
 
 export class SpotOrderSyncSettingDto implements ISpotOrderSyncSettingDto {

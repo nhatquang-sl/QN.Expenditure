@@ -18,7 +18,6 @@ const columns: readonly Column[] = [
   {
     id: 'lastSyncAt',
     label: 'Last Sync At',
-    minWidth: 170,
     align: 'right',
     format: (value: string) => (
       <DateTimePicker defaultValue={new Date(parseInt(value)).toISOString()} />

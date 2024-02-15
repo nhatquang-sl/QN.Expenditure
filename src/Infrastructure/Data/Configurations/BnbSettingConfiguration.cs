@@ -8,8 +8,15 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<BnbSetting> builder)
         {
-            // Guid max length
             builder.HasKey(t => t.UserId);
+
+            builder.Property(t => t.ApiKey)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            builder.Property(t => t.SecretKey)
+                .HasMaxLength(500)
+                .IsRequired();
         }
     }
 }

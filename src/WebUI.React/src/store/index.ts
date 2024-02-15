@@ -5,7 +5,7 @@ import authReducer from 'features/auth/slice';
 
 import counterReducer from 'features/counter/slice';
 import layoutReducer from 'features/layout/slice';
-import { AuthClient, BnbSpotClient } from './api-client';
+import { AuthClient, BnbSettingClient, BnbSpotClient } from './api-client';
 import { API_ENDPOINT } from './constants';
 
 export const store = configureStore({
@@ -46,5 +46,6 @@ instance.interceptors.request.use(
 
 const authClient = new AuthClient(API_ENDPOINT, instance);
 const bnbSpotClient = new BnbSpotClient(API_ENDPOINT, instance);
+const bnbSettingClient = new BnbSettingClient(API_ENDPOINT, instance);
 
-export { authClient, bnbSpotClient };
+export { authClient, bnbSettingClient, bnbSpotClient };

@@ -8,8 +8,12 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<SpotOrder> builder)
         {
-            // Guid max length
             builder.HasKey(t => t.OrderId);
+            builder.Property(t => t.OrderId).ValueGeneratedNever();
+
+            // Guid max length
+            builder.Property(t => t.UserId)
+                .HasMaxLength(36);
 
             builder.Property(t => t.Symbol)
                 .HasMaxLength(10)
@@ -20,19 +24,19 @@ namespace Infrastructure.Data.Configurations
                 .IsRequired();
 
             builder.Property(t => t.Price)
-                .HasPrecision(10, 8)
+                .HasPrecision(18, 8)
                 .IsRequired();
 
             builder.Property(t => t.OrigQty)
-                .HasPrecision(10, 8)
+                .HasPrecision(18, 8)
                 .IsRequired();
 
             builder.Property(t => t.ExecutedQty)
-                .HasPrecision(10, 8)
+                .HasPrecision(18, 8)
                 .IsRequired();
 
             builder.Property(t => t.CummulativeQuoteQty)
-                .HasPrecision(10, 8)
+                .HasPrecision(18, 8)
                 .IsRequired();
 
             builder.Property(t => t.Status)
@@ -52,19 +56,19 @@ namespace Infrastructure.Data.Configurations
                 .IsRequired();
 
             builder.Property(t => t.StopPrice)
-                .HasPrecision(10, 8)
+                .HasPrecision(18, 8)
                 .IsRequired();
 
             builder.Property(t => t.IcebergQty)
-                .HasPrecision(10, 8)
+                .HasPrecision(18, 8)
                 .IsRequired();
 
             builder.Property(t => t.OrigQuoteOrderQty)
-                .HasPrecision(10, 8)
+                .HasPrecision(18, 8)
                 .IsRequired();
 
             builder.Property(t => t.SelfTradePreventionMode)
-                .HasMaxLength(10)
+                .HasMaxLength(20)
                 .IsRequired();
         }
     }

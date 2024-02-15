@@ -8,6 +8,7 @@ import Login from 'features/auth/login';
 import LoginHistory from 'features/auth/login-history';
 import RegisterConfirm from 'features/auth/register-confirm';
 import RequestActivateEmail from 'features/auth/request-activate-email';
+import BnbSetting from 'features/bnb/setting';
 import BnbSpotOrdersSyncSettings from 'features/bnb/spot-orders/sync-settings';
 import Landing from 'features/landing';
 import Header from 'features/layout/header';
@@ -48,8 +49,12 @@ const router = createBrowserRouter([
         element: <LoginHistory />,
       },
       {
-        path: 'bnb/spot-orders',
+        path: 'bnb/sync-settings',
         element: <BnbSpotOrdersSyncSettings />,
+      },
+      {
+        path: 'bnb/setting',
+        element: <BnbSetting />,
       },
     ],
   },

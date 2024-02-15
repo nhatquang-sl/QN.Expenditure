@@ -1,19 +1,21 @@
-﻿using Application.Common.Abstractions;
+﻿using Application.BnbSetting.DTOs;
+using Application.Common.Abstractions;
 using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.BnbSetting.Commands.UpdateBnbSetting
 {
-    public record UpdateBnbSettingCommand(string ApiKey, string SecretKey) : IRequest<Domain.Entities.BnbSetting>;
+    public record UpdateBnbSettingCommand(string ApiKey, string SecretKey) : IRequest<BnbSettingDto>;
 
-    public class UpdateBnbSettingCommandHandler(ICurrentUser currentUser, IApplicationDbContext applicationDbContext)
-        : IRequestHandler<UpdateBnbSettingCommand, Domain.Entities.BnbSetting>
+    public class UpdateBnbSettingCommandHandler(IMapper mapper, ICurrentUser currentUser, IApplicationDbContext applicationDbContext)
+        : IRequestHandler<UpdateBnbSettingCommand, BnbSettingDto>
     {
+        private readonly IMapper _mapper = mapper;
         private readonly ICurrentUser _currentUser = currentUser;
         private readonly IApplicationDbContext _applicationDbContext = applicationDbContext;
 
-        public async Task<Domain.Entities.BnbSetting> Handle(UpdateBnbSettingCommand request, CancellationToken cancellationToken)
+        public async Task<BnbSettingDto> Handle(UpdateBnbSettingCommand request, CancellationToken cancellationToken)
         {
             var entity = await _applicationDbContext.BnbSettings.FirstOrDefaultAsync(x => x.UserId == _currentUser.Id, cancellationToken);
             if (entity == null)
@@ -35,7 +37,7 @@ namespace Application.BnbSetting.Commands.UpdateBnbSetting
 
             await _applicationDbContext.SaveChangesAsync(cancellationToken);
 
-            return entity ?? default;
+            return _mapper.Map<BnbSettingDto>(entity) ?? new BnbSettingDto();
         }
     }
 }
