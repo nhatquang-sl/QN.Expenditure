@@ -58,6 +58,7 @@ const AddSyncSetting = (props: { onAddNew: OnChangeCallback }) => {
             id="symbol"
             type="text"
             label="Symbol"
+            disabled={loading}
             sx={{ margin: 1 }}
             error={!!errors.symbol}
             helperText={errors.symbol ? errors.symbol?.message : ''}
@@ -70,7 +71,11 @@ const AddSyncSetting = (props: { onAddNew: OnChangeCallback }) => {
         name="lastSyncAt"
         defaultValue={dayjs(new Date())}
         render={({ field }) => (
-          <MobileDateTimePicker {...field} sx={{ verticalAlign: 'middle', margin: 1 }} />
+          <MobileDateTimePicker
+            {...field}
+            disabled={loading}
+            sx={{ verticalAlign: 'middle', margin: 1 }}
+          />
         )}
       />
 

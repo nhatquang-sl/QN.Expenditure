@@ -2,7 +2,9 @@
 using Application.BnbSpotOrder.Commands.DeleteSyncSetting;
 using Application.BnbSpotOrder.Commands.UpdateSyncSetting;
 using Application.BnbSpotOrder.DTOs;
+using Application.BnbSpotOrder.Queries.GetSpotOrders;
 using Application.BnbSpotOrder.Queries.GetSyncSettings;
+using Application.Common.ExServices.Bnb.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,5 +37,8 @@ namespace WebAPI.Controllers
         public Task<SpotOrderSyncSettingDto> DeleteSyncSetting(string symbol)
             => _sender.Send(new DeleteSyncSettingCommand(symbol));
 
+        [HttpGet]
+        public Task<List<SpotOrderRaw>> GetSpotOrders()
+            => _sender.Send(new GetSpotOrdersQuery());
     }
 }

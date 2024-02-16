@@ -959,6 +959,61 @@ export class BnbSpotClient {
         }
         return Promise.resolve<SpotOrderSyncSettingDto>(null as any);
     }
+
+    getSpotOrders( cancelToken?: CancelToken): Promise<SpotOrderRaw[]> {
+        let url_ = this.baseUrl + "/api/BnbSpot";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetSpotOrders(_response);
+        });
+    }
+
+    protected processGetSpotOrders(response: AxiosResponse): Promise<SpotOrderRaw[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(SpotOrderRaw.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<SpotOrderRaw[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderRaw[]>(null as any);
+    }
 }
 
 export class ValuesClient {
@@ -1619,7 +1674,6 @@ export interface IUserLoginHistory {
 }
 
 export class BnbSettingDto implements IBnbSettingDto {
-    userId!: string;
     apiKey!: string;
     secretKey!: string;
 
@@ -1634,7 +1688,6 @@ export class BnbSettingDto implements IBnbSettingDto {
 
     init(_data?: any) {
         if (_data) {
-            this.userId = _data["userId"];
             this.apiKey = _data["apiKey"];
             this.secretKey = _data["secretKey"];
         }
@@ -1649,7 +1702,6 @@ export class BnbSettingDto implements IBnbSettingDto {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["userId"] = this.userId;
         data["apiKey"] = this.apiKey;
         data["secretKey"] = this.secretKey;
         return data;
@@ -1657,7 +1709,6 @@ export class BnbSettingDto implements IBnbSettingDto {
 }
 
 export interface IBnbSettingDto {
-    userId: string;
     apiKey: string;
     secretKey: string;
 }
@@ -1816,6 +1867,118 @@ export class SpotOrderSyncSettingUpdateDto implements ISpotOrderSyncSettingUpdat
 
 export interface ISpotOrderSyncSettingUpdateDto {
     lastSyncAt: number;
+}
+
+export class SpotOrderRaw implements ISpotOrderRaw {
+    symbol!: string;
+    orderId!: number;
+    orderListId!: number;
+    clientOrderId!: string;
+    price!: string;
+    origQty!: string;
+    executedQty!: string;
+    cummulativeQuoteQty!: string;
+    status!: string;
+    timeInForce!: string;
+    type!: string;
+    side!: string;
+    stopPrice!: string;
+    icebergQty!: string;
+    time!: number;
+    updateTime!: number;
+    isWorking!: boolean;
+    workingTime!: number;
+    origQuoteOrderQty!: string;
+    selfTradePreventionMode!: string;
+
+    constructor(data?: ISpotOrderRaw) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.orderId = _data["orderId"];
+            this.orderListId = _data["orderListId"];
+            this.clientOrderId = _data["clientOrderId"];
+            this.price = _data["price"];
+            this.origQty = _data["origQty"];
+            this.executedQty = _data["executedQty"];
+            this.cummulativeQuoteQty = _data["cummulativeQuoteQty"];
+            this.status = _data["status"];
+            this.timeInForce = _data["timeInForce"];
+            this.type = _data["type"];
+            this.side = _data["side"];
+            this.stopPrice = _data["stopPrice"];
+            this.icebergQty = _data["icebergQty"];
+            this.time = _data["time"];
+            this.updateTime = _data["updateTime"];
+            this.isWorking = _data["isWorking"];
+            this.workingTime = _data["workingTime"];
+            this.origQuoteOrderQty = _data["origQuoteOrderQty"];
+            this.selfTradePreventionMode = _data["selfTradePreventionMode"];
+        }
+    }
+
+    static fromJS(data: any): SpotOrderRaw {
+        data = typeof data === 'object' ? data : {};
+        let result = new SpotOrderRaw();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["orderId"] = this.orderId;
+        data["orderListId"] = this.orderListId;
+        data["clientOrderId"] = this.clientOrderId;
+        data["price"] = this.price;
+        data["origQty"] = this.origQty;
+        data["executedQty"] = this.executedQty;
+        data["cummulativeQuoteQty"] = this.cummulativeQuoteQty;
+        data["status"] = this.status;
+        data["timeInForce"] = this.timeInForce;
+        data["type"] = this.type;
+        data["side"] = this.side;
+        data["stopPrice"] = this.stopPrice;
+        data["icebergQty"] = this.icebergQty;
+        data["time"] = this.time;
+        data["updateTime"] = this.updateTime;
+        data["isWorking"] = this.isWorking;
+        data["workingTime"] = this.workingTime;
+        data["origQuoteOrderQty"] = this.origQuoteOrderQty;
+        data["selfTradePreventionMode"] = this.selfTradePreventionMode;
+        return data;
+    }
+}
+
+export interface ISpotOrderRaw {
+    symbol: string;
+    orderId: number;
+    orderListId: number;
+    clientOrderId: string;
+    price: string;
+    origQty: string;
+    executedQty: string;
+    cummulativeQuoteQty: string;
+    status: string;
+    timeInForce: string;
+    type: string;
+    side: string;
+    stopPrice: string;
+    icebergQty: string;
+    time: number;
+    updateTime: number;
+    isWorking: boolean;
+    workingTime: number;
+    origQuoteOrderQty: string;
+    selfTradePreventionMode: string;
 }
 
 export class WeatherForecast implements IWeatherForecast {

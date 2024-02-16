@@ -16,6 +16,13 @@ namespace Application.Common.Mappings
                .ForMember(x => x.Time, opt => opt.MapFrom(x => x.Time.ToDateTimeFromMilliseconds()))
                .ForMember(x => x.UpdateTime, opt => opt.MapFrom(x => x.UpdateTime.ToDateTimeFromMilliseconds()))
                .ForMember(x => x.WorkingTime, opt => opt.MapFrom(x => x.WorkingTime.ToDateTimeFromMilliseconds()));
+
+
+            CreateMap<SpotOrder, SpotOrderRaw>()
+               .ForMember(x => x.Time, opt => opt.MapFrom(x => x.Time.ToUnixTimestampMilliseconds()))
+               .ForMember(x => x.UpdateTime, opt => opt.MapFrom(x => x.UpdateTime.ToUnixTimestampMilliseconds()))
+               .ForMember(x => x.WorkingTime, opt => opt.MapFrom(x => x.WorkingTime.ToUnixTimestampMilliseconds()));
+
         }
 
         private void ApplyMappingsFromAssembly(Assembly assembly)

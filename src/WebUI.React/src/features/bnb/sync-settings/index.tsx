@@ -11,10 +11,10 @@ import {
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { BackdropLoading } from 'components/backdrop-loading';
 import { useCallback, useEffect, useState } from 'react';
 import { bnbSpotClient } from 'store';
 import { SpotOrderSyncSettingDto } from 'store/api-client';
-import { PAGE } from 'store/constants';
 import AddSyncSetting from './add';
 import SyncSettingItem from './list-item';
 import { columns } from './types';
@@ -23,7 +23,7 @@ const BnbSpotOrdersSyncSettings = () => {
   const [loading, setLoading] = useState(false);
   const [syncSettings, setSyncSettings] = useState<SpotOrderSyncSettingDto[]>([]);
 
-  const fetchSessions = useCallback(async (page: number = PAGE.START, size: number = PAGE.SIZE) => {
+  const fetchSessions = useCallback(async () => {
     setLoading(true);
     var syncSettings = await bnbSpotClient.getSyncSettings();
     setSyncSettings(syncSettings);
@@ -49,7 +49,7 @@ const BnbSpotOrdersSyncSettings = () => {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <TableContainer sx={{ flex: 1 }}>
               <Typography component="h2" variant="h6" color="primary" gutterBottom>
                 Sync Settings
@@ -84,6 +84,7 @@ const BnbSpotOrdersSyncSettings = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <BackdropLoading loading={loading} />
           </Paper>
         </Grid>
       </Grid>

@@ -19,7 +19,10 @@ namespace Application.Common.Logging
         public LogEntry(LogLevel level, string message, object? data, MethodBase? methodBase)
         {
             Level = level;
-            Message = $"{methodBase?.ReflectedType?.ReflectedType?.Name}.{methodBase?.ReflectedType?.Name}{(string.IsNullOrWhiteSpace(message) ? "" : $" - {message}")}";
+            if (methodBase != null)
+                Message = $"{methodBase?.ReflectedType?.ReflectedType?.Name}.{methodBase?.ReflectedType?.Name}{(string.IsNullOrWhiteSpace(message) ? "" : $" - {message}")}";
+            else
+                Message = $"{message}";
             Data = data;
         }
 
