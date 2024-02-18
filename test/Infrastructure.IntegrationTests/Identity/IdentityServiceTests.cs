@@ -53,7 +53,7 @@ namespace Infrastructure.IntegrationTests.Identity
             // Assert
             user.Id.ShouldNotBeNullOrWhiteSpace();
             code.ShouldNotBeNullOrWhiteSpace();
-            exception.Message.ShouldBe(@"{""email"":""Email \u0027sunlight@yopmail.com\u0027 is already taken.""}");
+            exception.Message.ShouldBe(@"{""message"":""Email \u0027sunlight@yopmail.com\u0027 is already taken.""}");
         }
 
         [Fact]
