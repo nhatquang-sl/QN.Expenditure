@@ -1,4 +1,5 @@
 ﻿using Application.Common.Abstractions;
+using Domain.Entities;
 using Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -9,6 +10,14 @@ namespace Infrastructure.Data
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
     {
+        public DbSet<UserLoginHistory> UserLoginHistories => Set<UserLoginHistory>();
+
+        public DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings => Set<SpotOrderSyncSetting>();
+
+        public DbSet<SpotOrder> SpotOrders => Set<SpotOrder>();
+
+        public DbSet<BnbSetting> BnbSettings => Set<BnbSetting>();
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -25,6 +34,8 @@ namespace Infrastructure.Data
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.ToTable(name: "Users");
+                entity.Property(e => e.FirstName).HasMaxLength(50);
+                entity.Property(e => e.LastName).HasMaxLength(50);
             });
 
             builder.Entity<IdentityRole>(entity =>

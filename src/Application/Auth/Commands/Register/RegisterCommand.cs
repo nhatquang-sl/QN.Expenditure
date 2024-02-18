@@ -1,6 +1,7 @@
 ﻿using Application.Common.Abstractions;
 using Application.Common.Logging;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace Application.Auth.Commands.Register
@@ -25,22 +26,25 @@ namespace Application.Auth.Commands.Register
 
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterResult>
     {
-        private readonly LogTraceBase _logTrace;
+        private readonly IPublisher _publisher;
+        private readonly ILogTrace _logTrace;
         private readonly IIdentityService _identityService;
 
-        public RegisterCommandHandler(LogTraceBase logTrace, IIdentityService identityService)
+        public RegisterCommandHandler(IPublisher publisher, ILogTrace logTrace, IIdentityService identityService)
         {
+            _publisher = publisher;
             _logTrace = logTrace;
             _identityService = identityService;
         }
 
         public async Task<RegisterResult> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
-            var userId = await _identityService.CreateUserAsync(request);
+            var (user, code) = await _identityService.CreateUserAsync(request);
 
-            _logTrace.Log(new LogEntry(LogLevel.Information, MethodBase.GetCurrentMethod(), new { userId }));
+            _logTrace.Log(new LogEntry(LogLevel.Information, new { user.Id }, MethodBase.GetCurrentMethod()));
 
-            return new RegisterResult(userId);
+            await _publisher.Publish(new RegisterEvent(user, code), cancellationToken);
+            return new RegisterResult(user.Id);
         }
     }
 }

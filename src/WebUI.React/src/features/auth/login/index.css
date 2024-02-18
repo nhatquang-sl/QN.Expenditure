@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .section-min-height {
+    min-height: calc(100vh - 68px);
+  }
+  .main-min-height {
+    min-height: calc(100vh - 240px);
+  }
+
+  .translateX {
+    transform: translate(100%, -100%);
+  }
+
+  .auth-animation {
+    @apply transition ease-in-out duration-700;
+  }
+}
+
+.form-container {
+  @apply flex flex-1 flex-col items-center auth-animation w-full h-full lg:h-auto z-10;
+}
+
+.form {
+  @apply relative w-full flex flex-col items-center px-6 auth-animation;
+}
+
+.form-icon {
+  @apply scale-100 auth-animation m-2 mt-16;
+}
+
+.form-header {
+  @apply mb-12 mt-24 auth-animation;
+}
+
+.register-form-container {
+  @apply rounded-t-3xl absolute;
+
+  @apply lg:translateX lg:z-0 lg:h-full lg:w-1/2;
+
+  transform: translateY(calc(100% - 48px));
+
+  .form {
+    @apply translate-y-[-102px] lg:translate-y-0;
+  }
+
+  .form-icon {
+    @apply scale-0 lg:scale-100;
+  }
+
+  .form-header {
+    @apply scale-75 lg:scale-100;
+  }
+}
+
+.overlay-container {
+  @apply hidden lg:block;
+}
+
+.overlay {
+  @apply relative w-full h-full;
+
+  .overlay-panel {
+    @apply text-slate-100 absolute w-full top-1/3 text-center auth-animation;
+  }
+
+  .overlay-register {
+    transform: translate(-200%, -50%);
+  }
+
+  .overlay-login {
+    transform: translate(0, -50%);
+  }
+}
+
+#chk:checked {
+  ~ .login-form-container {
+    .form-icon {
+      @apply scale-0;
+    }
+
+    .form-header {
+      transform: scale(0.75);
+    }
+
+    .form {
+      transform: translateY(-102px);
+    }
+  }
+
+  ~ .register-form-container {
+    transform: translateY(48px);
+
+    .form-icon {
+      transform: scale(1);
+    }
+
+    .form-header {
+      transform: scale(1);
+    }
+
+    .form {
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (min-width: 1024px) {
+  .register-form-container {
+    transform: translate(100%, -100%);
+    border-radius: 0;
+  }
+
+  .login-form-container {
+    .form-header {
+      @apply scale-100
+    }
+  }
+
+  #chk:checked ~ .login-form-container {
+    transform: translateY(100%);
+  }
+
+  #chk:checked ~ .register-form-container {
+    transform: translate(100%, 0);
+  }
+
+  #chk:checked ~ .overlay-container {
+    transform: translateX(-100%);
+  }
+
+  #chk:checked ~ .overlay-container .overlay-register {
+    transform: translate(0, -50%);
+  }
+
+  #chk:checked ~ .overlay-container .overlay-login {
+    transform: translate(200%, -50%);
+  }
+}
