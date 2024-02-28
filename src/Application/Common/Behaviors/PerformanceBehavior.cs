@@ -22,6 +22,7 @@ namespace Application.Common.Behaviors
             _timer.Start();
             try
             {
+                _logTrace.LogInformation($"PerformanceBehavior {request.GetType().Name} at : {DateTime.UtcNow}");
                 var response = await next();
 
                 return response;

@@ -18,7 +18,6 @@ namespace WebAPI.Middleware
             try
             {
                 await _next(context);
-                logTrace.Flush();
             }
             catch (Exception ex)
             {
@@ -42,7 +41,6 @@ namespace WebAPI.Middleware
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 }
 
-                logTrace.Flush();
                 await context.Response.WriteAsync(context.Response.StatusCode != (int)HttpStatusCode.InternalServerError ? ex.Message : "Internal Server Error");
             }
         }
@@ -54,6 +52,11 @@ namespace WebAPI.Middleware
     }
 
     public class Conflict
+    {
+        public string Message { get; set; }
+    }
+
+    public class NotFound
     {
         public string Message { get; set; }
     }

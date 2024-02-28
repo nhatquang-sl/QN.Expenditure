@@ -895,7 +895,21 @@ export class BnbSpotClient {
                 }
             }
         }
-        if (status === 200) {
+        if (status === 404) {
+            const _responseText = response.data;
+            let result404: any = null;
+            let resultData404  = _responseText;
+            result404 = NotFound.fromJS(resultData404);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+
+        } else if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 200) {
             const _responseText = response.data;
             let result200: any = null;
             let resultData200  = _responseText;
@@ -960,6 +974,57 @@ export class BnbSpotClient {
         return Promise.resolve<SpotOrderSyncSettingDto>(null as any);
     }
 
+    triggerSync(symbol: string, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
+        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings/{symbol}/sync";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "POST",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processTriggerSync(_response);
+        });
+    }
+
+    protected processTriggerSync(response: AxiosResponse): Promise<SpotOrderSyncSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotOrderSyncSettingDto.fromJS(resultData200);
+            return Promise.resolve<SpotOrderSyncSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderSyncSettingDto>(null as any);
+    }
+
     getSpotOrders( cancelToken?: CancelToken): Promise<SpotOrderRaw[]> {
         let url_ = this.baseUrl + "/api/BnbSpot";
         url_ = url_.replace(/[?&]$/, "");
@@ -985,6 +1050,64 @@ export class BnbSpotClient {
     }
 
     protected processGetSpotOrders(response: AxiosResponse): Promise<SpotOrderRaw[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(SpotOrderRaw.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<SpotOrderRaw[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderRaw[]>(null as any);
+    }
+
+    getSpotOrdersBySymbol(symbol: string, cancelToken?: CancelToken): Promise<SpotOrderRaw[]> {
+        let url_ = this.baseUrl + "/{symbol}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetSpotOrdersBySymbol(_response);
+        });
+    }
+
+    protected processGetSpotOrdersBySymbol(response: AxiosResponse): Promise<SpotOrderRaw[]> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1831,6 +1954,42 @@ export class CreateSyncSettingCommand implements ICreateSyncSettingCommand {
 export interface ICreateSyncSettingCommand {
     symbol: string;
     lastSyncAt: number;
+}
+
+export class NotFound implements INotFound {
+    message!: string;
+
+    constructor(data?: INotFound) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.message = _data["message"];
+        }
+    }
+
+    static fromJS(data: any): NotFound {
+        data = typeof data === 'object' ? data : {};
+        let result = new NotFound();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["message"] = this.message;
+        return data;
+    }
+}
+
+export interface INotFound {
+    message: string;
 }
 
 export class SpotOrderSyncSettingUpdateDto implements ISpotOrderSyncSettingUpdateDto {

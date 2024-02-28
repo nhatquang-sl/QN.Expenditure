@@ -1,42 +1,42 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoadingButton } from '@mui/lab';
 import { Grid, Paper, Typography } from '@mui/material';
-import TextPassword from 'components/text-password';
 import { useCallback, useEffect, useState } from 'react';
-import { Control, Controller, FieldErrors, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { bnbSettingClient } from 'store';
 import { UpdateBnbSettingCommand } from 'store/api-client';
+import TextPassword from './text-passowrd';
 import { UpdateSettingData, UpdateSettingSchema } from './types';
 
-function ControlledTextPassword(props: {
-  name: 'apiKey' | 'secretKey';
-  label: string;
-  loading: boolean;
-  control: Control<UpdateSettingData>;
-  errors: FieldErrors<UpdateSettingData>;
-}) {
-  const { name, label, loading, control, errors } = props;
-  return (
-    <Controller
-      control={control}
-      name={name}
-      defaultValue=""
-      render={({ field }) => (
-        <TextPassword
-          required
-          {...field}
-          fullWidth
-          id={name}
-          label={label}
-          disabled={loading}
-          sx={{ margin: 1 }}
-          error={!!errors[name]}
-          helperText={errors[name] ? errors[name]?.message : ''}
-        />
-      )}
-    />
-  );
-}
+// function ControlledTextPassword(props: {
+//   name: 'apiKey' | 'secretKey';
+//   label: string;
+//   loading: boolean;
+//   control: Control<UpdateSettingData>;
+//   errors: FieldErrors<UpdateSettingData>;
+// }) {
+//   const { name, label, loading, control, errors } = props;
+//   return (
+//     <Controller
+//       control={control}
+//       name={name}
+//       defaultValue=""
+//       render={({ field }) => (
+//         <TextPassword
+//           required
+//           {...field}
+//           fullWidth
+//           id={name}
+//           label={label}
+//           disabled={loading}
+//           sx={{ margin: 1 }}
+//           error={!!errors[name]}
+//           helperText={errors[name] ? errors[name]?.message : ''}
+//         />
+//       )}
+//     />
+//   );
+// }
 
 export default function BnbSetting() {
   const [loading, setLoading] = useState(false);
@@ -75,6 +75,7 @@ export default function BnbSetting() {
 
     setLoading(false);
   };
+
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
@@ -83,7 +84,7 @@ export default function BnbSetting() {
             Bnb Setting
           </Typography>
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            <ControlledTextPassword
+            <TextPassword
               name="apiKey"
               label="API Key"
               control={control}
@@ -91,14 +92,13 @@ export default function BnbSetting() {
               loading={loading}
             />
 
-            <ControlledTextPassword
+            <TextPassword
               name="secretKey"
               label="Secret Key"
               control={control}
               errors={errors}
               loading={loading}
             />
-
             <LoadingButton
               type="submit"
               variant="contained"

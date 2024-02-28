@@ -13,6 +13,7 @@ namespace Infrastructure.Data
                 .Build();
 
             var connString = config.GetValue<string>("ConnectionStrings:DefaultConnection");
+            //connString = "Server=(localdb)\\mssqllocaldb;Database=qnexp;Trusted_Connection=True;MultipleActiveResultSets=true";
 
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
             optionsBuilder.UseSqlServer(connString);

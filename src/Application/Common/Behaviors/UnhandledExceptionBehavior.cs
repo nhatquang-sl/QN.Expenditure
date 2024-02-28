@@ -30,11 +30,12 @@ namespace Application.Common.Behaviors
                     sb.AppendLine(e.Message);
                     e = e.InnerException;
                 }
-                _logTrace.LogError(sb.ToString(), ex.StackTrace);
+                _logTrace.LogError(sb.ToString(), new { stackTrace = ex.StackTrace });
                 throw;
             }
             finally
             {
+                _logTrace.AddProperty("RequestName", request.GetType().Name);
                 _logTrace.Flush();
             }
         }

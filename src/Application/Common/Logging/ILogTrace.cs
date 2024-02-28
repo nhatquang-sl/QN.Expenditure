@@ -16,6 +16,8 @@ namespace Application.Common.Logging
 
         void LogError(string message, object? data = null, MethodBase? methodBase = null);
 
+        void LogError(string message, Exception ex, MethodBase? methodBase = null);
+
         void LogCritical(string message, object? data = null, MethodBase? methodBase = null);
 
         public void Flush();

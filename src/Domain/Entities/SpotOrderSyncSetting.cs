@@ -5,5 +5,7 @@
         public string UserId { get; set; }
         public string Symbol { get; set; }
         public DateTime LastSyncAt { get; set; }
+        public ICollection<SpotOrder> SpotOrders { get; private set; }
+
     }
 }

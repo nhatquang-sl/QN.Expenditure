@@ -39,37 +39,6 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SpotOrders",
-                columns: table => new
-                {
-                    OrderId = table.Column<long>(type: "bigint", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(36)", maxLength: 36, nullable: false),
-                    Symbol = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    OrderListId = table.Column<int>(type: "int", nullable: false),
-                    ClientOrderId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
-                    OrigQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
-                    ExecutedQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
-                    CummulativeQuoteQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    TimeInForce = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    Type = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    Side = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    StopPrice = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
-                    IcebergQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
-                    Time = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdateTime = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsWorking = table.Column<bool>(type: "bit", nullable: false),
-                    WorkingTime = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    OrigQuoteOrderQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
-                    SelfTradePreventionMode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SpotOrders", x => x.OrderId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "SpotOrderSyncSettings",
                 columns: table => new
                 {
@@ -145,6 +114,43 @@ namespace Infrastructure.Migrations
                         column: x => x.RoleId,
                         principalTable: "Roles",
                         principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SpotOrders",
+                columns: table => new
+                {
+                    OrderId = table.Column<long>(type: "bigint", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(36)", maxLength: 36, nullable: false),
+                    Symbol = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    OrderListId = table.Column<int>(type: "int", nullable: false),
+                    ClientOrderId = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    OrigQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    ExecutedQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    CummulativeQuoteQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    TimeInForce = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: false),
+                    Side = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    StopPrice = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    IcebergQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    Time = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdateTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsWorking = table.Column<bool>(type: "bit", nullable: false),
+                    WorkingTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    OrigQuoteOrderQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    SelfTradePreventionMode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SpotOrders", x => x.OrderId);
+                    table.ForeignKey(
+                        name: "FK_SpotOrders_SpotOrderSyncSettings_Symbol_UserId",
+                        columns: x => new { x.Symbol, x.UserId },
+                        principalTable: "SpotOrderSyncSettings",
+                        principalColumns: new[] { "Symbol", "UserId" },
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -246,6 +252,11 @@ namespace Infrastructure.Migrations
                 filter: "[NormalizedName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SpotOrders_Symbol_UserId",
+                table: "SpotOrders",
+                columns: new[] { "Symbol", "UserId" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserClaims_UserId",
                 table: "UserClaims",
                 column: "UserId");
@@ -286,9 +297,6 @@ namespace Infrastructure.Migrations
                 name: "SpotOrders");
 
             migrationBuilder.DropTable(
-                name: "SpotOrderSyncSettings");
-
-            migrationBuilder.DropTable(
                 name: "UserClaims");
 
             migrationBuilder.DropTable(
@@ -302,6 +310,9 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserTokens");
+
+            migrationBuilder.DropTable(
+                name: "SpotOrderSyncSettings");
 
             migrationBuilder.DropTable(
                 name: "Roles");

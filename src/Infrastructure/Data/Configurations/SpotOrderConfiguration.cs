@@ -11,6 +11,11 @@ namespace Infrastructure.Data.Configurations
             builder.HasKey(t => t.OrderId);
             builder.Property(t => t.OrderId).ValueGeneratedNever();
 
+            builder.HasOne(t => t.SyncSetting)
+                .WithMany(t => t.SpotOrders)
+                .HasForeignKey(t => new { t.Symbol, t.UserId })
+                .OnDelete(DeleteBehavior.Cascade);
+
             // Guid max length
             builder.Property(t => t.UserId)
                 .HasMaxLength(36);
@@ -48,7 +53,7 @@ namespace Infrastructure.Data.Configurations
                 .IsRequired();
 
             builder.Property(t => t.Type)
-                .HasMaxLength(10)
+                .HasMaxLength(25)
                 .IsRequired();
 
             builder.Property(t => t.Side)

@@ -1,7 +1,19 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { Divider, IconButton, List, Toolbar, styled } from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
+import {
+  Divider,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  styled,
+} from '@mui/material';
 import MuiDrawer from '@mui/material/Drawer';
+import { logout } from 'features/auth/slice';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { RootState } from 'store';
 import { mainListItems, secondaryListItems } from './listItems';
 import { drawerWidth, toggleDrawer } from './slice';
@@ -34,6 +46,8 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 function Sidebar() {
   const open = useSelector((state: RootState) => state.layout.open);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const toggle = () => {
     dispatch(toggleDrawer());
   };
@@ -52,10 +66,23 @@ function Sidebar() {
         </IconButton>
       </Toolbar>
       <Divider />
-      <List component="nav">
+      <List component="nav" sx={{ flex: 1 }}>
         {mainListItems}
         <Divider sx={{ my: 1 }} />
         {secondaryListItems}
+        <Divider sx={{ my: 1 }} />
+        <ListItemButton
+          sx={{ position: 'absolute', bottom: 0, width: '100%' }}
+          onClick={() => {
+            dispatch(logout());
+            navigate('/login', { replace: true });
+          }}
+        >
+          <ListItemIcon>
+            <LogoutIcon />
+          </ListItemIcon>
+          <ListItemText primary="Logout" />
+        </ListItemButton>
       </List>
     </Drawer>
   );

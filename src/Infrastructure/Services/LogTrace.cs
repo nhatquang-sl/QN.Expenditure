@@ -1,7 +1,11 @@
 ﻿using Application.Common.Logging;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
 using System.Dynamic;
 using System.Reflection;
+using System.Text;
 
 namespace Infrastructure.Services
 {
@@ -10,10 +14,12 @@ namespace Infrastructure.Services
         private readonly ILogger<LogTrace> _logger;
         private readonly ExpandoObject _properties = new();
         private readonly IList<LogEntry> _entries = new List<LogEntry>();
+        private readonly IConfiguration _configuration;
 
-        public LogTrace(ILogger<LogTrace> logger)
+        public LogTrace(ILogger<LogTrace> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
         }
 
         public void AddProperty(string key, object value)
@@ -38,6 +44,19 @@ namespace Infrastructure.Services
         public void LogError(string message, object? data = null, MethodBase? methodBase = null)
             => _entries.Add(new LogEntry(LogLevel.Error, message, data, methodBase));
 
+        public void LogError(string message, Exception ex, MethodBase? methodBase = null)
+        {
+            var sb = new StringBuilder(ex.Message);
+            var exception = ex.InnerException;
+            while (exception != null)
+            {
+                sb.Append(exception.Message);
+                exception = exception.InnerException;
+            }
+
+            _entries.Add(new LogEntry(LogLevel.Error, $"{message} - {sb}", ex.StackTrace, methodBase));
+        }
+
         public void LogCritical(string message, object? data = null, MethodBase? methodBase = null)
             => _entries.Add(new LogEntry(LogLevel.Critical, message, data, methodBase));
 
@@ -45,28 +64,78 @@ namespace Infrastructure.Services
         {
             if (!_entries.Any()) return;
 
-            Console.WriteLine(_entries);
             var logLevel = _entries.Max(x => x.Level);
             var entries = _entries.Select(x =>
             {
-                if (x.Data != null)
-                {
-                    // hide user password
-                    foreach (PropertyInfo prop in x.Data.GetType().GetProperties())
-                    {
-                        if (prop.Name.Equals("password", StringComparison.OrdinalIgnoreCase))
-                        {
-                            prop.SetValue(x.Data, "*");
-                        }
-                    }
-                }
+                HideSensitiveData(x.Data);
+                //if (x.Data != null)
+                //{
+                //    // hide user password
+                //    foreach (PropertyInfo prop in x.Data.GetType().GetProperties())
+                //    {
+                //        if (prop.Name.Equals("password", StringComparison.OrdinalIgnoreCase)
+                //        || prop.Name.Equals("SecretKey", StringComparison.OrdinalIgnoreCase)
+                //        || prop.Name.Equals("apikey", StringComparison.OrdinalIgnoreCase))
+                //        {
+                //            prop.SetValue(x.Data, "*");
+                //        }
+                //    }
+                //}
 
                 return new { Message = $"[{x.Level}] {x.Message}", x.Data };
-            });
+            }).ToList();
+            _properties.TryAdd("Entries", entries);
+            _properties.TryAdd("SourceContext", GetType().FullName);
 
-            string msgTemplate = string.Join(" ", _properties.Select(x => "{@" + x.Key + "}").Append("{@Entries}"));
-            var args = _properties.Select(x => x.Value).Append(entries).ToArray();
-            _logger.Log(logLevel, msgTemplate, args);
+            string msgTemplate = string.Join(" ", _properties.Select(x => "{@" + x.Key + "}"));
+            var args = _properties.Select(x => x.Value).ToArray();
+            //_logger.Log(logLevel, msgTemplate, JsonSerializer.Serialize(args));
+
+            CreateLogger().Write(Convert(logLevel), msgTemplate, args);
+        }
+
+        string[] ourNamespaces = ["Domain", "Application", "Infrastructure"];
+        object? HideSensitiveData(object? data)
+        {
+            try
+            {
+                if (data == null || data.GetType().Namespace == null || !ourNamespaces.Any(x => data.GetType().Namespace.Contains(x))) return data;
+                foreach (PropertyInfo prop in data.GetType().GetProperties())
+                {
+                    prop.SetValue(data, HideSensitiveData(prop.GetValue(data)));
+                    if (prop.Name.Equals("password", StringComparison.OrdinalIgnoreCase)
+                    || prop.Name.Equals("SecretKey", StringComparison.OrdinalIgnoreCase)
+                    || prop.Name.Equals("apikey", StringComparison.OrdinalIgnoreCase))
+                    {
+                        prop.SetValue(data, "*");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+
+            }
+
+            return data;
+        }
+
+        LogEventLevel Convert(LogLevel level)
+        {
+            return level switch
+            {
+                LogLevel.Debug => LogEventLevel.Debug,
+                LogLevel.Information => LogEventLevel.Information,
+                LogLevel.Error => LogEventLevel.Error,
+                LogLevel.Warning => LogEventLevel.Warning,
+                LogLevel.Critical => LogEventLevel.Fatal,
+                _ => LogEventLevel.Verbose,
+            };
+        }
+
+        private Serilog.Core.Logger CreateLogger()
+        {
+            return new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger();
+
         }
     }
 }
