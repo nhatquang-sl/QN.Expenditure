@@ -17,6 +17,8 @@ namespace Infrastructure.Data.Configurations
                 .IsRequired();
 
             builder.HasKey(t => new { t.Symbol, t.UserId });
+
+
         }
     }
 }

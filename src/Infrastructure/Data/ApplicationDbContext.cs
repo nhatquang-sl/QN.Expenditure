@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Infrastructure.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
+    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options), IApplicationDbContext
     {
         public DbSet<UserLoginHistory> UserLoginHistories => Set<UserLoginHistory>();
 
@@ -17,8 +17,6 @@ namespace Infrastructure.Data
         public DbSet<SpotOrder> SpotOrders => Set<SpotOrder>();
 
         public DbSet<BnbSetting> BnbSettings => Set<BnbSetting>();
-
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
