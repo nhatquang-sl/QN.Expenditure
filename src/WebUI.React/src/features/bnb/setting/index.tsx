@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { bnbSettingClient } from 'store';
 import { UpdateBnbSettingCommand } from 'store/api-client';
-import TextPassword from './text-passowrd';
+import TextPassword from './text-password';
 import { UpdateSettingData, UpdateSettingSchema } from './types';
 
 // function ControlledTextPassword(props: {

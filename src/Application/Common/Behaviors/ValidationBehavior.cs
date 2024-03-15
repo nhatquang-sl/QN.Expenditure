@@ -30,7 +30,7 @@ namespace Application.Common.Behaviors
                     .SelectMany(r => r.Errors)
                     .ToList();
 
-                if (failures.Any())
+                if (failures.Count != 0)
                 {
                     var errors = failures.GroupBy(r => r.PropertyName).Select(r => new { PropertyName = r.Key, messages = r.Select(x => x.ErrorMessage).Distinct().ToList() }).ToList();
                     if (errors.Count == 1 && string.IsNullOrWhiteSpace(errors[0].PropertyName) && errors[0].messages.Count == 1)

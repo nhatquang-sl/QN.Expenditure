@@ -9,6 +9,7 @@ namespace Application.Common.Abstractions
         DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings { get; }
         DbSet<SpotOrder> SpotOrders { get; }
         DbSet<Domain.Entities.BnbSetting> BnbSettings { get; }
+        DbSet<SpotGrid> SpotGrids { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

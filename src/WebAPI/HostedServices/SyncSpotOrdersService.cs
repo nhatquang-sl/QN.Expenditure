@@ -36,7 +36,7 @@ namespace WebAPI.HostedServices
                         logger.Information("Exception SyncSpotOrdersService - {message}", ex.Message);
                     }
 
-                    await Task.Delay(2 * 60 * 1000);
+                    await Task.Delay(5 * 60 * 1000);
                 }
             });
         }
