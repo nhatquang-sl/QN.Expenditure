@@ -1139,6 +1139,71 @@ export class BnbSpotClient {
     }
 }
 
+export class BnbSpotGridClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5228";
+
+    }
+
+    create(command: CreateSpotGridCommand, cancelToken?: CancelToken): Promise<void> {
+        let url_ = this.baseUrl + "/api/BnbSpotGrid";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "POST",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processCreate(_response);
+        });
+    }
+
+    protected processCreate(response: AxiosResponse): Promise<void> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = CreateSpotGridBadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<void>(null as any);
+    }
+}
+
 export class ValuesClient {
     protected instance: AxiosInstance;
     protected baseUrl: string;
@@ -2138,6 +2203,123 @@ export interface ISpotOrderRaw {
     workingTime: number;
     origQuoteOrderQty: string;
     selfTradePreventionMode: string;
+}
+
+export class CreateSpotGridBadRequest implements ICreateSpotGridBadRequest {
+    symbol!: string;
+    upperPrice!: string;
+    takeProfit!: string;
+
+    constructor(data?: ICreateSpotGridBadRequest) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.upperPrice = _data["upperPrice"];
+            this.takeProfit = _data["takeProfit"];
+        }
+    }
+
+    static fromJS(data: any): CreateSpotGridBadRequest {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateSpotGridBadRequest();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["upperPrice"] = this.upperPrice;
+        data["takeProfit"] = this.takeProfit;
+        return data;
+    }
+}
+
+export interface ICreateSpotGridBadRequest {
+    symbol: string;
+    upperPrice: string;
+    takeProfit: string;
+}
+
+export class CreateSpotGridCommand implements ICreateSpotGridCommand {
+    symbol!: string;
+    lowerPrice!: number;
+    upperPrice!: number;
+    triggerPrice!: number;
+    numberOfGrids!: number;
+    gridMode!: SpotGridMode;
+    investment!: number;
+    takeProfit!: number;
+    stopLoss!: number;
+
+    constructor(data?: ICreateSpotGridCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.lowerPrice = _data["lowerPrice"];
+            this.upperPrice = _data["upperPrice"];
+            this.triggerPrice = _data["triggerPrice"];
+            this.numberOfGrids = _data["numberOfGrids"];
+            this.gridMode = _data["gridMode"];
+            this.investment = _data["investment"];
+            this.takeProfit = _data["takeProfit"];
+            this.stopLoss = _data["stopLoss"];
+        }
+    }
+
+    static fromJS(data: any): CreateSpotGridCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateSpotGridCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["lowerPrice"] = this.lowerPrice;
+        data["upperPrice"] = this.upperPrice;
+        data["triggerPrice"] = this.triggerPrice;
+        data["numberOfGrids"] = this.numberOfGrids;
+        data["gridMode"] = this.gridMode;
+        data["investment"] = this.investment;
+        data["takeProfit"] = this.takeProfit;
+        data["stopLoss"] = this.stopLoss;
+        return data;
+    }
+}
+
+export interface ICreateSpotGridCommand {
+    symbol: string;
+    lowerPrice: number;
+    upperPrice: number;
+    triggerPrice: number;
+    numberOfGrids: number;
+    gridMode: SpotGridMode;
+    investment: number;
+    takeProfit: number;
+    stopLoss: number;
+}
+
+export enum SpotGridMode {
+    ARITHMETIC = 0,
+    GEOMETRIC = 1,
 }
 
 export class WeatherForecast implements IWeatherForecast {

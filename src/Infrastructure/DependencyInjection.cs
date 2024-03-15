@@ -18,6 +18,7 @@ namespace Infrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddSingleton(configuration);
             services.AddApplicationServices();
             var environment = configuration.GetValue<string>("Environment");
             if (environment?.ToLower() == "test")
@@ -36,7 +37,6 @@ namespace Infrastructure
                     options.UseSqlServer(connectionString);
                 });
             }
-
             services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
             services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
                         .AddRoles<IdentityRole>()

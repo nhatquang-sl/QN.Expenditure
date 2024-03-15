@@ -16,6 +16,8 @@ namespace Infrastructure.Data
 
         public DbSet<SpotOrder> SpotOrders => Set<SpotOrder>();
 
+        public DbSet<SpotGrid> SpotGrids => Set<SpotGrid>();
+
         public DbSet<BnbSetting> BnbSettings => Set<BnbSetting>();
 
         protected override void OnModelCreating(ModelBuilder builder)

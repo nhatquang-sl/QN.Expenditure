@@ -1,4 +1,5 @@
-﻿using Application.Common.ExServices.Bnb.Models;
+﻿using Application.BnbSpotGrid.Commands.CreateSpotGrid;
+using Application.Common.ExServices.Bnb.Models;
 using Application.Common.Extensions;
 using AutoMapper;
 using Domain.Entities;
@@ -23,6 +24,7 @@ namespace Application.Common.Mappings
                .ForMember(x => x.UpdateTime, opt => opt.MapFrom(x => x.UpdateTime.ToUnixTimestampMilliseconds()))
                .ForMember(x => x.WorkingTime, opt => opt.MapFrom(x => x.WorkingTime.ToUnixTimestampMilliseconds()));
 
+            CreateMap<CreateSpotGridCommand, SpotGrid>();
         }
 
         private void ApplyMappingsFromAssembly(Assembly assembly)

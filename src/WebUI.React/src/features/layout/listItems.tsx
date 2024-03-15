@@ -1,4 +1,3 @@
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LayersIcon from '@mui/icons-material/Layers';
@@ -6,6 +5,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import PeopleIcon from '@mui/icons-material/People';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import { Icon } from '@mui/material';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
@@ -67,9 +67,15 @@ export const secondaryListItems = (
     </ListItemButton>
     <ListItemButton component={Link} to="bnb/spot-orders">
       <ListItemIcon>
-        <AssignmentIcon />
+        <Icon>history</Icon>
       </ListItemIcon>
-      <ListItemText primary="Spot Orders" />
+      <ListItemText primary="Histories" />
+    </ListItemButton>
+    <ListItemButton component={Link} to="bnb/spot-grids">
+      <ListItemIcon>
+        <Icon>assignment</Icon>
+      </ListItemIcon>
+      <ListItemText primary="Spot Grids" />
     </ListItemButton>
   </React.Fragment>
 );
