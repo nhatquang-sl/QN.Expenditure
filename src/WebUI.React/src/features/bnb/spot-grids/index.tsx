@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Grid, Paper, Typography } from '@mui/material';
+import { Grid, Paper } from '@mui/material';
 import Form from 'components/form';
 import {
   ActionBlock,
@@ -11,6 +11,8 @@ import {
 } from 'components/form/types';
 import { bnbSpotGridClient } from 'store';
 import { CreateSpotGridCommand, SpotGridMode } from 'store/api-client';
+import Chart from './chart';
+import Header from './header';
 import { GridOrderData, GridOrderSchema } from './types';
 
 const GRID_MODES = [
@@ -25,13 +27,13 @@ export default function BnbSpotGrids() {
   };
 
   return (
-    <Grid container spacing={3}>
+    <Grid container>
+      <Grid item xs={12}>
+        <Chart pair="BTCUSDT"></Chart>
+      </Grid>
       <Grid item xs={12}>
         <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          <Typography component="h2" variant="h6" color="primary" gutterBottom>
-            Grid
-          </Typography>
-
+          <Header />
           <Form
             onSubmit={onSubmit}
             resolver={zodResolver(GridOrderSchema)}
