@@ -30,18 +30,18 @@ jobs:
       id-token: write
 
     steps:
-      # - name: Checkout repository
-      #   uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # - name: Clone Submodule #https://rgoswami.me/posts/priv-gh-actions/
-      #   env:
-      #     SSHK: ${{ secrets.SUB_CREDENTIALS }}
-      #   run: |
-      #     mkdir -p $HOME/.ssh
-      #     echo "$SSHK" > $HOME/.ssh/ssh.key
-      #     chmod 600 $HOME/.ssh/ssh.key
-      #     export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ssh.key"
-      #     git submodule update --init --recursive
+      - name: Clone Submodule #https://rgoswami.me/posts/priv-gh-actions/
+        env:
+          SSHK: ${{ secrets.SUB_CREDENTIALS }}
+        run: |
+          mkdir -p $HOME/.ssh
+          echo "$SSHK" > $HOME/.ssh/ssh.key
+          chmod 600 $HOME/.ssh/ssh.key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ssh.key"
+          git submodule update --init --recursive
 
       - name: Docker meta
         id: meta
@@ -63,10 +63,9 @@ jobs:
       - name: 🙏Build and push Docker image
         uses: docker/build-push-action@v6
         with:
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.SUB_CREDENTIALS }}
       - name: 🚀Deploy Docker to VPS
         run: |
           echo "${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}"
