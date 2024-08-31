@@ -1,0 +1,3 @@
+[submodule "src/WebAPI/QN.Expenditure.Credentials"]
+	path = src/WebAPI/QN.Expenditure.Credentials
+	url = git@github.com:nhatquang-sl/QN.Expenditure.Credentials.git
