@@ -1,0 +1,79 @@
+name: Docker
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+on:
+  push:
+    # branches: [ "main" ]
+    tags:
+      - '*'
+
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
+
+
+jobs:
+  build-push-image:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}
+
+      # Set up BuildKit Docker container builder to be able to build
+      - name: ⚙️Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+      # Build and push Docker image with Buildx
+      - name: 🙏Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+      - name: 🚀Deploy Docker to VPS
+        run: |
+          echo "${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}"
+    outputs:
+      IMAGE_TAGS: ${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+  deploy-docker-to-vps:
+    runs-on: ubuntu-latest
+    needs: [build-push-image]
+    steps:
+    - env:
+        IMAGE_TAGS: ${{needs.build-push-image.outputs.IMAGE_TAGS}}
+      run: echo "$IMAGE_TAGS"
+    - name: 🚀Deploy Docker to VPS
+      run: |
+        echo "${{needs.build-push-image.outputs.IMAGE_TAGS}}" 
+        mkdir -p $HOME/.ssh
+        echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
+        chmod 600 $HOME/.ssh/ssh.key
+        ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "
+          docker ps -aq | xargs --no-run-if-empty docker stop | xargs --no-run-if-empty docker rm &&
+          docker run --name ${{ secrets.DOCKERHUB_REPOSITORY }} -d -p 3000:3000 ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}"
