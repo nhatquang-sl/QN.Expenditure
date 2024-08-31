@@ -11,13 +11,6 @@ on:
     tags:
       - '*'
 
-env:
-  # Use docker.io for Docker Hub if empty
-  REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
-
-
 jobs:
   build-push-image:
 
@@ -35,16 +28,6 @@ jobs:
         with:
           ssh-key: ${{ secrets.SUB_CREDENTIALS }}
           submodules: true
-
-      # - name: Clone Submodule #https://rgoswami.me/posts/priv-gh-actions/
-      #   env:
-      #     SSHK: ${{ secrets.SUB_CREDENTIALS }}
-      #   run: |
-      #     mkdir -p $HOME/.ssh
-      #     echo "$SSHK" > $HOME/.ssh/ssh.key
-      #     chmod 600 $HOME/.ssh/ssh.key
-      #     export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ssh.key"
-      #     git submodule update --init --recursive
 
       - name: Docker meta
         id: meta
