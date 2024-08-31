@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-          ssh-key: ${{ secrets.SUB_CREDENTIALS }}
+          ssh-key: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker meta
         id: meta
