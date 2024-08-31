@@ -1,22 +1,16 @@
-﻿using Application.Common.Logging;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Serilog.Events;
 using System.Dynamic;
 using System.Reflection;
 using System.Text;
 
-namespace Infrastructure.Services
+namespace Lib.Application.Logging
 {
-    public class LogTrace : ILogTrace
+    public class LogTrace(Serilog.Core.Logger logger) : ILogTrace
     {
-        private readonly Serilog.Core.Logger _logger;
+        private readonly Serilog.Core.Logger _logger = logger;
         private readonly ExpandoObject _properties = new();
-        private readonly IList<LogEntry> _entries = new List<LogEntry>();
-
-        public LogTrace(Serilog.Core.Logger logger)
-        {
-            _logger = logger;
-        }
+        private readonly List<LogEntry> _entries = [];
 
         public void AddProperty(string key, object value)
         {

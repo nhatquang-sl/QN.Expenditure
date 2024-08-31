@@ -1,4 +1,5 @@
 using Application.Common.Abstractions;
+using Cex.Infrastructure;
 using Infrastructure;
 using Infrastructure.Data;
 using Serilog;
@@ -27,17 +28,19 @@ builder.Configuration
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ReadFrom.Configuration(context.Configuration)
 );
-
 // Add services to the container.
+builder.Services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
 builder.Services.AddControllers();
 builder.Services.AddOpenApiDocument();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddCexInfrastructureServices(builder.Configuration);
 
 builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 builder.Services.AddHostedService<SyncSpotOrdersService>();
+builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 
 var app = builder.Build();

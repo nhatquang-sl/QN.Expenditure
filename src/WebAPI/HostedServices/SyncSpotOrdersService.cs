@@ -14,12 +14,13 @@ namespace WebAPI.HostedServices
             var services = new ServiceCollection();
             services.AddSingleton(_configuration);
             services.AddInfrastructureServices(_configuration);
+            services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger());
             var serviceProvider = services.BuildServiceProvider();
 
             await Task.Factory.StartNew(async () =>
             {
                 var logger = new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger();
-                logger.Information("Start SyncSpotOrdersService started at {startAt}", DateTime.UtcNow);
+                logger.Information("Start {serviceName} started at {startAt}", GetType().Name, DateTime.UtcNow);
                 while (true)
                 {
                     try
@@ -33,7 +34,7 @@ namespace WebAPI.HostedServices
                     }
                     catch (Exception ex)
                     {
-                        logger.Information("Exception SyncSpotOrdersService - {message}", ex.Message);
+                        logger.Information("Exception {serviceName} - {message}", this.GetType().Name, ex.Message);
                     }
 
                     await Task.Delay(5 * 60 * 1000);

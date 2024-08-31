@@ -11,6 +11,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Cex\Cex.Infrastructure\Cex.Infrastructure.csproj" />
 		<ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
 	</ItemGroup>
 
@@ -25,5 +26,6 @@
 		<PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
 		<PackageReference Include="Serilog.Sinks.Loggly" Version="5.4.0" />
 		<PackageReference Include="Serilog.Sinks.Seq" Version="5.2.3" />
+		<PackageReference Include="SocketIOClient" Version="3.1.2" />
 	</ItemGroup>
 </Project>
