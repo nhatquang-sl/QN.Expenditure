@@ -1,9 +1,8 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+# https://github.com/dotnet/dotnet-docker/blob/main/samples/aspnetapp/README.md
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
@@ -21,4 +20,7 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "WebAPI.dll"]
-# docker build --no-cache --progress plain -t qn-expenditure:1.0 .
+
+# docker build -t nq.expenditure:1.2 .
+# docker run -it --rm -p 8000:8080 nq.expenditure:1.2
+# http://localhost:8000/api/weatherforecast
