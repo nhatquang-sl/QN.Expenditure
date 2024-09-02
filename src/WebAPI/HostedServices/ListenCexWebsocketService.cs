@@ -1,10 +1,10 @@
 ﻿
 using Cex.Application.Candle.Commands.SyncCandles;
 using Cex.Application.Common.Configs;
-using Cex.Application.Common.ExServices.Cex;
 using Cex.Application.Config.Commands.RefreshUserToken;
 using Cex.Application.Config.Queries.GetUserToken;
 using Cex.Infrastructure;
+using Lib.ExternalServices.Cex;
 using MediatR;
 using Microsoft.Extensions.Options;
 using Serilog;

@@ -1,6 +1,7 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using Lib.ExternalServices.Cex.Models;
+using System.IdentityModel.Tokens.Jwt;
 
-namespace Cex.Application.Common.ExServices.Cex
+namespace Lib.ExternalServices.Cex
 {
     public static class CexUtils
     {
@@ -18,13 +19,5 @@ namespace Cex.Application.Common.ExServices.Cex
                 ExpiredAt = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime
             };
         }
-    }
-
-    public class JwtTokenData
-    {
-        public long UserId { get; set; }
-        public string Email { get; set; }
-        public string Nickname { get; set; }
-        public DateTime ExpiredAt { get; set; }
     }
 }

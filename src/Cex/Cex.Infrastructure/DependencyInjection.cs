@@ -1,14 +1,12 @@
 ﻿using Cex.Application;
 using Cex.Application.Common.Abstractions;
 using Cex.Application.Common.Configs;
-using Cex.Application.Common.ExServices.Cex;
 using Cex.Infrastructure.Data;
 using Cex.Infrastructure.Data.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Refit;
 
 namespace Cex.Infrastructure
 {
@@ -66,12 +64,6 @@ namespace Cex.Infrastructure
 
             //services.AddAutoMapper(typeof(MappingProfile));
 
-            services
-                .AddRefitClient<ICexService>()
-                .ConfigureHttpClient((c) =>
-                {
-                    c.BaseAddress = new Uri(configuration.GetValue("CexConfig:ApiEndpoint", "") ?? "");
-                });
             return services;
         }
     }

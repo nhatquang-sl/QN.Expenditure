@@ -7,16 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
     <PackageReference Include="Refit" Version="7.1.2" />
     <PackageReference Include="Refit.HttpClientFactory" Version="7.1.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Libs\Lib.Application\Lib.Application.csproj" />
-    <ProjectReference Include="..\..\Libs\Lib.ExternalServices\Lib.ExternalServices.csproj" />
-    <ProjectReference Include="..\Cex.Domain\Cex.Domain.csproj" />
+    <Folder Include="Telegram\" />
   </ItemGroup>
 
 </Project>

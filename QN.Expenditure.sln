@@ -36,7 +36,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cex.Infrastructure", "src\C
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{E494EBDE-A657-463A-8B71-71C4977991C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lib.Application", "src\Libs\Lib.Application\Lib.Application.csproj", "{3CCB4CCE-0CC2-41FB-993D-55C3CD177E62}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lib.Application", "src\Libs\Lib.Application\Lib.Application.csproj", "{3CCB4CCE-0CC2-41FB-993D-55C3CD177E62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lib.ExternalServices", "src\Libs\Lib.ExternalServices\Lib.ExternalServices.csproj", "{0FFCFF7D-377F-472B-9ABE-78BF989A2581}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -92,6 +94,10 @@ Global
 		{3CCB4CCE-0CC2-41FB-993D-55C3CD177E62}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3CCB4CCE-0CC2-41FB-993D-55C3CD177E62}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3CCB4CCE-0CC2-41FB-993D-55C3CD177E62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FFCFF7D-377F-472B-9ABE-78BF989A2581}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FFCFF7D-377F-472B-9ABE-78BF989A2581}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FFCFF7D-377F-472B-9ABE-78BF989A2581}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FFCFF7D-377F-472B-9ABE-78BF989A2581}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -103,6 +109,7 @@ Global
 		{E9669DD4-0414-4BBE-BB24-F5C35348E301} = {125BB6F4-183C-4B2C-AC00-E2A96472C38D}
 		{12B587EE-38DC-41C2-B617-B3E44EB2BD18} = {125BB6F4-183C-4B2C-AC00-E2A96472C38D}
 		{3CCB4CCE-0CC2-41FB-993D-55C3CD177E62} = {E494EBDE-A657-463A-8B71-71C4977991C4}
+		{0FFCFF7D-377F-472B-9ABE-78BF989A2581} = {E494EBDE-A657-463A-8B71-71C4977991C4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {287FCC55-8B80-4737-A2E0-4D5F3A0390B7}
