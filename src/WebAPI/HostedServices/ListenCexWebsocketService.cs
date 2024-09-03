@@ -102,9 +102,14 @@ namespace WebAPI.HostedServices
                     // Connect to the server
                     await socket.ConnectAsync();
                 }
-                catch (Exception ex)
+                catch (Exception exception)
                 {
-                    logger.Information("Exception ListenCexWebsocketService - {message}", ex.Message);
+                    var ex = exception;
+                    while (ex != null)
+                    {
+                        logger.Error("ListenCexWebsocketService - {message}\n{StackTrace}", ex.Message, ex.StackTrace);
+                        ex = ex.InnerException;
+                    }
                 }
             });
 
