@@ -8,7 +8,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace Cex.Application.Candle.Commands.SyncCandles
 {
@@ -63,13 +62,13 @@ namespace Cex.Application.Candle.Commands.SyncCandles
             var lastCandle = candles.Last();
             if (Math.Max(lastCandle.OpenPrice, lastCandle.ClosePrice) >= maxPrice)
                 await _telegramService.SendMessage(_telegramConfig.BotToken
-                    , new TelegramMessage(_telegramConfig.ChatId, $"Peak at {lastCandle.Session}"));
+                    , new TelegramMessage(_telegramConfig.ChatId, $"Peak at {maxPrice}"));
 
             if (Math.Min(lastCandle.OpenPrice, lastCandle.ClosePrice) <= minPrice)
                 await _telegramService.SendMessage(_telegramConfig.BotToken
-                    , new TelegramMessage(_telegramConfig.ChatId, $"Trough at {lastCandle.Session}"));
+                    , new TelegramMessage(_telegramConfig.ChatId, $"Trough at {minPrice}"));
             sw.Stop();
-            _logTrace.LogInformation($"{MethodBase.GetCurrentMethod()} processed: {sw.ElapsedMilliseconds} ms");
+            _logTrace.LogInformation($"NotifyStreak processed: {sw.ElapsedMilliseconds} ms");
         }
     }
 }
