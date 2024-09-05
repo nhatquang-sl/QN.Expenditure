@@ -1,6 +1,6 @@
 // console.log(import.meta.env);
 export const sidebarWidth = 240;
-export const API_ENDPOINT = 'https://localhost:5001'; // 'https://quangnn.somee.com'; // import.meta.env.DEV ? 'http://localhost:5228' : '';
+export const API_ENDPOINT = 'https://85.190.240.120:5001'; // 'https://quangnn.somee.com'; // import.meta.env.DEV ? 'http://localhost:5228' : '';
 
 export const PAGE = {
   START: 1,
