@@ -36,7 +36,7 @@ const ConsecutiveSnackBars = () => {
   //   // setSnackPack((prev) => [...prev, { message, key: new Date().getTime() }]);
   // };
 
-  const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
+  const handleClose = (_: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
       return;
     }

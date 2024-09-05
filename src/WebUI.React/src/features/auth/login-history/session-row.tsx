@@ -6,15 +6,15 @@ import { columns } from './types';
 
 const SessionRow = (props: { session: UserLoginHistory }) => {
   const { session } = props;
-  const [openDetail, setOpenDetail] = useState(false);
+  const [_, setOpenDetail] = useState(false);
 
   const handleSelectSession = () => {
     setOpenDetail(true);
   };
 
-  const handleDeselectSession = () => {
-    setOpenDetail(false);
-  };
+  // const handleDeselectSession = () => {
+  //   setOpenDetail(false);
+  // };
 
   return (
     <>

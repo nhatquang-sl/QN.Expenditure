@@ -21,6 +21,6 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "WebAPI.dll"]
 
-# docker build -t nq.expenditure:1.2 .
+# docker build . --no-cache --progress plain -t nq.expenditure:1.2 -f Dockerfile
 # docker run -it --rm -p 8000:8080 nq.expenditure:1.2
 # http://localhost:8000/api/weatherforecast

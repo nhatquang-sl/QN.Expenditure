@@ -33,7 +33,7 @@ const AppBar = styled(MuiAppBar, {
     }),
   }),
 }));
-const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
+// const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
 function Header() {
   const open = useSelector((state: RootState) => state.layout.open);

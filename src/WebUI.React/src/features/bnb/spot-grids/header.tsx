@@ -2,7 +2,7 @@ import { Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 export default function Header() {
-  const [curPrice, setCurPrice] = useState(0);
+  const [curPrice] = useState(0);
   useEffect(() => {
     // WS: get market price
     const markPriceWS = new WebSocket(`wss://stream.binance.com:9443/ws/BTCUSDT@kline_1m`);

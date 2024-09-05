@@ -19,7 +19,7 @@ import { columns } from './types';
 // import { setSessionsPage } from 'store/sessions-slice';
 
 const LoginHistory = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [_, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<UserLoginHistory[]>([]);
 
   const fetchSessions = useCallback(async (page: number = PAGE.START, size: number = PAGE.SIZE) => {
