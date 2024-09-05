@@ -18,9 +18,9 @@ COPY src/WebUI.React .
 RUN npm i -g serve
 RUN npm i
     
-RUN cd node_modules && ls
+# RUN cd node_modules && ls
 RUN npm run build
-# RUN npm run build
+RUN rm -rf node_modules
 
 # Copy the rest of the source files into the image.
 # COPY . .
@@ -30,7 +30,12 @@ EXPOSE 3000
 
 # Run the application.
 CMD [ "serve", "-s", "dist" ]
-# docker build . --no-cache --progress plain -t nq.expenditure.ui:1.1 -f WebUI.Dockerfile
-# docker build . -t nq.expenditure.ui:1.1 -f WebUI.Dockerfile
-# docker run -it --rm -p 3001:3000 nq.expenditure.ui:1.1
-# cryptogp.southeastasia.cloudapp.azure.com
+# docker build . --no-cache --progress plain -t qex.ui:1.2 -f WebUI.Dockerfile
+# docker build . -t qex.ui:1.2 -f WebUI.Dockerfile
+# docker run -it --rm -p 8000:8080 qex.ui:1.2
+# http://localhost:8000/api/weatherforecast
+
+# docker tag qex.ui:1.2 nhatquang/qex.ui:1.2
+# docker push nhatquang/qex.ui:1.2
+# docker pull nhatquang/qex.ui:1.2
+# docker run -d -p 3001:3000 nhatquang/qex.ui:1.2
