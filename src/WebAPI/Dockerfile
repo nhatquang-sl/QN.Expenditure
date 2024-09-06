@@ -1,12 +1,12 @@
-# docker build . --no-cache --progress plain -t nq.expenditure:1.2 -f src/WebAPI/Dockerfile
-# docker build . -t nq.expenditure:1.2 -f src/WebAPI/Dockerfile
-# docker run -it --rm -p 8000:8080 nq.expenditure:1.2
+# docker build . --no-cache --progress plain -t nq.expenditure:v1.4 -f src/WebAPI/Dockerfile
+# docker build . -t nq.expenditure:v1.4 -f src/WebAPI/Dockerfile
+# docker run -it --rm -p 8000:8080 nq.expenditure:v1.4
 # http://localhost:8000/api/weatherforecast
 
-# docker tag nq.expenditure:1.2 nhatquang/nq.expenditure:1.2
-# docker push nhatquang/nq.expenditure:1.2
-# docker pull nhatquang/nq.expenditure:1.2
-# docker run -d -p 8000:8080 nhatquang/nq.expenditure:1.2
+# docker tag nq.expenditure:v1.4 nhatquang/nq.expenditure:v1.4
+# docker push nhatquang/nq.expenditure:v1.4
+# docker pull nhatquang/nq.expenditure:v1.4
+# docker run -d -p 5001:5001 -e ASPNETCORE_HTTP_PORTS=5001 nhatquang/nq.expenditure:v1.4
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER app
