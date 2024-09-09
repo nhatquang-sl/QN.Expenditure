@@ -19,6 +19,8 @@ namespace Application.BnbSpotOrder.Queries.GetSpotOrders
         {
             var settings = await _applicationDbContext.SpotOrders
                 .Where(x => x.UserId == _currentUser.Id)
+                .OrderBy(x => x.Symbol)
+                .ThenByDescending(x => x.WorkingTime)
                 .ToListAsync(cancellationToken);
 
             return _mapper.Map<List<SpotOrderRaw>>(settings) ?? [];
