@@ -31,7 +31,6 @@ namespace Infrastructure
             else
             {
                 var connectionString = configuration.GetConnectionString("DefaultConnection");
-                Console.WriteLine(connectionString);
                 services.AddDbContext<ApplicationDbContext>((options) =>
                 {
                     options.UseSqlServer(connectionString);

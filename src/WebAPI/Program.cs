@@ -40,7 +40,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 builder.Services.AddHostedService<SyncSpotOrdersService>();
-builder.Services.AddHostedService<ListenCexWebsocketService>();
+// builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 
 var app = builder.Build();

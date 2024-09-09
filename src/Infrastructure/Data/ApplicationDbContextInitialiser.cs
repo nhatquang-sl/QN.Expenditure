@@ -86,14 +86,15 @@ namespace Infrastructure.Data
             }
 
             // Default users
-            var administrator = new ApplicationUser { UserName = "administrator@localhost", Email = "administrator@localhost", FirstName = "First", LastName = "Last" };
-            administrator.EmailConfirmed = true;
-            if (_userManager.Users.All(u => u.UserName != administrator.UserName))
+            var administrator = _configuration.GetSection("Administrator").Get<RegisterCommand>();
+            if (administrator != null && _userManager.Users.All(u => u.UserName != administrator.Email))
             {
-                await _userManager.CreateAsync(administrator, "Administrator1!");
+                var user = _mapper.Map<ApplicationUser>(administrator);
+                user.EmailConfirmed = true;
+                await _userManager.CreateAsync(user, administrator.Password);
                 if (!string.IsNullOrWhiteSpace(administratorRole.Name))
                 {
-                    await _userManager.AddToRolesAsync(administrator, new[] { administratorRole.Name });
+                    await _userManager.AddToRolesAsync(user, new[] { administratorRole.Name });
                 }
             }
 
