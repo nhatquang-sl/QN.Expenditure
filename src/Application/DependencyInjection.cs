@@ -1,6 +1,6 @@
 ﻿using Application.Common.Behaviors;
-using Application.Common.ExServices.Bnb;
 using FluentValidation;
+using Lib.ExternalServices.Bnd;
 using MediatR;
 using MediatR.NotificationPublishers;
 using Microsoft.Extensions.DependencyInjection;

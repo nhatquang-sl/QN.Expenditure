@@ -39,7 +39,8 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
-builder.Services.AddHostedService<SyncSpotOrdersService>();
+//builder.Services.AddHostedService<SyncSpotOrdersService>();
+builder.Services.AddHostedService<ArbitrageService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 

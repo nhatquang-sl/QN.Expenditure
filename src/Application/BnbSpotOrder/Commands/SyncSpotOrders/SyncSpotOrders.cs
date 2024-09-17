@@ -1,11 +1,11 @@
 ﻿using Application.BnbSpotOrder.DTOs;
 using Application.Common.Abstractions;
-using Application.Common.ExServices.Bnb;
-using Application.Common.ExServices.Bnb.Models;
 using Application.Common.Extensions;
 using Application.Common.Logging;
 using AutoMapper;
 using Domain.Entities;
+using Lib.ExternalServices.Bnd;
+using Lib.ExternalServices.Bnd.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.BnbSpotOrder.Commands.SyncSpotOrders

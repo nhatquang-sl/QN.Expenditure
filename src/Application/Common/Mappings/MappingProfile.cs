@@ -1,8 +1,8 @@
 ﻿using Application.BnbSpotGrid.Commands.CreateSpotGrid;
-using Application.Common.ExServices.Bnb.Models;
 using Application.Common.Extensions;
 using AutoMapper;
 using Domain.Entities;
+using Lib.ExternalServices.Bnd.Models;
 using System.Reflection;
 
 namespace Application.Common.Mappings

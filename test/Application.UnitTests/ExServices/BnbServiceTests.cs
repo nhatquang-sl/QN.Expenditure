@@ -1,5 +1,5 @@
-﻿using Application.Common.ExServices.Bnb;
-using Application.Common.ExServices.Bnb.Models;
+﻿using Lib.ExternalServices.Bnd;
+using Lib.ExternalServices.Bnd.Models;
 using Refit;
 
 namespace Application.UnitTests.ExServices
@@ -20,6 +20,12 @@ namespace Application.UnitTests.ExServices
         {
             var time = await _bndService.GetServerTime();
             var res = await _bndService.AllOrders(API_KEY, new AllOrdersRequest("IDUSDT", time.ServerTime, 0, SECRET_KEY));
+        }
+
+        [Fact]
+        public async void Succeeds_GetTickerPrices()
+        {
+            var res = await _bndService.GetTickerPrice("[\"BTCUSDT\",\"BNBUSDT\"]");
         }
     }
 }

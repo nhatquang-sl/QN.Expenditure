@@ -1,7 +1,7 @@
 ﻿using Application.Common.Abstractions;
-using Application.Common.ExServices.Bnb;
 using Application.Common.Logging;
 using AutoMapper;
+using Lib.ExternalServices.Bnd;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Refit;

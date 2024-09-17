@@ -1,4 +1,4 @@
-﻿namespace Application.Common.ExServices.Bnb.Models
+﻿namespace Lib.ExternalServices.Bnd.Models
 {
     public class SpotOrderRaw
     {

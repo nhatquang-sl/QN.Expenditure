@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.csproj" />
+    <ProjectReference Include="..\Libs\Lib.ExternalServices\Lib.ExternalServices.csproj" />
   </ItemGroup>
 
 </Project>

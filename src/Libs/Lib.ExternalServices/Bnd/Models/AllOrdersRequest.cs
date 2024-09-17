@@ -1,6 +1,6 @@
 ﻿using Refit;
 
-namespace Application.Common.ExServices.Bnb.Models
+namespace Lib.ExternalServices.Bnd.Models
 {
     public class AllOrdersRequest : SignatureRequest
     {
