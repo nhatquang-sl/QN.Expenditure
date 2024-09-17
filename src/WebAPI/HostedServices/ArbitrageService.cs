@@ -57,6 +57,7 @@ namespace WebAPI.HostedServices
             var bridgeAmount = mainAmount * mainToBridgePrice;
             var potentialProfit = bridgeAmount * bridgePrice - initBaseAmount;
 
+            Console.WriteLine($"Profit: {potentialProfit}\nRoute: {string.Join(">", route)}\nPrice: {string.Join(">", routePrices)}");
             if (potentialProfit > 1)
             {
                 await _telegramService.SendMessage(_telegramConfig.BotToken
