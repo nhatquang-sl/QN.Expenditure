@@ -19,7 +19,7 @@ namespace Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddSingleton(configuration);
-            services.AddApplicationServices();
+            services.AddApplicationServices(configuration);
             var environment = configuration.GetValue<string>("Environment");
             if (environment?.ToLower() == "test")
             {

@@ -1,68 +1,46 @@
-﻿using Lib.ExternalServices.Bnd;
-using Lib.ExternalServices.Telegram;
-using Lib.ExternalServices.Telegram.Models;
-using Microsoft.Extensions.Options;
+﻿using Application.BnbSpotOrder.Commands.Arbitrage;
+using Infrastructure;
+using MediatR;
+using Serilog;
 
 namespace WebAPI.HostedServices
 {
-    public class ArbitrageService(IBndService bndService, ITelegramService telegramService, IOptions<TelegramServiceConfig> telegramConfig) : BackgroundService
+    public class ArbitrageService(IConfiguration configuration) : BackgroundService
     {
-        private readonly IBndService _bndService = bndService;
-        private readonly ITelegramService _telegramService = telegramService;
-        private readonly TelegramServiceConfig _telegramConfig = telegramConfig.Value;
+        private readonly IConfiguration _configuration = configuration;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var baseToken = "USDT";
-            var bridgeToken = "BTC";
-            var mainTokens = new List<string> { "FTM", "TIA", "DYM" };
+            var services = new ServiceCollection();
+            services.AddInfrastructureServices(_configuration);
+            services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger());
+            var serviceProvider = services.BuildServiceProvider();
+
             await Task.Factory.StartNew(async () =>
             {
+                var logger = new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger();
+                logger.Information("Start ArbitrageService started at {startAt}", DateTime.UtcNow);
                 while (true)
                 {
                     try
                     {
-                        var tasks = mainTokens.Select(async mainToken =>
-                        {
-                            var tokenPrices = await _bndService.GetTickerPrice($"[\"{mainToken}{baseToken}\",\"{mainToken}{bridgeToken}\",\"{bridgeToken}{baseToken}\"]");
-                            var tokenPrice = decimal.Parse(tokenPrices.FirstOrDefault(x => x.Symbol == $"{mainToken}{baseToken}")?.Price ?? "0");
-                            var bridgePrice = decimal.Parse(tokenPrices.FirstOrDefault(x => x.Symbol == $"{bridgeToken}{baseToken}")?.Price ?? "0");
-                            var mainToBridgePrice = decimal.Parse(tokenPrices.FirstOrDefault(x => x.Symbol == $"{mainToken}{bridgeToken}")?.Price ?? "0");
-                            var bridgeToMainPrice = 1 / mainToBridgePrice;
-
-                            await Task.WhenAll(
-                                CheckArbitrage([baseToken, mainToken, bridgeToken], [tokenPrice, mainToBridgePrice, bridgePrice])
-                                , CheckArbitrage([baseToken, bridgeToken, mainToken], [bridgePrice, bridgeToMainPrice, tokenPrice]));
-                        });
-
-                        await Task.WhenAll(tasks);
+                        using var scope = serviceProvider.CreateScope();
+                        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                        await mediator.Send(new ArbitrageCommand());
                     }
                     catch (Exception ex)
                     {
-
+                        var exception = ex;
+                        do
+                        {
+                            logger.Error(exception, "Error ArbitrageService");
+                            exception = exception.InnerException;
+                        } while (exception != null);
                     }
                     await Task.Delay(60 * 1000);
                 }
             }, stoppingToken);
         }
 
-        async Task CheckArbitrage(List<string> route, List<decimal> routePrices)
-        {
-            var mainPrice = routePrices[0];
-            var mainToBridgePrice = routePrices[1];
-            var bridgePrice = routePrices[2];
-
-            var initBaseAmount = 100;
-            var mainAmount = initBaseAmount / mainPrice;
-            var bridgeAmount = mainAmount * mainToBridgePrice;
-            var potentialProfit = bridgeAmount * bridgePrice - initBaseAmount;
-
-            Console.WriteLine($"Profit: {potentialProfit}\nRoute: {string.Join(">", route)}\nPrice: {string.Join(">", routePrices)}");
-            if (potentialProfit > 1)
-            {
-                await _telegramService.SendMessage(_telegramConfig.BotToken
-                    , new TelegramMessage(_telegramConfig.ChatId, $"Profit: {potentialProfit}\nRoute: {string.Join(">", route)}\nPrice: {string.Join(">", routePrices)}"));
-            }
-        }
     }
 }

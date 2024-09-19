@@ -15,11 +15,23 @@ namespace Lib.ExternalServices.Bnd
 
         [Get("/api/v3/ticker/price")]
         Task<List<TickerPriceRaw>> GetTickerPrice(string symbols);
+
+        [Get("/api/v3/ticker/bookTicker")]
+        Task<List<OrderBookTickerRaw>> GetOrderBookTicker(string symbols);
     }
 
     public class TickerPriceRaw
     {
         public string Symbol { get; set; }
         public string Price { get; set; }
+    }
+
+    public class OrderBookTickerRaw
+    {
+        public string Symbol { get; set; }
+        public string BidPrice { get; set; } // buy
+        public string BidQty { get; set; }
+        public string AskPrice { get; set; } // sell
+        public string AskQty { get; set; }
     }
 }
