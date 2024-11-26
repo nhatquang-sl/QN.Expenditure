@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Lib.ExternalServices.Bnd.Models
+namespace Lib.ExternalServices.Bnb.Models
 {
     public class SignatureRequest
     {

@@ -95,7 +95,8 @@ namespace Infrastructure.Services
         {
             try
             {
-                if (data == null || data.GetType().Namespace == null || !ourNamespaces.Any(x => data.GetType().Namespace.Contains(x))) return data;
+                var dataHasOurNamspace = data != null && ourNamespaces.Contains(data.GetType().FullName);
+                if (data == null || data.GetType().Namespace == null || !dataHasOurNamspace) return data;
                 foreach (PropertyInfo prop in data.GetType().GetProperties())
                 {
                     prop.SetValue(data, HideSensitiveData(prop.GetValue(data)));
@@ -109,10 +110,7 @@ namespace Infrastructure.Services
                     }
                 }
             }
-            catch (Exception e)
-            {
-
-            }
+            catch (Exception) { }
 
             return data;
         }

@@ -2,7 +2,7 @@
 using Application.Common.Extensions;
 using AutoMapper;
 using Domain.Entities;
-using Lib.ExternalServices.Bnd.Models;
+using Lib.ExternalServices.Bnb.Models;
 using System.Reflection;
 
 namespace Application.Common.Mappings

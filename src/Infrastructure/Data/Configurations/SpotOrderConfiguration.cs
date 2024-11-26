@@ -16,6 +16,11 @@ namespace Infrastructure.Data.Configurations
                 .HasForeignKey(t => new { t.Symbol, t.UserId })
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.HasOne(t => t.SpotGrid)
+                .WithMany(t => t.SpotOrders)
+                .HasForeignKey("SpotGridId")
+                .IsRequired(false);
+
             // Guid max length
             builder.Property(t => t.UserId)
                 .HasMaxLength(36);

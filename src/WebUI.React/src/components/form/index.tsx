@@ -23,6 +23,7 @@ export default function Form(props: {
   const {
     handleSubmit,
     register,
+    reset,
     formState: { errors },
   } = useForm({ resolver: props.resolver });
   const [submitErrors, setSubmitErrors] = useState<Record<string, string>>({});
@@ -31,10 +32,11 @@ export default function Form(props: {
   const onSubmit = async (data: any) => {
     setLoading(true);
     try {
-      await props.onSubmit(data);
-
       setSubmitErrors({});
       setErrorMessage('');
+
+      await props.onSubmit(data);
+      reset();
     } catch (err: any) {
       setSubmitErrors(err);
       setErrorMessage(err['message']);

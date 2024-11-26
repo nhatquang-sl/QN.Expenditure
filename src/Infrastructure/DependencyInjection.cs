@@ -33,6 +33,7 @@ namespace Infrastructure
                 var connectionString = configuration.GetConnectionString("DefaultConnection");
                 services.AddDbContext<ApplicationDbContext>((options) =>
                 {
+                    options.LogTo(Console.WriteLine);
                     options.UseSqlServer(connectionString);
                 });
             }

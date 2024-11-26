@@ -22,7 +22,7 @@ namespace Cex.Application.Config.Queries.GetUserToken
 
             var token = JsonSerializer.Deserialize<UserToken>(config.Value);
 
-            return (token.AccessToken, token.RefreshToken);
+            return (token?.AccessToken ?? "", token?.RefreshToken ?? "");
         }
     }
 }

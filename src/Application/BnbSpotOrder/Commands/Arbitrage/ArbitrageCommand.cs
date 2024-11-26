@@ -1,5 +1,5 @@
 ﻿using Application.Common.Logging;
-using Lib.ExternalServices.Bnd;
+using Lib.ExternalServices.Bnb;
 using Lib.ExternalServices.Telegram;
 using Lib.ExternalServices.Telegram.Models;
 using MediatR;
@@ -9,12 +9,12 @@ namespace Application.BnbSpotOrder.Commands.Arbitrage
 {
     public class ArbitrageCommand : IRequest { }
 
-    public class ArbitrageCommandHandler(IBndService bndService, ITelegramService telegramService
+    public class ArbitrageCommandHandler(IBnbService bndService, ITelegramService telegramService
         , IOptions<TelegramServiceConfig> telegramConfig, ILogTrace logTrace)
         : IRequestHandler<ArbitrageCommand>
     {
         private readonly ILogTrace _logTrace = logTrace;
-        private readonly IBndService _bndService = bndService;
+        private readonly IBnbService _bndService = bndService;
         private readonly ITelegramService _telegramService = telegramService;
         private readonly TelegramServiceConfig _telegramConfig = telegramConfig.Value;
         private const decimal POW6 = 1000000;

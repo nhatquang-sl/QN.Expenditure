@@ -8,6 +8,8 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<SpotGrid> builder)
         {
+            builder.HasKey(t => t.Id);
+
             builder.Property(t => t.UserId)
                 .HasMaxLength(36)
                 .IsRequired();

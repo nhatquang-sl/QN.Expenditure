@@ -19,7 +19,7 @@ const GRID_MODES = [
   new InputOption(SpotGridMode.ARITHMETIC, 'arithmetic'),
   new InputOption(SpotGridMode.GEOMETRIC, 'geometric'),
 ];
-const SYMBOLS = [new InputOption('BTCUSDT')];
+const SYMBOLS = [new InputOption('BTCUSDT'), new InputOption('CYBERUSDT')];
 export default function BnbSpotGrids() {
   const onSubmit = async (data: GridOrderData) => {
     const res = await bnbSpotGridClient.create(new CreateSpotGridCommand(data));

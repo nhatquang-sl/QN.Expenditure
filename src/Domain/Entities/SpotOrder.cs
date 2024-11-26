@@ -24,5 +24,6 @@
         public decimal OrigQuoteOrderQty { get; set; }
         public string SelfTradePreventionMode { get; set; }
         public SpotOrderSyncSetting SyncSetting { get; set; }
+        public SpotGrid SpotGrid { get; set; }
     }
 }

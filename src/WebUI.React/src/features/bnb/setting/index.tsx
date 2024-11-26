@@ -53,7 +53,7 @@ export default function BnbSetting() {
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
-    var setting = await bnbSettingClient.getSetting();
+    const setting = await bnbSettingClient.getSetting();
 
     setValue('apiKey', setting.apiKey);
     setValue('secretKey', setting.secretKey);

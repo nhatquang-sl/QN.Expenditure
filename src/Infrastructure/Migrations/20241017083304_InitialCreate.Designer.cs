@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240222094652_InitialCreate")]
+    [Migration("20241017083304_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.2")
+                .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -43,6 +43,73 @@ namespace Infrastructure.Migrations
                     b.HasKey("UserId");
 
                     b.ToTable("BnbSettings");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SpotGrid", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GridMode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Investment")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<decimal>("LowerPrice")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<int>("NumberOfGrids")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("StopLoss")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal>("TakeProfit")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<decimal>("TriggerPrice")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("UpperPrice")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SpotGrids");
                 });
 
             modelBuilder.Entity("Domain.Entities.SpotOrder", b =>
@@ -95,6 +162,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<long?>("SpotGridId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -134,6 +204,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("OrderId");
+
+                    b.HasIndex("SpotGridId");
 
                     b.HasIndex("Symbol", "UserId");
 
@@ -406,11 +478,17 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.SpotOrder", b =>
                 {
+                    b.HasOne("Domain.Entities.SpotGrid", "SpotGrid")
+                        .WithMany("SpotOrders")
+                        .HasForeignKey("SpotGridId");
+
                     b.HasOne("Domain.Entities.SpotOrderSyncSetting", "SyncSetting")
                         .WithMany("SpotOrders")
                         .HasForeignKey("Symbol", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("SpotGrid");
 
                     b.Navigation("SyncSetting");
                 });
@@ -464,6 +542,11 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.SpotGrid", b =>
+                {
+                    b.Navigation("SpotOrders");
                 });
 
             modelBuilder.Entity("Domain.Entities.SpotOrderSyncSetting", b =>

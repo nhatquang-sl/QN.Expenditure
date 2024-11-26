@@ -6,7 +6,7 @@ using Application.BnbSpotOrder.DTOs;
 using Application.BnbSpotOrder.Queries.GetSpotOrders;
 using Application.BnbSpotOrder.Queries.GetSpotOrdersBySymbol;
 using Application.BnbSpotOrder.Queries.GetSyncSettings;
-using Lib.ExternalServices.Bnd.Models;
+using Lib.ExternalServices.Bnb.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

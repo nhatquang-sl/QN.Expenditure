@@ -17,12 +17,15 @@
         public DateTime CreatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public ICollection<SpotOrder> SpotOrders { get; private set; }
     }
 
     public enum SpotGridStatus
     {
         NEW,
         RUNNING,
+        TAKE_PROFIT,
+        STOP_LOSS,
         PAUSED
     }
 

@@ -39,6 +39,32 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "SpotGrids",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(36)", maxLength: 36, nullable: false),
+                    Symbol = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    LowerPrice = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    UpperPrice = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    TriggerPrice = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    NumberOfGrids = table.Column<int>(type: "int", nullable: false),
+                    GridMode = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Investment = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    TakeProfit = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    StopLoss = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SpotGrids", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SpotOrderSyncSettings",
                 columns: table => new
                 {
@@ -141,11 +167,17 @@ namespace Infrastructure.Migrations
                     IsWorking = table.Column<bool>(type: "bit", nullable: false),
                     WorkingTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     OrigQuoteOrderQty = table.Column<decimal>(type: "decimal(18,8)", precision: 18, scale: 8, nullable: false),
-                    SelfTradePreventionMode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
+                    SelfTradePreventionMode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    SpotGridId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SpotOrders", x => x.OrderId);
+                    table.ForeignKey(
+                        name: "FK_SpotOrders_SpotGrids_SpotGridId",
+                        column: x => x.SpotGridId,
+                        principalTable: "SpotGrids",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_SpotOrders_SpotOrderSyncSettings_Symbol_UserId",
                         columns: x => new { x.Symbol, x.UserId },
@@ -252,6 +284,11 @@ namespace Infrastructure.Migrations
                 filter: "[NormalizedName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SpotOrders_SpotGridId",
+                table: "SpotOrders",
+                column: "SpotGridId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SpotOrders_Symbol_UserId",
                 table: "SpotOrders",
                 columns: new[] { "Symbol", "UserId" });
@@ -310,6 +347,9 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserTokens");
+
+            migrationBuilder.DropTable(
+                name: "SpotGrids");
 
             migrationBuilder.DropTable(
                 name: "SpotOrderSyncSettings");

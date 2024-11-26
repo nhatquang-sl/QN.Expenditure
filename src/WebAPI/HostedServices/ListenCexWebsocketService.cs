@@ -96,6 +96,7 @@ namespace WebAPI.HostedServices
                         }
                         catch (Exception ex)
                         {
+                            logger.Error("Error ListenCexWebsocketService", ex);
                         }
                     });
 

@@ -1,5 +1,6 @@
 ﻿using Application.BnbSpotGrid.Commands.CreateSpotGrid;
 using Application.BnbSpotGrid.DTOs;
+using Application.BnbSpotGrid.Queries.GetSpotGrids;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,8 +14,13 @@ namespace WebAPI.Controllers
 
         [HttpPost]
         [ProducesResponseType(typeof(CreateSpotGridBadRequest), StatusCodes.Status400BadRequest)]
-        //[ProducesResponseType(typeof(SpotGridDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(SpotGridDto), StatusCodes.Status200OK)]
         public Task<SpotGridDto> Create(CreateSpotGridCommand command)
             => _sender.Send(command);
+
+        [HttpGet]
+        [ProducesResponseType(typeof(List<SpotGridDto>), StatusCodes.Status200OK)]
+        public Task<List<SpotGridDto>> Get()
+            => _sender.Send(new GetSpotGridsQuery());
     }
 }

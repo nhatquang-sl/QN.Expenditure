@@ -20,7 +20,7 @@ export class AuthClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
@@ -622,7 +622,7 @@ export class BnbSettingClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
@@ -736,7 +736,7 @@ export class BnbSpotClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
@@ -1148,11 +1148,11 @@ export class BnbSpotGridClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
-    create(command: CreateSpotGridCommand, cancelToken?: CancelToken): Promise<void> {
+    create(command: CreateSpotGridCommand, cancelToken?: CancelToken): Promise<SpotGridDto> {
         let url_ = this.baseUrl + "/api/BnbSpotGrid";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1164,6 +1164,7 @@ export class BnbSpotGridClient {
             url: url_,
             headers: {
                 "Content-Type": "application/json",
+                "Accept": "application/json"
             },
             cancelToken
         };
@@ -1179,7 +1180,7 @@ export class BnbSpotGridClient {
         });
     }
 
-    protected processCreate(response: AxiosResponse): Promise<void> {
+    protected processCreate(response: AxiosResponse): Promise<SpotGridDto> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1196,11 +1197,73 @@ export class BnbSpotGridClient {
             result400 = CreateSpotGridBadRequest.fromJS(resultData400);
             return throwException("A server side error occurred.", status, _responseText, _headers, result400);
 
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotGridDto.fromJS(resultData200);
+            return Promise.resolve<SpotGridDto>(result200);
+
         } else if (status !== 200 && status !== 204) {
             const _responseText = response.data;
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<SpotGridDto>(null as any);
+    }
+
+    get( cancelToken?: CancelToken): Promise<SpotGridDto[]> {
+        let url_ = this.baseUrl + "/api/BnbSpotGrid";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGet(_response);
+        });
+    }
+
+    protected processGet(response: AxiosResponse): Promise<SpotGridDto[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(SpotGridDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<SpotGridDto[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto[]>(null as any);
     }
 }
 
@@ -1213,7 +1276,7 @@ export class ValuesClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
@@ -1280,7 +1343,7 @@ export class WeatherForecastClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
@@ -2249,6 +2312,107 @@ export interface ICreateSpotGridBadRequest {
     takeProfit: string;
 }
 
+export class SpotGridDto implements ISpotGridDto {
+    id!: number;
+    userId!: string;
+    symbol!: string;
+    lowerPrice!: number;
+    upperPrice!: number;
+    triggerPrice!: number;
+    numberOfGrids!: number;
+    gridMode!: SpotGridMode;
+    investment!: number;
+    takeProfit!: number;
+    stopLoss!: number;
+    status!: SpotGridStatus;
+    createdAt!: Date;
+    updatedAt!: Date;
+
+    constructor(data?: ISpotGridDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.userId = _data["userId"];
+            this.symbol = _data["symbol"];
+            this.lowerPrice = _data["lowerPrice"];
+            this.upperPrice = _data["upperPrice"];
+            this.triggerPrice = _data["triggerPrice"];
+            this.numberOfGrids = _data["numberOfGrids"];
+            this.gridMode = _data["gridMode"];
+            this.investment = _data["investment"];
+            this.takeProfit = _data["takeProfit"];
+            this.stopLoss = _data["stopLoss"];
+            this.status = _data["status"];
+            this.createdAt = _data["createdAt"] ? new Date(_data["createdAt"].toString()) : <any>undefined;
+            this.updatedAt = _data["updatedAt"] ? new Date(_data["updatedAt"].toString()) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): SpotGridDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SpotGridDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["userId"] = this.userId;
+        data["symbol"] = this.symbol;
+        data["lowerPrice"] = this.lowerPrice;
+        data["upperPrice"] = this.upperPrice;
+        data["triggerPrice"] = this.triggerPrice;
+        data["numberOfGrids"] = this.numberOfGrids;
+        data["gridMode"] = this.gridMode;
+        data["investment"] = this.investment;
+        data["takeProfit"] = this.takeProfit;
+        data["stopLoss"] = this.stopLoss;
+        data["status"] = this.status;
+        data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : <any>undefined;
+        data["updatedAt"] = this.updatedAt ? this.updatedAt.toISOString() : <any>undefined;
+        return data;
+    }
+}
+
+export interface ISpotGridDto {
+    id: number;
+    userId: string;
+    symbol: string;
+    lowerPrice: number;
+    upperPrice: number;
+    triggerPrice: number;
+    numberOfGrids: number;
+    gridMode: SpotGridMode;
+    investment: number;
+    takeProfit: number;
+    stopLoss: number;
+    status: SpotGridStatus;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export enum SpotGridMode {
+    ARITHMETIC = 0,
+    GEOMETRIC = 1,
+}
+
+export enum SpotGridStatus {
+    NEW = 0,
+    RUNNING = 1,
+    TAKE_PROFIT = 2,
+    STOP_LOSS = 3,
+    PAUSED = 4,
+}
+
 export class CreateSpotGridCommand implements ICreateSpotGridCommand {
     symbol!: string;
     lowerPrice!: number;
@@ -2315,11 +2479,6 @@ export interface ICreateSpotGridCommand {
     investment: number;
     takeProfit: number;
     stopLoss: number;
-}
-
-export enum SpotGridMode {
-    ARITHMETIC = 0,
-    GEOMETRIC = 1,
 }
 
 export class WeatherForecast implements IWeatherForecast {

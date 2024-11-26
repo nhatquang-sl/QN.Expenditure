@@ -22,8 +22,6 @@ namespace Application.BnbSpotGrid.Queries.GetSpotGrids
                 .Where(x => x.UserId == _currentUser.Id && x.DeletedAt == null)
                 .ToListAsync(cancellationToken);
 
-
-
             return _mapper.Map<List<SpotGridDto>>(entities) ?? [];
         }
     }

@@ -25,7 +25,7 @@ const BnbSpotOrdersSyncSettings = () => {
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
-    var syncSettings = await bnbSpotClient.getSyncSettings();
+    const syncSettings = await bnbSpotClient.getSyncSettings();
     setSyncSettings(syncSettings);
     console.log(syncSettings);
     setLoading(false);

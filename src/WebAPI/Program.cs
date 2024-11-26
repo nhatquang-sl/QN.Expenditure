@@ -14,7 +14,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
         policy =>
         {
-            policy.WithOrigins("http://85.190.240.120", "http://quangnn.somee.com", "https://quangnn.somee.com")
+            policy.WithOrigins("http://85.190.240.120", "http://quangnn.somee.com", "https://quangnn.somee.com", "http://localhost:5174")
                     .AllowAnyHeader()
                     .AllowAnyMethod();
         });
@@ -39,8 +39,8 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
-//builder.Services.AddHostedService<SyncSpotOrdersService>();
-builder.Services.AddHostedService<ArbitrageService>();
+builder.Services.AddHostedService<BnbSpotGridService>();
+//builder.Services.AddHostedService<ArbitrageService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 

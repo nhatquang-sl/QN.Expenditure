@@ -63,7 +63,7 @@ namespace Infrastructure.Identity
 
         public async Task<string> GenerateEmailConfirmCode(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId) ?? throw new NotFoundException($"UserId [{userId}] not found");
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
             return code;

@@ -17,7 +17,7 @@ namespace Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.2")
+                .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -159,6 +159,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<long?>("SpotGridId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -198,6 +201,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("OrderId");
+
+                    b.HasIndex("SpotGridId");
 
                     b.HasIndex("Symbol", "UserId");
 
@@ -470,11 +475,17 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.SpotOrder", b =>
                 {
+                    b.HasOne("Domain.Entities.SpotGrid", "SpotGrid")
+                        .WithMany("SpotOrders")
+                        .HasForeignKey("SpotGridId");
+
                     b.HasOne("Domain.Entities.SpotOrderSyncSetting", "SyncSetting")
                         .WithMany("SpotOrders")
                         .HasForeignKey("Symbol", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("SpotGrid");
 
                     b.Navigation("SyncSetting");
                 });
@@ -528,6 +539,11 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.SpotGrid", b =>
+                {
+                    b.Navigation("SpotOrders");
                 });
 
             modelBuilder.Entity("Domain.Entities.SpotOrderSyncSetting", b =>

@@ -4,17 +4,17 @@ using Application.Common.Extensions;
 using Application.Common.Logging;
 using AutoMapper;
 using Domain.Entities;
-using Lib.ExternalServices.Bnd;
-using Lib.ExternalServices.Bnd.Models;
+using Lib.ExternalServices.Bnb;
+using Lib.ExternalServices.Bnb.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.BnbSpotOrder.Commands.SyncSpotOrders
 {
-    public class SyncSpotOrders(IMapper mapper, ILogTrace logTrace, IBndService bndService, IApplicationDbContext applicationDbContext)
+    public class SyncSpotOrders(IMapper mapper, ILogTrace logTrace, IBnbService bndService, IApplicationDbContext applicationDbContext)
     {
         protected readonly IMapper _mapper = mapper;
         protected readonly ILogTrace _logTrace = logTrace;
-        protected readonly IBndService _bndService = bndService;
+        protected readonly IBnbService _bndService = bndService;
         protected readonly IApplicationDbContext _applicationDbContext = applicationDbContext;
 
         protected async Task<SpotOrderSyncSettingDto> Sync(Domain.Entities.BnbSetting setting

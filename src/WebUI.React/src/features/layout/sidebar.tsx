@@ -15,7 +15,7 @@ import { logout } from 'features/auth/slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from 'store';
-import { mainListItems, secondaryListItems } from './listItems';
+import { BnbMenuItems, mainListItems } from './listItems';
 import { drawerWidth, toggleDrawer } from './slice';
 
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
@@ -69,7 +69,8 @@ function Sidebar() {
       <List component="nav" sx={{ flex: 1 }}>
         {mainListItems}
         <Divider sx={{ my: 1 }} />
-        {secondaryListItems}
+        {/* {secondaryListItems} */}
+        <BnbMenuItems />
         <Divider sx={{ my: 1 }} />
         <ListItemButton
           sx={{ position: 'absolute', bottom: 0, width: '100%' }}

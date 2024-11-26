@@ -3,7 +3,7 @@ using Application.Common.Abstractions;
 using Application.Common.Exceptions;
 using Application.Common.Logging;
 using AutoMapper;
-using Lib.ExternalServices.Bnd;
+using Lib.ExternalServices.Bnb;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,7 +12,7 @@ namespace Application.BnbSpotOrder.Commands.SyncSpotOrders
     public record SyncSpotOrdersBySymbolCommand(string Symbol) : IRequest<SpotOrderSyncSettingDto> { }
 
     public class SyncSpotOrdersBySymbolCommandHandler(IMapper mapper, ILogTrace logTrace
-            , ICurrentUser currentUser, IApplicationDbContext applicationDbContext, IBndService bndService) : SyncSpotOrders(mapper, logTrace, bndService, applicationDbContext)
+            , ICurrentUser currentUser, IApplicationDbContext applicationDbContext, IBnbService bndService) : SyncSpotOrders(mapper, logTrace, bndService, applicationDbContext)
         , IRequestHandler<SyncSpotOrdersBySymbolCommand, SpotOrderSyncSettingDto>
     {
         private readonly ICurrentUser _currentUser = currentUser;

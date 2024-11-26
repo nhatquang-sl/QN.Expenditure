@@ -1,6 +1,6 @@
 ﻿using Application.Common.Abstractions;
 using AutoMapper;
-using Lib.ExternalServices.Bnd.Models;
+using Lib.ExternalServices.Bnb.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 

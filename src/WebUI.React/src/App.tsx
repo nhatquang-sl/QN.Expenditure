@@ -9,7 +9,7 @@ import LoginHistory from 'features/auth/login-history';
 import RegisterConfirm from 'features/auth/register-confirm';
 import RequestActivateEmail from 'features/auth/request-activate-email';
 import BnbSetting from 'features/bnb/setting';
-import BnbSpotGrids from 'features/bnb/spot-grids';
+import BnbSpotGrids from 'features/bnb/spot-grids/list';
 import BnbSpotOrders from 'features/bnb/spot-orders';
 import BnbSpotOrdersSyncSettings from 'features/bnb/sync-settings';
 import Landing from 'features/landing';

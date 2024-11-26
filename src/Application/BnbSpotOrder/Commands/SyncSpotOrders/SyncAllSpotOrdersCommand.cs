@@ -1,7 +1,7 @@
 ﻿using Application.Common.Abstractions;
 using Application.Common.Logging;
 using AutoMapper;
-using Lib.ExternalServices.Bnd;
+using Lib.ExternalServices.Bnb;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Refit;
@@ -11,7 +11,7 @@ namespace Application.BnbSpotOrder.Commands.SyncSpotOrders
     public class SyncAllSpotOrdersCommand : IRequest { }
 
     public class SyncSpotOrdersCommandHandler(IMapper mapper, ILogTrace logTrace
-            , IApplicationDbContext applicationDbContext, IBndService bndService)
+            , IApplicationDbContext applicationDbContext, IBnbService bndService)
         : SyncSpotOrders(mapper, logTrace, bndService, applicationDbContext)
         , IRequestHandler<SyncAllSpotOrdersCommand>
     {

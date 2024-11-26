@@ -29,7 +29,7 @@ export const store = configureStore({
 export type RootState = ReturnType<typeof store.getState>;
 
 // Create instance
-let instance = axios.create();
+const instance = axios.create();
 
 // Set the AUTH token for any request
 instance.interceptors.request.use(

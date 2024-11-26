@@ -1,9 +1,10 @@
-﻿using Lib.ExternalServices.Bnd.Models;
+﻿using Lib.ExternalServices.Bnb.Models;
 using Refit;
+using System.Text.Json;
 
-namespace Lib.ExternalServices.Bnd
+namespace Lib.ExternalServices.Bnb
 {
-    public interface IBndService
+    public interface IBnbService
     {
         [Get("/api/v3/time")]
         Task<ServerTimeResponse> GetServerTime();
@@ -13,14 +14,33 @@ namespace Lib.ExternalServices.Bnd
         Task<List<SpotOrderRaw>> AllOrders([Header("X-MBX-APIKEY")] string authorization, AllOrdersRequest request);
 
 
+        //https://binance-docs.github.io/apidocs/spot/en/#symbol-price-ticker
         [Get("/api/v3/ticker/price")]
-        Task<List<TickerPriceRaw>> GetTickerPrice(string symbols);
+        internal Task<List<TickerPriceRaw>> GetTickerPrice(string symbols);
+
+
+        public async Task<List<TickerPrice>> GetTickerPrice(string[] symbols)
+        {
+            var data = await GetTickerPrice(JsonSerializer.Serialize(symbols));
+
+            return data.Select(x => new TickerPrice
+            {
+                Symbol = x.Symbol,
+                Price = decimal.Parse(x.Price)
+            }).ToList();
+        }
 
         [Get("/api/v3/ticker/bookTicker")]
         Task<List<OrderBookTickerRaw>> GetOrderBookTicker(string symbols);
     }
 
-    public class TickerPriceRaw
+    public class TickerPrice
+    {
+        public string Symbol { get; set; }
+        public decimal Price { get; set; }
+    }
+
+    internal class TickerPriceRaw
     {
         public string Symbol { get; set; }
         public string Price { get; set; }

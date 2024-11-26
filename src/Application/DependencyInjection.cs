@@ -1,7 +1,7 @@
 ﻿using Application.Common.Behaviors;
 using FluentValidation;
 using Lib.ExternalServices;
-using Lib.ExternalServices.Bnd;
+using Lib.ExternalServices.Bnb;
 using MediatR;
 using MediatR.NotificationPublishers;
 using Microsoft.Extensions.Configuration;
@@ -32,7 +32,7 @@ namespace Application
 
 
             services
-                .AddRefitClient<IBndService>()
+                .AddRefitClient<IBnbService>()
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.binance.com"));
 
             return services;
