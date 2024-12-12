@@ -1,5 +1,5 @@
-﻿using Application.BnbSpotOrder.Commands.Arbitrage;
-using Infrastructure;
+﻿using Auth.Infrastructure;
+using Cex.Application.BnbSpotOrder.Commands.Arbitrage;
 using MediatR;
 using Serilog;
 
@@ -37,10 +37,10 @@ namespace WebAPI.HostedServices
                             exception = exception.InnerException;
                         } while (exception != null);
                     }
+
                     await Task.Delay(60 * 1000);
                 }
             }, stoppingToken);
         }
-
     }
 }

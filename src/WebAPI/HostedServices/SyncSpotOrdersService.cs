@@ -1,5 +1,5 @@
-﻿using Application.BnbSpotOrder.Commands.SyncSpotOrders;
-using Infrastructure;
+﻿using Auth.Infrastructure;
+using Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders;
 using MediatR;
 using Serilog;
 
@@ -34,13 +34,12 @@ namespace WebAPI.HostedServices
                     }
                     catch (Exception ex)
                     {
-                        logger.Information("Exception {serviceName} - {message}", this.GetType().Name, ex.Message);
+                        logger.Information("Exception {serviceName} - {message}", GetType().Name, ex.Message);
                     }
 
                     await Task.Delay(5 * 60 * 1000);
                 }
             });
         }
-
     }
 }

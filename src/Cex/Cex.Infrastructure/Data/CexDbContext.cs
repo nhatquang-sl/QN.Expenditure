@@ -1,5 +1,6 @@
 ﻿using Cex.Application.Common.Abstractions;
 using Cex.Domain;
+using Cex.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Cex.Infrastructure.Data
@@ -8,23 +9,25 @@ namespace Cex.Infrastructure.Data
     {
         public DbSet<Config> Configs => Set<Config>();
         public DbSet<Candle> Candles => Set<Candle>();
+        public DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings { get; }
+        public DbSet<SpotOrder> SpotOrders { get; }
+        public DbSet<BnbSetting> BnbSettings { get; }
+        public DbSet<SpotGrid> SpotGrids { get; }
 
-        protected override void OnModelCreating(ModelBuilder builder)
-        {
-            CustomizeIdentityTableNames(builder);
-        }
 
         public new Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         {
             return base.SaveChangesAsync(cancellationToken);
         }
 
-        static void CustomizeIdentityTableNames(ModelBuilder builder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<Config>(entity =>
-            {
-                entity.HasKey(c => c.Key);
-            });
+            CustomizeIdentityTableNames(builder);
+        }
+
+        private static void CustomizeIdentityTableNames(ModelBuilder builder)
+        {
+            builder.Entity<Config>(entity => { entity.HasKey(c => c.Key); });
 
             builder.Entity<Candle>(entity =>
             {
@@ -32,28 +35,28 @@ namespace Cex.Infrastructure.Data
                 entity.Property(t => t.Session).ValueGeneratedNever();
 
                 entity.Property(t => t.OpenPrice)
-                .HasPrecision(8, 3)
-                .IsRequired();
+                    .HasPrecision(8, 3)
+                    .IsRequired();
 
                 entity.Property(t => t.ClosePrice)
-                .HasPrecision(8, 3)
-                .IsRequired();
+                    .HasPrecision(8, 3)
+                    .IsRequired();
 
                 entity.Property(t => t.HighPrice)
-                .HasPrecision(8, 3)
-                .IsRequired();
+                    .HasPrecision(8, 3)
+                    .IsRequired();
 
                 entity.Property(t => t.LowPrice)
-                .HasPrecision(8, 3)
-                .IsRequired();
+                    .HasPrecision(8, 3)
+                    .IsRequired();
 
                 entity.Property(t => t.BaseVolume)
-                .HasPrecision(8, 3)
-                .IsRequired();
+                    .HasPrecision(8, 3)
+                    .IsRequired();
 
                 entity.Property(t => t.QuoteVolume)
-                .HasPrecision(13, 3)
-                .IsRequired();
+                    .HasPrecision(13, 3)
+                    .IsRequired();
             });
         }
     }

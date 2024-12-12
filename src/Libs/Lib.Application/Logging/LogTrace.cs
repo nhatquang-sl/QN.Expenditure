@@ -1,16 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
-using Serilog.Events;
-using System.Dynamic;
+﻿using System.Dynamic;
 using System.Reflection;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace Lib.Application.Logging
 {
-    public class LogTrace(Serilog.Core.Logger logger) : ILogTrace
+    public class LogTrace(Logger logger) : ILogTrace
     {
-        private readonly Serilog.Core.Logger _logger = logger;
-        private readonly ExpandoObject _properties = new();
+        private static readonly string[] OurNamespaces = ["Domain", "Application", "Infrastructure"];
         private readonly List<LogEntry> _entries = [];
+        private readonly ExpandoObject _properties = new();
 
         public void AddProperty(string key, object value)
         {
@@ -23,16 +24,24 @@ namespace Lib.Application.Logging
         }
 
         public void LogDebug(string message, object? data = null, MethodBase? methodBase = null)
-            => _entries.Add(new LogEntry(LogLevel.Debug, message, data, methodBase));
+        {
+            _entries.Add(new LogEntry(LogLevel.Debug, message, data, methodBase));
+        }
 
         public void LogInformation(string message, object? data = null, MethodBase? methodBase = null)
-            => _entries.Add(new LogEntry(LogLevel.Information, message, data, methodBase));
+        {
+            _entries.Add(new LogEntry(LogLevel.Information, message, data, methodBase));
+        }
 
         public void LogWarning(string message, object? data = null, MethodBase? methodBase = null)
-            => _entries.Add(new LogEntry(LogLevel.Warning, message, data, methodBase));
+        {
+            _entries.Add(new LogEntry(LogLevel.Warning, message, data, methodBase));
+        }
 
         public void LogError(string message, object? data = null, MethodBase? methodBase = null)
-            => _entries.Add(new LogEntry(LogLevel.Error, message, data, methodBase));
+        {
+            _entries.Add(new LogEntry(LogLevel.Error, message, data, methodBase));
+        }
 
         public void LogError(string message, Exception ex, MethodBase? methodBase = null)
         {
@@ -48,11 +57,16 @@ namespace Lib.Application.Logging
         }
 
         public void LogCritical(string message, object? data = null, MethodBase? methodBase = null)
-            => _entries.Add(new LogEntry(LogLevel.Critical, message, data, methodBase));
+        {
+            _entries.Add(new LogEntry(LogLevel.Critical, message, data, methodBase));
+        }
 
         public void Flush()
         {
-            if (!_entries.Any()) return;
+            if (_entries.Count == 0)
+            {
+                return;
+            }
 
             var logLevel = _entries.Max(x => x.Level);
             var entries = _entries.Select(x =>
@@ -77,39 +91,44 @@ namespace Lib.Application.Logging
             _properties.TryAdd("Entries", entries);
             _properties.TryAdd("SourceContext", GetType().FullName);
 
-            string msgTemplate = string.Join(" ", _properties.Select(x => "{@" + x.Key + "}"));
+            var msgTemplate = string.Join(" ", _properties.Select(x => "{@" + x.Key + "}"));
             var args = _properties.Select(x => x.Value).ToArray();
             //_logger.Log(logLevel, msgTemplate, JsonSerializer.Serialize(args));
 
-            _logger.Write(Convert(logLevel), msgTemplate, args);
+            logger.Write(Convert(logLevel), msgTemplate, args);
         }
 
-        string[] ourNamespaces = ["Domain", "Application", "Infrastructure"];
-        object? HideSensitiveData(object? data)
+        private static object? HideSensitiveData(object? data)
         {
             try
             {
-                var dataHasOurNamspace = data != null && ourNamespaces.Contains(data.GetType().FullName);
-                if (data == null || data.GetType().Namespace == null || !dataHasOurNamspace) return data;
-                foreach (PropertyInfo prop in data.GetType().GetProperties())
+                var dataHasOurNamespace = data != null && OurNamespaces.Contains(data.GetType().FullName);
+                if (data?.GetType().Namespace == null || !dataHasOurNamespace)
+                {
+                    return data;
+                }
+
+                foreach (var prop in data.GetType().GetProperties())
                 {
                     prop.SetValue(data, HideSensitiveData(prop.GetValue(data)));
                     if (prop.Name.Equals("password", StringComparison.OrdinalIgnoreCase)
-                    || prop.Name.Equals("SecretKey", StringComparison.OrdinalIgnoreCase)
-                    || prop.Name.Equals("apikey", StringComparison.OrdinalIgnoreCase)
-                    || prop.Name.Equals("AccessToken", StringComparison.OrdinalIgnoreCase)
-                    || prop.Name.Equals("RefreshToken", StringComparison.OrdinalIgnoreCase))
+                        || prop.Name.Equals("SecretKey", StringComparison.OrdinalIgnoreCase)
+                        || prop.Name.Equals("apikey", StringComparison.OrdinalIgnoreCase)
+                        || prop.Name.Equals("AccessToken", StringComparison.OrdinalIgnoreCase)
+                        || prop.Name.Equals("RefreshToken", StringComparison.OrdinalIgnoreCase))
                     {
                         prop.SetValue(data, "*");
                     }
                 }
             }
-            catch (Exception) { }
+            catch (Exception)
+            {
+            }
 
             return data;
         }
 
-        LogEventLevel Convert(LogLevel level)
+        private static LogEventLevel Convert(LogLevel level)
         {
             return level switch
             {
@@ -118,7 +137,7 @@ namespace Lib.Application.Logging
                 LogLevel.Error => LogEventLevel.Error,
                 LogLevel.Warning => LogEventLevel.Warning,
                 LogLevel.Critical => LogEventLevel.Fatal,
-                _ => LogEventLevel.Verbose,
+                _ => LogEventLevel.Verbose
             };
         }
     }

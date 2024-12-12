@@ -1,11 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Cex.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Cex.Application.Common.Abstractions
 {
     public interface ICexDbContext
     {
-        DbSet<Domain.Config> Configs { get; }
-        DbSet<Domain.Candle> Candles { get; }
+        DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings { get; }
+        DbSet<SpotOrder> SpotOrders { get; }
+        DbSet<Domain.Entities.BnbSetting> BnbSettings { get; }
+        DbSet<SpotGrid> SpotGrids { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

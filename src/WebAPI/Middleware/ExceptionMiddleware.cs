@@ -1,6 +1,6 @@
-﻿using Application.Common.Exceptions;
-using Application.Common.Logging;
-using System.Net;
+﻿using System.Net;
+using Lib.Application.Exceptions;
+using Lib.Application.Logging;
 
 namespace WebAPI.Middleware
 {
@@ -32,6 +32,10 @@ namespace WebAPI.Middleware
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 }
+                else if (type == typeof(UnprocessableEntityException))
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.UnprocessableEntity;
+                }
                 else if (type == typeof(ConflictException))
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.Conflict;
@@ -41,7 +45,9 @@ namespace WebAPI.Middleware
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 }
 
-                await context.Response.WriteAsync(context.Response.StatusCode != (int)HttpStatusCode.InternalServerError ? ex.Message : "Internal Server Error");
+                await context.Response.WriteAsync(context.Response.StatusCode != (int)HttpStatusCode.InternalServerError
+                    ? ex.Message
+                    : "Internal Server Error");
             }
         }
     }

@@ -1,26 +1,54 @@
-﻿
-using Application.BnbSpotGrid.Commands.TradeSpotGrid;
-using Infrastructure;
+﻿using Auth.Infrastructure;
+using Lib.ExternalServices.KuCoin;
 using MediatR;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace WebAPI.HostedServices
 {
-    public class BnbSpotGridService(IConfiguration configuration) : BackgroundService
+    public class BnbSpotGridService(
+        IConfiguration configuration,
+        IKuCoinService kuCoinService,
+        IOptions<KuCoinConfig> kuCoinConfig) : BackgroundService
     {
-        private readonly IConfiguration _configuration = configuration;
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var services = new ServiceCollection();
-            services.AddSingleton(_configuration);
-            services.AddInfrastructureServices(_configuration);
-            services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger());
+            services.AddSingleton(configuration);
+            services.AddInfrastructureServices(configuration);
+            services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger());
             var serviceProvider = services.BuildServiceProvider();
 
             await Task.Factory.StartNew(async () =>
             {
-                var logger = new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger();
+                try
+                {
+                    var apiKey = kuCoinConfig.Value.ApiKey;
+                    var apiSecret = kuCoinConfig.Value.ApiSecret;
+                    var apiPassphrase = kuCoinConfig.Value.ApiPassphrase;
+
+                    var order = new OrderRequest
+                    {
+                        ClientOid = Guid.NewGuid().ToString(),
+                        Side = "buy",
+                        Symbol = "BTC-USDT",
+                        Type = "limit",
+                        Price = "3000",
+                        Size = "0.002"
+                    };
+
+                    var placeOrderRes = await kuCoinService.PlaceOrder(
+                        order,
+                        apiKey,
+                        apiSecret,
+                        apiPassphrase
+                    );
+                }
+                catch (Exception ex)
+                {
+                }
+
+                var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
                 logger.Information("Start {serviceName} started at {startAt}", GetType().Name, DateTime.UtcNow);
                 while (true)
                 {
@@ -29,11 +57,11 @@ namespace WebAPI.HostedServices
                         using var scope = serviceProvider.CreateScope();
                         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                        await mediator.Send(new TradeSpotGridCommand());
+                        // await mediator.Send(new TradeSpotGridCommand());
                     }
                     catch (Exception ex)
                     {
-                        logger.Information("Exception {serviceName} - {message}", this.GetType().Name, ex.Message);
+                        logger.Information("Exception {serviceName} - {message}", GetType().Name, ex.Message);
                     }
 
                     await Task.Delay(5 * 60 * 1000);

@@ -1,6 +1,6 @@
-﻿using Application.BnbSetting.Commands.UpdateBnbSetting;
-using Application.BnbSetting.DTOs;
-using Application.BnbSetting.Queries.GetBnbSettingByUserId;
+﻿using Cex.Application.BnbSetting.Commands.UpdateBnbSetting;
+using Cex.Application.BnbSetting.DTOs;
+using Cex.Application.BnbSetting.Queries.GetBnbSettingByUserId;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,10 +14,14 @@ namespace WebAPI.Controllers
 
         [HttpGet]
         public Task<BnbSettingDto> GetSetting()
-            => _sender.Send(new GetBnbSettingByUserIdQuery());
+        {
+            return _sender.Send(new GetBnbSettingByUserIdQuery());
+        }
 
         [HttpPut]
         public Task<BnbSettingDto> UpdateSetting([FromBody] UpdateBnbSettingCommand request)
-            => _sender.Send(request);
+        {
+            return _sender.Send(request);
+        }
     }
 }
