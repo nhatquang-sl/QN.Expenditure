@@ -9,6 +9,8 @@ namespace Lib.Application.Logging
         void Log(LogEntry entry);
 
         void LogDebug(string message, object? data = null, MethodBase? methodBase = null);
+        
+        void LogDebug(object data, MethodBase? methodBase = null);
 
         void LogInformation(string message, object? data = null, MethodBase? methodBase = null);
 

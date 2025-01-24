@@ -13,31 +13,16 @@ import { useQuery } from '@tanstack/react-query';
 import { BackdropLoading } from 'components/backdrop-loading';
 
 import { bnbSpotGridClient } from 'store';
-export interface Column {
-  id: 'symbol' | 'lastSyncAt' | 'action';
-  label: string;
-  minWidth?: number;
-  align?: 'right';
-  format?: (value: string) => string | JSX.Element;
-}
-const columns: readonly Column[] = [
-  { id: 'symbol', label: 'Symbol' },
-  {
-    id: 'lastSyncAt',
-    label: 'Last Sync At',
-    align: 'right',
-  },
-  { id: 'action', label: 'Action', minWidth: 150, align: 'right' },
-];
+import SpotGridItem from './item';
+import { columns } from './types';
 
 export default function BnbSpotGrids() {
   // Queries
   const { isLoading, data } = useQuery({
-    queryKey: ['BnbSpotGrids'],
-    queryFn: () => {
-      bnbSpotGridClient.get();
-    },
+    queryKey: ['SpotGrids'],
+    queryFn: async () => await bnbSpotGridClient.get(),
   });
+
   console.log(data);
 
   return (
@@ -56,7 +41,8 @@ export default function BnbSpotGrids() {
                     <TableCell
                       key={column.id}
                       align={column.align}
-                      style={{ width: column.minWidth }}
+                      size="small"
+                      style={{ width: column.width }}
                     >
                       {column.label}
                     </TableCell>
@@ -64,16 +50,10 @@ export default function BnbSpotGrids() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {/* {syncSettings &&
-                  syncSettings.map((syncSetting) => {
-                    return (
-                      <SyncSettingItem
-                        key={syncSetting.symbol}
-                        syncSetting={syncSetting}
-                        onDelete={deleteSyncSettingCallback}
-                      />
-                    );
-                  })} */}
+                {data &&
+                  data.map((spotGrid) => {
+                    return <SpotGridItem key={spotGrid.id} spotGrid={spotGrid} />;
+                  })}
               </TableBody>
             </Table>
           </TableContainer>

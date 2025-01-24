@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { LoadingButton } from '@mui/lab';
 import { Alert, Grid, MenuItem, TextField } from '@mui/material';
 import { useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
+import { UnprocessableEntity } from 'store/api-client';
 import { Block } from './types';
 
 function camelCase(str: string) {
@@ -11,6 +13,19 @@ function camelCase(str: string) {
       return index == 0 ? word.toLowerCase() : word.toUpperCase();
     })
     .replace(/\s+/g, '');
+}
+
+function ErrorHelperText(props: { errors: string[] }) {
+  return (
+    <>
+      {props.errors.map((e) => (
+        <span key={e}>
+          {e}
+          <br />
+        </span>
+      ))}
+    </>
+  );
 }
 
 // https://www.youtube.com/watch?v=aCRaGQmUiQE
@@ -24,21 +39,24 @@ export default function Form(props: {
     handleSubmit,
     register,
     reset,
-    formState: { errors },
+    formState: { errors: formError },
   } = useForm({ resolver: props.resolver });
-  const [submitErrors, setSubmitErrors] = useState<Record<string, string>>({});
+  const [submitErrors, setSubmitErrors] = useState<UnprocessableEntity[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const onSubmit = async (data: any) => {
     setLoading(true);
     try {
-      setSubmitErrors({});
+      setSubmitErrors([]);
       setErrorMessage('');
 
       await props.onSubmit(data);
       reset();
     } catch (err: any) {
-      setSubmitErrors(err);
+      console.log(err);
+      if (Array.isArray(err)) {
+        setSubmitErrors(err);
+      }
       setErrorMessage(err['message']);
     }
     setLoading(false);
@@ -47,7 +65,8 @@ export default function Form(props: {
   const onCloseErrorMessage = () => {
     setErrorMessage('');
   };
-  console.log(errors, props.resolver.name);
+
+  console.log(formError);
   return (
     <Grid
       container
@@ -68,7 +87,11 @@ export default function Form(props: {
         <Grid key={b.id} item xs={12} sm={12} sx={{ display: 'flex', columnGap: '16px' }}>
           {b.elements.map((el) => {
             const elId = camelCase(el.label);
-            const error = errors[elId];
+            let elErrors: string[] = [];
+            if (formError[elId]?.message) elErrors.push(formError[elId]?.message?.toString());
+            const apiError = submitErrors.filter((x) => x.name == elId)[0]?.errors;
+            if (apiError?.length) elErrors = elErrors.concat(apiError);
+
             if (el.type === 'select')
               return (
                 <TextField
@@ -78,8 +101,8 @@ export default function Form(props: {
                   {...register(elId, { setValueAs: (v) => (isNaN(v) ? v : parseFloat(v)) })}
                   select
                   defaultValue={el.defaultValue ?? el.options[0].value}
-                  error={!!error}
-                  helperText={error ? error.message?.toString() : ''}
+                  error={elErrors.length > 0}
+                  helperText={<ErrorHelperText errors={elErrors} />}
                   sx={{ minWidth: 120 }}
                 >
                   {el.options.map((option) => (
@@ -96,18 +119,16 @@ export default function Form(props: {
                 {...register(elId, {
                   setValueAs: (v) => {
                     if (v === '') return '';
-                    if (el.type === 'number') return parseFloat(v);
+                    if (el.type === 'number') return v === '' ? undefined : parseFloat(v);
                     else return v;
                   },
                 })}
                 id={elId}
-                defaultValue={el.defaultValue ?? ''}
+                defaultValue={el.defaultValue}
                 label={el.label}
                 type={el.type}
-                error={!!error || !!submitErrors[elId]}
-                helperText={
-                  error ? error.message?.toString() : !!submitErrors[elId] ? submitErrors[elId] : ''
-                }
+                error={elErrors.length > 0}
+                helperText={<ErrorHelperText errors={elErrors} />}
                 sx={{ flex: el.flex }}
               />
             );

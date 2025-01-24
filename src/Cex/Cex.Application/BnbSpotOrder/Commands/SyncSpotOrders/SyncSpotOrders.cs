@@ -16,10 +16,10 @@ namespace Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders
         IBnbService bndService,
         ICexDbContext dbContext)
     {
-        protected readonly ICexDbContext DbContext = dbContext;
         protected readonly IBnbService _bndService = bndService;
         protected readonly ILogTrace _logTrace = logTrace;
         protected readonly IMapper _mapper = mapper;
+        protected readonly ICexDbContext DbContext = dbContext;
 
         protected async Task<SpotOrderSyncSettingDto> Sync(Domain.Entities.BnbSetting setting
             , SpotOrderSyncSetting syncSetting, long serverTime, CancellationToken cancellationToken)
@@ -67,7 +67,7 @@ namespace Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders
 
             if (await spotOrdersQuery.AnyAsync(cancellationToken))
             {
-                var lastSyncAt = spotOrdersQuery.Max(x => x.UpdateTime);
+                var lastSyncAt = spotOrdersQuery.Max(x => x.UpdatedAt);
                 ss.LastSyncAt = lastSyncAt;
                 DbContext.SpotOrderSyncSettings.Update(ss);
                 _logTrace.LogInformation($"Update Last Sync {syncSetting.Symbol} at {ss.LastSyncAt}");

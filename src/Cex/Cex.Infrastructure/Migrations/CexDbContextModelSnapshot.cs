@@ -22,64 +22,228 @@ namespace Cex.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Cex.Domain.Candle", b =>
+            modelBuilder.Entity("Cex.Domain.Entities.BnbSetting", b =>
                 {
-                    b.Property<long>("Session")
-                        .HasColumnType("bigint");
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
 
-                    b.Property<decimal>("BaseVolume")
-                        .HasPrecision(8, 3)
-                        .HasColumnType("decimal(8,3)");
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("CloseDateTime")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("SecretKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("ClosePrice")
-                        .HasPrecision(8, 3)
-                        .HasColumnType("decimal(8,3)");
+                    b.HasKey("UserId");
 
-                    b.Property<decimal>("HighPrice")
-                        .HasPrecision(8, 3)
-                        .HasColumnType("decimal(8,3)");
-
-                    b.Property<bool>("IsBetSession")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal>("LowPrice")
-                        .HasPrecision(8, 3)
-                        .HasColumnType("decimal(8,3)");
-
-                    b.Property<DateTime>("OpenDateTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("OpenPrice")
-                        .HasPrecision(8, 3)
-                        .HasColumnType("decimal(8,3)");
-
-                    b.Property<decimal>("QuoteVolume")
-                        .HasPrecision(13, 3)
-                        .HasColumnType("decimal(13,3)");
-
-                    b.HasKey("Session");
-
-                    b.ToTable("Candles");
+                    b.ToTable("BnbSettings");
                 });
 
-            modelBuilder.Entity("Cex.Domain.Config", b =>
+            modelBuilder.Entity("Cex.Domain.Entities.SpotGrid", b =>
                 {
-                    b.Property<string>("Key")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GridMode")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Investment")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<decimal>("LowerPrice")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<int>("NumberOfGrids")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("StopLoss")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("TakeProfit")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<decimal>("TriggerPrice")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Value")
+                    b.Property<decimal>("UpperPrice")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Key");
+                    b.HasKey("Id");
 
-                    b.ToTable("Configs");
+                    b.ToTable("SpotGrids");
+                });
+
+            modelBuilder.Entity("Cex.Domain.Entities.SpotGridStep", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("BuyPrice")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<string>("OrderId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Qty")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<decimal>("SellPrice")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<long?>("SpotGridId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SpotGridId");
+
+                    b.ToTable("SpotGridSteps");
+                });
+
+            modelBuilder.Entity("Cex.Domain.Entities.SpotOrder", b =>
+                {
+                    b.Property<string>("OrderId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ClientOrderId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Fee")
+                        .HasPrecision(18, 10)
+                        .HasColumnType("decimal(18,10)");
+
+                    b.Property<string>("FeeCurrency")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsWorking")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("OrigQty")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<string>("Side")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("SpotGridOrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("SpotGridStepId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TimeInForce")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("WorkingTime")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("OrderId");
+
+                    b.HasIndex("SpotGridStepId");
+
+                    b.ToTable("SpotOrders");
+                });
+
+            modelBuilder.Entity("Cex.Domain.Entities.SpotOrderSyncSetting", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Symbol")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("LastSyncAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("UserId", "Symbol");
+
+                    b.ToTable("SpotOrderSyncSettings");
+                });
+
+            modelBuilder.Entity("Cex.Domain.Entities.SpotGridStep", b =>
+                {
+                    b.HasOne("Cex.Domain.Entities.SpotGrid", null)
+                        .WithMany("GridSteps")
+                        .HasForeignKey("SpotGridId");
+                });
+
+            modelBuilder.Entity("Cex.Domain.Entities.SpotOrder", b =>
+                {
+                    b.HasOne("Cex.Domain.Entities.SpotGridStep", null)
+                        .WithMany("Orders")
+                        .HasForeignKey("SpotGridStepId");
+                });
+
+            modelBuilder.Entity("Cex.Domain.Entities.SpotGrid", b =>
+                {
+                    b.Navigation("GridSteps");
+                });
+
+            modelBuilder.Entity("Cex.Domain.Entities.SpotGridStep", b =>
+                {
+                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }

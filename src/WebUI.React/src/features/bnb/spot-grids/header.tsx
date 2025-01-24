@@ -2,14 +2,15 @@ import { Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 export default function Header() {
-  const [curPrice] = useState(0);
+  const [curPrice, setCurPrice] = useState(0);
   useEffect(() => {
     // WS: get market price
-    const markPriceWS = new WebSocket(`wss://stream.binance.com:9443/ws/BTCUSDT@kline_1m`);
+    const markPriceWS = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_1h`);
     markPriceWS.onmessage = function (event) {
       try {
         const json = JSON.parse(event.data);
-        console.log(json);
+        setCurPrice(json.k.c);
+        // console.log(json.k.c);
       } catch (err) {
         console.log(err);
       }

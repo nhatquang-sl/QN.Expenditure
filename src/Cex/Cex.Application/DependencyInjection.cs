@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using FluentValidation;
 using Lib.Application;
 using Lib.Application.Behaviors;
 using Lib.ExternalServices;
@@ -15,8 +16,14 @@ namespace Cex.Application
             IConfiguration configuration)
         {
             services.AddLibApplicationServices(configuration);
-            services.AddLibExternalServices(configuration);
 
+            var environment = configuration.GetValue<string>("Environment") ?? "";
+            if (!environment.Equals("test", StringComparison.OrdinalIgnoreCase))
+            {
+                services.AddLibExternalServices(configuration);
+            }
+
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
             services.AddMediatR(cfg =>
             {
                 cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());

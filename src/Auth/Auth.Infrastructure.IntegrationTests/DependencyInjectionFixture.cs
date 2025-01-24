@@ -18,7 +18,7 @@ namespace Auth.Infrastructure.IntegrationTests
                     { "Environment", "test" }
                 })
                 .Build();
-            serviceCollection.AddInfrastructureServices(configuration);
+            serviceCollection.AddAuthInfrastructureServices(configuration);
             serviceCollection.AddSingleton<ICurrentUser>(x => new UserProfileDto
             {
                 Id = Guid.NewGuid().ToString(),

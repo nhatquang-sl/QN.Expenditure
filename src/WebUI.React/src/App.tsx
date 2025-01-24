@@ -9,6 +9,7 @@ import LoginHistory from 'features/auth/login-history';
 import RegisterConfirm from 'features/auth/register-confirm';
 import RequestActivateEmail from 'features/auth/request-activate-email';
 import BnbSetting from 'features/bnb/setting';
+import BnbCreateSpotGrids from 'features/bnb/spot-grids/create';
 import BnbSpotGrids from 'features/bnb/spot-grids/list';
 import BnbSpotOrders from 'features/bnb/spot-orders';
 import BnbSpotOrdersSyncSettings from 'features/bnb/sync-settings';
@@ -65,6 +66,10 @@ const router = createBrowserRouter([
       {
         path: 'bnb/spot-grids',
         element: <BnbSpotGrids />,
+      },
+      {
+        path: 'bnb/spot-grids/create',
+        element: <BnbCreateSpotGrids />,
       },
     ],
   },

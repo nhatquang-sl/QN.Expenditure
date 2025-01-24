@@ -25,7 +25,7 @@ export class AuthClient {
     }
 
     register(registerCommand: RegisterCommand, cancelToken?: CancelToken): Promise<RegisterResult> {
-        let url_ = this.baseUrl + "/api/Auth/register";
+        let url_ = this.baseUrl + "/api/auth/register";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(registerCommand);
@@ -84,7 +84,7 @@ export class AuthClient {
     }
 
     confirmEmail(userId: string | undefined, code: string | undefined, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/confirm-email?";
+        let url_ = this.baseUrl + "/api/auth/confirm-email?";
         if (userId === null)
             throw new Error("The parameter 'userId' cannot be null.");
         else if (userId !== undefined)
@@ -145,7 +145,7 @@ export class AuthClient {
     }
 
     confirmEmailChange(userId: string | undefined, code: string | undefined, email: string | undefined, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/confirm-email-change?";
+        let url_ = this.baseUrl + "/api/auth/confirm-email-change?";
         if (userId === null)
             throw new Error("The parameter 'userId' cannot be null.");
         else if (userId !== undefined)
@@ -210,7 +210,7 @@ export class AuthClient {
     }
 
     login(loginCommand: LoginCommand, cancelToken?: CancelToken): Promise<UserAuthDto> {
-        let url_ = this.baseUrl + "/api/Auth/login";
+        let url_ = this.baseUrl + "/api/auth/login";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(loginCommand);
@@ -269,7 +269,7 @@ export class AuthClient {
     }
 
     resendEmailConfirmation( cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/resend-email-confirmation";
+        let url_ = this.baseUrl + "/api/auth/resend-email-confirmation";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -322,7 +322,7 @@ export class AuthClient {
     }
 
     changePassword(command: ChangePasswordCommand, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/change-password";
+        let url_ = this.baseUrl + "/api/auth/change-password";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -379,7 +379,7 @@ export class AuthClient {
     }
 
     changeEmail(command: ChangeEmailCommand, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/change-email";
+        let url_ = this.baseUrl + "/api/auth/change-email";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -436,7 +436,7 @@ export class AuthClient {
     }
 
     forgotPassword(command: ForgotPasswordCommand, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/forgot-password";
+        let url_ = this.baseUrl + "/api/auth/forgot-password";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -493,7 +493,7 @@ export class AuthClient {
     }
 
     resetPassword(command: ResetPasswordCommand, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/reset-password";
+        let url_ = this.baseUrl + "/api/auth/reset-password";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -550,7 +550,7 @@ export class AuthClient {
     }
 
     getLoginHistories(page: number | undefined, size: number | undefined, cancelToken?: CancelToken): Promise<UserLoginHistory[]> {
-        let url_ = this.baseUrl + "/api/Auth/login-histories?";
+        let url_ = this.baseUrl + "/api/auth/login-histories?";
         if (page === null)
             throw new Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -627,7 +627,7 @@ export class BnbSettingClient {
     }
 
     getSetting( cancelToken?: CancelToken): Promise<BnbSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSetting";
+        let url_ = this.baseUrl + "/api/bnbsetting";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -675,7 +675,7 @@ export class BnbSettingClient {
     }
 
     updateSetting(request: UpdateBnbSettingCommand, cancelToken?: CancelToken): Promise<BnbSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSetting";
+        let url_ = this.baseUrl + "/api/bnbsetting";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(request);
@@ -741,7 +741,7 @@ export class BnbSpotClient {
     }
 
     getSyncSettings( cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto[]> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -796,7 +796,7 @@ export class BnbSpotClient {
     }
 
     createSyncSetting(request: CreateSyncSettingCommand, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(request);
@@ -855,7 +855,7 @@ export class BnbSpotClient {
     }
 
     updateSyncSetting(symbol: string, request: SpotOrderSyncSettingUpdateDto, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings/{symbol}";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings/{symbol}";
         if (symbol === undefined || symbol === null)
             throw new Error("The parameter 'symbol' must be defined.");
         url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
@@ -924,7 +924,7 @@ export class BnbSpotClient {
     }
 
     deleteSyncSetting(symbol: string, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings/{symbol}";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings/{symbol}";
         if (symbol === undefined || symbol === null)
             throw new Error("The parameter 'symbol' must be defined.");
         url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
@@ -975,7 +975,7 @@ export class BnbSpotClient {
     }
 
     triggerSync(symbol: string, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings/{symbol}/sync";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings/{symbol}/sync";
         if (symbol === undefined || symbol === null)
             throw new Error("The parameter 'symbol' must be defined.");
         url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
@@ -1026,7 +1026,7 @@ export class BnbSpotClient {
     }
 
     getSpotOrders( cancelToken?: CancelToken): Promise<SpotOrderRaw[]> {
-        let url_ = this.baseUrl + "/api/BnbSpot";
+        let url_ = this.baseUrl + "/api/bnbspot";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1153,7 +1153,7 @@ export class BnbSpotGridClient {
     }
 
     create(command: CreateSpotGridCommand, cancelToken?: CancelToken): Promise<SpotGridDto> {
-        let url_ = this.baseUrl + "/api/BnbSpotGrid";
+        let url_ = this.baseUrl + "/api/bnbspotgrid";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -1194,8 +1194,22 @@ export class BnbSpotGridClient {
             const _responseText = response.data;
             let result400: any = null;
             let resultData400  = _responseText;
-            result400 = CreateSpotGridBadRequest.fromJS(resultData400);
+            result400 = BadRequest.fromJS(resultData400);
             return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
 
         } else if (status === 200) {
             const _responseText = response.data;
@@ -1212,7 +1226,7 @@ export class BnbSpotGridClient {
     }
 
     get( cancelToken?: CancelToken): Promise<SpotGridDto[]> {
-        let url_ = this.baseUrl + "/api/BnbSpotGrid";
+        let url_ = this.baseUrl + "/api/bnbspotgrid";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1245,7 +1259,28 @@ export class BnbSpotGridClient {
                 }
             }
         }
-        if (status === 200) {
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
             const _responseText = response.data;
             let result200: any = null;
             let resultData200  = _responseText;
@@ -1265,6 +1300,78 @@ export class BnbSpotGridClient {
         }
         return Promise.resolve<SpotGridDto[]>(null as any);
     }
+
+    delete(spotGridId: number, cancelToken?: CancelToken): Promise<SpotGridDto> {
+        let url_ = this.baseUrl + "/api/bnbspotgrid/{spotGridId}";
+        if (spotGridId === undefined || spotGridId === null)
+            throw new Error("The parameter 'spotGridId' must be defined.");
+        url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "DELETE",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processDelete(_response);
+        });
+    }
+
+    protected processDelete(response: AxiosResponse): Promise<SpotGridDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotGridDto.fromJS(resultData200);
+            return Promise.resolve<SpotGridDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto>(null as any);
+    }
 }
 
 export class ValuesClient {
@@ -1281,7 +1388,7 @@ export class ValuesClient {
     }
 
     get( cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Values";
+        let url_ = this.baseUrl + "/api/values";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1348,7 +1455,7 @@ export class WeatherForecastClient {
     }
 
     get( cancelToken?: CancelToken): Promise<WeatherForecast[]> {
-        let url_ = this.baseUrl + "/api/WeatherForecast";
+        let url_ = this.baseUrl + "/api/weatherforecast";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1403,17 +1510,8 @@ export class WeatherForecastClient {
     }
 }
 
-export class Conflict implements IConflict {
+export class Conflict {
     message!: string;
-
-    constructor(data?: IConflict) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1435,21 +1533,8 @@ export class Conflict implements IConflict {
     }
 }
 
-export interface IConflict {
-    message: string;
-}
-
-export class RegisterResult implements IRegisterResult {
+export class RegisterResult {
     userId!: string;
-
-    constructor(data?: IRegisterResult) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1471,24 +1556,11 @@ export class RegisterResult implements IRegisterResult {
     }
 }
 
-export interface IRegisterResult {
-    userId: string;
-}
-
-export class RegisterCommand implements IRegisterCommand {
+export class RegisterCommand {
     email!: string;
     password!: string;
     firstName!: string;
     lastName!: string;
-
-    constructor(data?: IRegisterCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1516,24 +1588,8 @@ export class RegisterCommand implements IRegisterCommand {
     }
 }
 
-export interface IRegisterCommand {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-}
-
-export class BadRequest implements IBadRequest {
+export class BadRequest {
     message!: string;
-
-    constructor(data?: IBadRequest) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1555,25 +1611,12 @@ export class BadRequest implements IBadRequest {
     }
 }
 
-export interface IBadRequest {
-    message: string;
-}
-
-export class UserProfileDto implements IUserProfileDto {
+export class UserProfileDto {
     id!: string;
     email!: string;
     firstName!: string;
     lastName!: string;
     emailConfirmed!: boolean;
-
-    constructor(data?: IUserProfileDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1603,21 +1646,9 @@ export class UserProfileDto implements IUserProfileDto {
     }
 }
 
-export interface IUserProfileDto {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    emailConfirmed: boolean;
-}
-
-export class UserAuthDto extends UserProfileDto implements IUserAuthDto {
+export class UserAuthDto extends UserProfileDto {
     accessToken!: string;
     refreshToken!: string;
-
-    constructor(data?: IUserAuthDto) {
-        super(data);
-    }
 
     override init(_data?: any) {
         super.init(_data);
@@ -1643,26 +1674,12 @@ export class UserAuthDto extends UserProfileDto implements IUserAuthDto {
     }
 }
 
-export interface IUserAuthDto extends IUserProfileDto {
-    accessToken: string;
-    refreshToken: string;
-}
-
-export class LoginCommand implements ILoginCommand {
+export class LoginCommand {
     email!: string;
     password!: string;
     rememberMe!: boolean;
     ipAddress!: string | undefined;
     userAgent!: string | undefined;
-
-    constructor(data?: ILoginCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1692,27 +1709,10 @@ export class LoginCommand implements ILoginCommand {
     }
 }
 
-export interface ILoginCommand {
-    email: string;
-    password: string;
-    rememberMe: boolean;
-    ipAddress: string | undefined;
-    userAgent: string | undefined;
-}
-
-export class ChangePasswordCommand implements IChangePasswordCommand {
+export class ChangePasswordCommand {
     oldPassword!: string;
     newPassword!: string;
     confirmPassword!: string;
-
-    constructor(data?: IChangePasswordCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1738,23 +1738,8 @@ export class ChangePasswordCommand implements IChangePasswordCommand {
     }
 }
 
-export interface IChangePasswordCommand {
-    oldPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-}
-
-export class ChangeEmailCommand implements IChangeEmailCommand {
+export class ChangeEmailCommand {
     newEmail!: string;
-
-    constructor(data?: IChangeEmailCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1776,21 +1761,8 @@ export class ChangeEmailCommand implements IChangeEmailCommand {
     }
 }
 
-export interface IChangeEmailCommand {
-    newEmail: string;
-}
-
-export class ForgotPasswordCommand implements IForgotPasswordCommand {
+export class ForgotPasswordCommand {
     email!: string;
-
-    constructor(data?: IForgotPasswordCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1812,24 +1784,11 @@ export class ForgotPasswordCommand implements IForgotPasswordCommand {
     }
 }
 
-export interface IForgotPasswordCommand {
-    email: string;
-}
-
-export class ResetPasswordCommand implements IResetPasswordCommand {
+export class ResetPasswordCommand {
     email!: string;
     password!: string;
     confirmPassword!: string;
     code!: string;
-
-    constructor(data?: IResetPasswordCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1857,14 +1816,7 @@ export class ResetPasswordCommand implements IResetPasswordCommand {
     }
 }
 
-export interface IResetPasswordCommand {
-    email: string;
-    password: string;
-    confirmPassword: string;
-    code: string;
-}
-
-export class UserLoginHistory implements IUserLoginHistory {
+export class UserLoginHistory {
     id!: number;
     userId!: string;
     ipAddress!: string | undefined;
@@ -1872,15 +1824,6 @@ export class UserLoginHistory implements IUserLoginHistory {
     accessToken!: string;
     refreshToken!: string;
     createdAt!: Date;
-
-    constructor(data?: IUserLoginHistory) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1914,28 +1857,9 @@ export class UserLoginHistory implements IUserLoginHistory {
     }
 }
 
-export interface IUserLoginHistory {
-    id: number;
-    userId: string;
-    ipAddress: string | undefined;
-    userAgent: string | undefined;
-    accessToken: string;
-    refreshToken: string;
-    createdAt: Date;
-}
-
-export class BnbSettingDto implements IBnbSettingDto {
+export class BnbSettingDto {
     apiKey!: string;
     secretKey!: string;
-
-    constructor(data?: IBnbSettingDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1959,23 +1883,9 @@ export class BnbSettingDto implements IBnbSettingDto {
     }
 }
 
-export interface IBnbSettingDto {
-    apiKey: string;
-    secretKey: string;
-}
-
-export class UpdateBnbSettingCommand implements IUpdateBnbSettingCommand {
+export class UpdateBnbSettingCommand {
     apiKey!: string;
     secretKey!: string;
-
-    constructor(data?: IUpdateBnbSettingCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1999,23 +1909,9 @@ export class UpdateBnbSettingCommand implements IUpdateBnbSettingCommand {
     }
 }
 
-export interface IUpdateBnbSettingCommand {
-    apiKey: string;
-    secretKey: string;
-}
-
-export class SpotOrderSyncSettingDto implements ISpotOrderSyncSettingDto {
+export class SpotOrderSyncSettingDto {
     symbol!: string;
     lastSyncAt!: number;
-
-    constructor(data?: ISpotOrderSyncSettingDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -2039,23 +1935,9 @@ export class SpotOrderSyncSettingDto implements ISpotOrderSyncSettingDto {
     }
 }
 
-export interface ISpotOrderSyncSettingDto {
-    symbol: string;
-    lastSyncAt: number;
-}
-
-export class CreateSyncSettingCommand implements ICreateSyncSettingCommand {
+export class CreateSyncSettingCommand {
     symbol!: string;
     lastSyncAt!: number;
-
-    constructor(data?: ICreateSyncSettingCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -2079,22 +1961,8 @@ export class CreateSyncSettingCommand implements ICreateSyncSettingCommand {
     }
 }
 
-export interface ICreateSyncSettingCommand {
-    symbol: string;
-    lastSyncAt: number;
-}
-
-export class NotFound implements INotFound {
+export class NotFound {
     message!: string;
-
-    constructor(data?: INotFound) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -2116,21 +1984,8 @@ export class NotFound implements INotFound {
     }
 }
 
-export interface INotFound {
-    message: string;
-}
-
-export class SpotOrderSyncSettingUpdateDto implements ISpotOrderSyncSettingUpdateDto {
+export class SpotOrderSyncSettingUpdateDto {
     lastSyncAt!: number;
-
-    constructor(data?: ISpotOrderSyncSettingUpdateDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -2152,11 +2007,7 @@ export class SpotOrderSyncSettingUpdateDto implements ISpotOrderSyncSettingUpdat
     }
 }
 
-export interface ISpotOrderSyncSettingUpdateDto {
-    lastSyncAt: number;
-}
-
-export class SpotOrderRaw implements ISpotOrderRaw {
+export class SpotOrderRaw {
     symbol!: string;
     orderId!: number;
     orderListId!: number;
@@ -2177,15 +2028,6 @@ export class SpotOrderRaw implements ISpotOrderRaw {
     workingTime!: number;
     origQuoteOrderQty!: string;
     selfTradePreventionMode!: string;
-
-    constructor(data?: ISpotOrderRaw) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -2245,74 +2087,41 @@ export class SpotOrderRaw implements ISpotOrderRaw {
     }
 }
 
-export interface ISpotOrderRaw {
-    symbol: string;
-    orderId: number;
-    orderListId: number;
-    clientOrderId: string;
-    price: string;
-    origQty: string;
-    executedQty: string;
-    cummulativeQuoteQty: string;
-    status: string;
-    timeInForce: string;
-    type: string;
-    side: string;
-    stopPrice: string;
-    icebergQty: string;
-    time: number;
-    updateTime: number;
-    isWorking: boolean;
-    workingTime: number;
-    origQuoteOrderQty: string;
-    selfTradePreventionMode: string;
-}
+export class UnprocessableEntity {
+    name!: string;
+    errors!: string[];
 
-export class CreateSpotGridBadRequest implements ICreateSpotGridBadRequest {
-    symbol!: string;
-    upperPrice!: string;
-    takeProfit!: string;
-
-    constructor(data?: ICreateSpotGridBadRequest) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
+    init(_data?: any) {
+        if (_data) {
+            this.name = _data["name"];
+            if (Array.isArray(_data["errors"])) {
+                this.errors = [] as any;
+                for (let item of _data["errors"])
+                    this.errors!.push(item);
             }
         }
     }
 
-    init(_data?: any) {
-        if (_data) {
-            this.symbol = _data["symbol"];
-            this.upperPrice = _data["upperPrice"];
-            this.takeProfit = _data["takeProfit"];
-        }
-    }
-
-    static fromJS(data: any): CreateSpotGridBadRequest {
+    static fromJS(data: any): UnprocessableEntity {
         data = typeof data === 'object' ? data : {};
-        let result = new CreateSpotGridBadRequest();
+        let result = new UnprocessableEntity();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["symbol"] = this.symbol;
-        data["upperPrice"] = this.upperPrice;
-        data["takeProfit"] = this.takeProfit;
+        data["name"] = this.name;
+        if (Array.isArray(this.errors)) {
+            data["errors"] = [];
+            for (let item of this.errors)
+                data["errors"].push(item);
+        }
         return data;
     }
 }
 
-export interface ICreateSpotGridBadRequest {
-    symbol: string;
-    upperPrice: string;
-    takeProfit: string;
-}
-
-export class SpotGridDto implements ISpotGridDto {
+export class SpotGridDto {
     id!: number;
     userId!: string;
     symbol!: string;
@@ -2322,20 +2131,11 @@ export class SpotGridDto implements ISpotGridDto {
     numberOfGrids!: number;
     gridMode!: SpotGridMode;
     investment!: number;
-    takeProfit!: number;
-    stopLoss!: number;
+    takeProfit!: number | undefined;
+    stopLoss!: number | undefined;
     status!: SpotGridStatus;
     createdAt!: Date;
     updatedAt!: Date;
-
-    constructor(data?: ISpotGridDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -2383,23 +2183,6 @@ export class SpotGridDto implements ISpotGridDto {
     }
 }
 
-export interface ISpotGridDto {
-    id: number;
-    userId: string;
-    symbol: string;
-    lowerPrice: number;
-    upperPrice: number;
-    triggerPrice: number;
-    numberOfGrids: number;
-    gridMode: SpotGridMode;
-    investment: number;
-    takeProfit: number;
-    stopLoss: number;
-    status: SpotGridStatus;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
 export enum SpotGridMode {
     ARITHMETIC = 0,
     GEOMETRIC = 1,
@@ -2413,7 +2196,7 @@ export enum SpotGridStatus {
     PAUSED = 4,
 }
 
-export class CreateSpotGridCommand implements ICreateSpotGridCommand {
+export class CreateSpotGridCommand {
     symbol!: string;
     lowerPrice!: number;
     upperPrice!: number;
@@ -2421,17 +2204,8 @@ export class CreateSpotGridCommand implements ICreateSpotGridCommand {
     numberOfGrids!: number;
     gridMode!: SpotGridMode;
     investment!: number;
-    takeProfit!: number;
-    stopLoss!: number;
-
-    constructor(data?: ICreateSpotGridCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
+    takeProfit!: number | undefined;
+    stopLoss!: number | undefined;
 
     init(_data?: any) {
         if (_data) {
@@ -2469,32 +2243,11 @@ export class CreateSpotGridCommand implements ICreateSpotGridCommand {
     }
 }
 
-export interface ICreateSpotGridCommand {
-    symbol: string;
-    lowerPrice: number;
-    upperPrice: number;
-    triggerPrice: number;
-    numberOfGrids: number;
-    gridMode: SpotGridMode;
-    investment: number;
-    takeProfit: number;
-    stopLoss: number;
-}
-
-export class WeatherForecast implements IWeatherForecast {
+export class WeatherForecast {
     date!: Date;
     temperatureC!: number;
     temperatureF!: number;
     summary!: string | undefined;
-
-    constructor(data?: IWeatherForecast) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -2520,13 +2273,6 @@ export class WeatherForecast implements IWeatherForecast {
         data["summary"] = this.summary;
         return data;
     }
-}
-
-export interface IWeatherForecast {
-    date: Date;
-    temperatureC: number;
-    temperatureF: number;
-    summary: string | undefined;
 }
 
 function formatDate(d: Date) {

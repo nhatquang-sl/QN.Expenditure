@@ -13,7 +13,7 @@ namespace WebAPI.HostedServices
         {
             var services = new ServiceCollection();
             services.AddSingleton(_configuration);
-            services.AddInfrastructureServices(_configuration);
+            services.AddAuthInfrastructureServices(_configuration);
             services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger());
             var serviceProvider = services.BuildServiceProvider();
 

@@ -1,3 +1,4 @@
+import { SpotGridMode } from 'store/api-client';
 import { z } from 'zod';
 
 export const GridOrderSchema = z
@@ -7,10 +8,10 @@ export const GridOrderSchema = z
     lowerPrice: z.number(),
     upperPrice: z.number(),
     numberOfGrids: z.number(),
-    gridMode: z.number(),
+    gridMode: z.number().default(SpotGridMode.ARITHMETIC),
     investment: z.number(),
-    takeProfit: z.number(),
-    stopLoss: z.number(),
+    takeProfit: z.coerce.number().optional(),
+    stopLoss: z.coerce.number().optional(),
   })
   .refine((data) => data.upperPrice > data.lowerPrice, {
     message: 'Upper Price must be greater than Lower Price',

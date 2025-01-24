@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MenuItem, TextField } from '@mui/material';
 import { CandlestickData, IChartApi, ISeriesApi, createChart } from 'lightweight-charts';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
@@ -152,7 +153,7 @@ function Chart(props: { pair: string }) {
     markPriceWS.onmessage = function (event) {
       try {
         const json = JSON.parse(event.data);
-        console.log(json);
+        // console.log(json);
         const {
           k: { T, o, c, h, l },
         } = json;

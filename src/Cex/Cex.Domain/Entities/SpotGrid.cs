@@ -11,13 +11,13 @@
         public int NumberOfGrids { get; set; }
         public SpotGridMode GridMode { get; set; }
         public decimal Investment { get; set; }
-        public decimal TakeProfit { get; set; }
-        public decimal StopLoss { get; set; }
+        public decimal? TakeProfit { get; set; }
+        public decimal? StopLoss { get; set; }
         public SpotGridStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public ICollection<SpotOrder> SpotOrders { get; }
+        public ICollection<SpotGridStep> GridSteps { get; private set; } = new List<SpotGridStep>();
     }
 
     public enum SpotGridStatus

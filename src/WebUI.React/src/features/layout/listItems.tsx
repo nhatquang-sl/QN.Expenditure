@@ -122,7 +122,7 @@ export function BnbMenuItems() {
           <ListItemButton sx={{ pl: 12 }} component={Link} to="bnb/spot-grids">
             <ListItemText primary="List" />
           </ListItemButton>
-          <ListItemButton sx={{ pl: 12 }} component={Link} to="bnb/spot-grids">
+          <ListItemButton sx={{ pl: 12 }} component={Link} to="bnb/spot-grids/create">
             <ListItemText primary="Create" />
           </ListItemButton>
         </List>

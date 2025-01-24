@@ -7,7 +7,7 @@ namespace Cex.Application
     {
         public MappingProfile()
         {
-            CreateMap<CandlePrice, Domain.Candle>().ReverseMap();
+
         }
     }
 }

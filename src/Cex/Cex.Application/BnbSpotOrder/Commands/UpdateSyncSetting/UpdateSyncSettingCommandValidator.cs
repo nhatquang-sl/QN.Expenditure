@@ -41,8 +41,8 @@ namespace Cex.Application.BnbSpotOrder.Commands.UpdateSyncSetting
         {
             var lastSyncSpotOrder = await _context.SpotOrders
                 .Where(x => x.Symbol == command.Symbol && x.UserId == _currentUser.Id)
-                .OrderByDescending(x => x.UpdateTime)
-                .Select(x => x.UpdateTime)
+                .OrderByDescending(x => x.UpdatedAt)
+                .Select(x => x.UpdatedAt)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (lastSyncSpotOrder == default)

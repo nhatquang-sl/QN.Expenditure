@@ -42,7 +42,7 @@ export class InputElement {
     this.flex = flex;
     this.defaultValue = defaultValue;
   }
-  type: 'text' | 'select' | 'number' = 'text';
+  type: 'text' | 'select' | 'number' | undefined = 'text';
   label: string = '';
   flex: number | 'none';
   defaultValue?: unknown;

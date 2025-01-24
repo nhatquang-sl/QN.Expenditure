@@ -42,11 +42,11 @@ const addBollingerBands = (chart: IChartApi, rsiChart: IChartApi, candles: Kline
 
   for (let i = 1; i < klines.length; i++) {
     const kline = klines[i];
-    let closeChange = parseFloat((kline.close - klines[i - 1].close).toFixed(4));
+    const closeChange = parseFloat((kline.close - klines[i - 1].close).toFixed(4));
     closeChange > 0 ? (kline.gain = closeChange) : (kline.loss = Math.abs(closeChange));
 
     if (i > 20) {
-      let sma20 = _.sumBy(_.slice(klines, i - 19, i + 1), 'close') / 20;
+      const sma20 = _.sumBy(_.slice(klines, i - 19, i + 1), 'close') / 20;
       const stdDev = standardDeviation(_.slice(klines, i - 19, i + 1));
       const bolu = sma20 + 2 * stdDev;
       const bold = sma20 - 2 * stdDev;
@@ -66,7 +66,7 @@ const addBollingerBands = (chart: IChartApi, rsiChart: IChartApi, candles: Kline
 
       const line = findIntersection(_.slice(klines, i - 19, i + 1));
       if (line) {
-        console.log(line);
+        // console.log(line);
         if (!supportSet.has(line)) {
           supportSet.add(line);
           const support = chart.addLineSeries({
@@ -124,7 +124,7 @@ const addBollingerBands = (chart: IChartApi, rsiChart: IChartApi, candles: Kline
     })
   );
 
-  var maxPriceLine = {
+  const maxPriceLine = {
     price: 70,
     color: 'purple',
     lineWidth: 1,
@@ -134,7 +134,7 @@ const addBollingerBands = (chart: IChartApi, rsiChart: IChartApi, candles: Kline
   } as CreatePriceLineOptions;
 
   rsiSeries.createPriceLine(maxPriceLine);
-  var minPriceLine = {
+  const minPriceLine = {
     price: 30,
     color: 'purple',
     lineWidth: 1,

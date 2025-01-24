@@ -28,6 +28,11 @@ namespace Lib.Application.Logging
             _entries.Add(new LogEntry(LogLevel.Debug, message, data, methodBase));
         }
 
+        public void LogDebug(object data, MethodBase? methodBase = null)
+        {
+            _entries.Add(new LogEntry(LogLevel.Debug, string.Empty, data, methodBase));
+        }
+
         public void LogInformation(string message, object? data = null, MethodBase? methodBase = null)
         {
             _entries.Add(new LogEntry(LogLevel.Information, message, data, methodBase));
@@ -69,24 +74,22 @@ namespace Lib.Application.Logging
             }
 
             var logLevel = _entries.Max(x => x.Level);
-            var entries = _entries.Select(x =>
+            var entries = _entries.Select<LogEntry, object>(x =>
             {
                 HideSensitiveData(x.Data);
-                //if (x.Data != null)
-                //{
-                //    // hide user password
-                //    foreach (PropertyInfo prop in x.Data.GetType().GetProperties())
-                //    {
-                //        if (prop.Name.Equals("password", StringComparison.OrdinalIgnoreCase)
-                //        || prop.Name.Equals("SecretKey", StringComparison.OrdinalIgnoreCase)
-                //        || prop.Name.Equals("apikey", StringComparison.OrdinalIgnoreCase))
-                //        {
-                //            prop.SetValue(x.Data, "*");
-                //        }
-                //    }
-                //}
 
-                return new { Message = $"[{x.Level}] {x.Message}", x.Data };
+                var msgSb = new StringBuilder($"[{x.Level}]");
+                if (!string.IsNullOrWhiteSpace(x.Message))
+                {
+                    msgSb.AppendLine($"{x.Message}");
+                }
+
+                if (x.Data == null)
+                {
+                    return new { Message = msgSb.ToString() };
+                }
+
+                return new { Message = msgSb.ToString(), x.Data };
             }).ToList();
             _properties.TryAdd("Entries", entries);
             _properties.TryAdd("SourceContext", GetType().FullName);

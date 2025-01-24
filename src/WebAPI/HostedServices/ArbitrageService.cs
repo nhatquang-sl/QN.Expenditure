@@ -12,7 +12,7 @@ namespace WebAPI.HostedServices
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var services = new ServiceCollection();
-            services.AddInfrastructureServices(_configuration);
+            services.AddAuthInfrastructureServices(_configuration);
             services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(_configuration).CreateLogger());
             var serviceProvider = services.BuildServiceProvider();
 

@@ -13,7 +13,7 @@ namespace Auth.Infrastructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
+        public static IServiceCollection AddAuthInfrastructureServices(this IServiceCollection services,
             IConfiguration configuration)
         {
             services.AddSingleton(configuration);

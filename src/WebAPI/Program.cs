@@ -34,7 +34,7 @@ builder.Services.AddTransient(_ =>
     new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
 builder.Services.AddControllers();
 builder.Services.AddOpenApiDocument();
-builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddAuthInfrastructureServices(builder.Configuration);
 builder.Services.AddCexInfrastructureServices(builder.Configuration);
 
 builder.Services.AddHttpClient();
