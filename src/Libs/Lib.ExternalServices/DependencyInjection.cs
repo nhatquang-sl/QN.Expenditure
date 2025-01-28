@@ -25,10 +25,7 @@ namespace Lib.ExternalServices
             services.Configure<TelegramServiceConfig>(configuration.GetSection("TelegramServiceConfig"));
             services
                 .AddRefitClient<ITelegramService>()
-                .ConfigureHttpClient(c =>
-                {
-                    c.BaseAddress = new Uri(configuration.GetValue("TelegramServiceConfig:ApiEndpoint", "") ?? "");
-                });
+                .ConfigureHttpClient(c => { c.BaseAddress = new Uri("https://api.telegram.org"); });
 
             services
                 .AddRefitClient<IBnbService>()

@@ -52,6 +52,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cex.Infrastructure.Integrat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lib.Notifications", "src\Libs\Lib.Notifications\Lib.Notifications.csproj", "{DCAE824E-42EE-4D0D-9A3D-9716796A2545}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lib.Notifications.Tests", "src\Libs\Lib.Notifications.Tests\Lib.Notifications.Tests.csproj", "{CB2980E9-B118-4EE2-A07D-92FF17B138D8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -130,6 +132,10 @@ Global
 		{DCAE824E-42EE-4D0D-9A3D-9716796A2545}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DCAE824E-42EE-4D0D-9A3D-9716796A2545}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DCAE824E-42EE-4D0D-9A3D-9716796A2545}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB2980E9-B118-4EE2-A07D-92FF17B138D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB2980E9-B118-4EE2-A07D-92FF17B138D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB2980E9-B118-4EE2-A07D-92FF17B138D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB2980E9-B118-4EE2-A07D-92FF17B138D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -150,6 +156,7 @@ Global
 		{1E213454-F649-4D54-BF50-0908917A85E9} = {E494EBDE-A657-463A-8B71-71C4977991C4}
 		{C02F0AA3-5DA5-4F83-9847-72E44F07323E} = {125BB6F4-183C-4B2C-AC00-E2A96472C38D}
 		{DCAE824E-42EE-4D0D-9A3D-9716796A2545} = {E494EBDE-A657-463A-8B71-71C4977991C4}
+		{CB2980E9-B118-4EE2-A07D-92FF17B138D8} = {E494EBDE-A657-463A-8B71-71C4977991C4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {287FCC55-8B80-4737-A2E0-4D5F3A0390B7}

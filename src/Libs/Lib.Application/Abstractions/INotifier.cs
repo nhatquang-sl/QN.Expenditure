@@ -2,6 +2,10 @@ namespace Lib.Application.Abstractions
 {
     public interface INotifier
     {
-        void Notify(string title, string description, object data);
+        Task NotifyInfo(string title, string description,
+            CancellationToken cancellationToken = default);
+
+        Task NotifyError(string title, object data,
+            CancellationToken cancellationToken = default);
     }
 }

@@ -3,8 +3,7 @@ using System.Net.Http.Headers;
 
 namespace Lib.ExternalServices
 {
-    public class HttpDelegatingHandler(HttpMessageHandler? innerHandler = null) : DelegatingHandler(
-        innerHandler ?? new HttpClientHandler())
+    public class HttpDelegatingHandler : DelegatingHandler
     {
         private readonly string[] _types = ["html", "text", "xml", "json", "txt", "x-www-form-urlencoded"];
 

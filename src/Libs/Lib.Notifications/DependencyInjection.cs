@@ -1,6 +1,10 @@
 using Lib.Application.Abstractions;
+using Lib.ExternalServices;
+using Lib.ExternalServices.Telegram;
+using Lib.Notifications.Telegram;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Refit;
 
 namespace Lib.Notifications
 {
@@ -9,21 +13,14 @@ namespace Lib.Notifications
         public static IServiceCollection AddTelegramNotifier(this IServiceCollection services,
             IConfiguration configuration)
         {
-            var environment = configuration.GetValue<string>("Environment");
+            services.AddTransient<HttpDelegatingHandler>();
+            services
+                .AddRefitClient<ITelegramService>()
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.telegram.org"))
+                .AddHttpMessageHandler<HttpDelegatingHandler>();
+            ;
 
-            services.AddHttpClient<INotifier, TelegramNotifier>((provider, client) =>
-            {
-                client.BaseAddress = new Uri("https://api.telegram.org/");
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
-            });
-
-            services.AddTransient<INotifier>(provider =>
-            {
-                var httpClient = provider.GetRequiredService<HttpClient>();
-                return new TelegramNotifier(httpClient, configuration.GetValue<string>("Notifier:PathUrl") ?? "");
-            });
-
-            return services;
+            services.AddScoped<INotifier, TelegramNotifier>();
 
             return services;
         }

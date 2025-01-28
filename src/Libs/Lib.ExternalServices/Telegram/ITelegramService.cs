@@ -7,5 +7,8 @@ namespace Lib.ExternalServices.Telegram
     {
         [Post("/{botToken}/sendMessage")]
         Task<TelegramMessageResponse> SendMessage(string botToken, TelegramMessage request);
+
+        [Post("/{botToken}/sendMessage")]
+        Task<TelegramMessageResponse> SendTopicMessage(string botToken, TelegramTopicMessage request);
     }
 }
