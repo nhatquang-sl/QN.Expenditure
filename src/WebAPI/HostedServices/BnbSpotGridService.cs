@@ -1,6 +1,7 @@
 ﻿using Cex.Application.Grid.Commands.TradeSpotGrid;
 using Cex.Infrastructure;
 using Lib.ExternalServices.KuCoin;
+using Lib.Notifications;
 using MediatR;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -16,6 +17,7 @@ namespace WebAPI.HostedServices
         {
             var services = new ServiceCollection();
             services.AddCexInfrastructureServices(configuration);
+            services.AddTelegramNotifier(configuration);
             var serviceProvider = services.BuildServiceProvider();
 
             await Task.Factory.StartNew(async () =>

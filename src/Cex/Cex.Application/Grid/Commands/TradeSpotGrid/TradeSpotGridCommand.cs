@@ -2,6 +2,7 @@
 using System.Globalization;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Entities;
+using Lib.Application.Abstractions;
 using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using MediatR;
@@ -18,7 +19,8 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
         ILogTrace logTrace,
         ICexDbContext cexDbContext,
         IKuCoinService kuCoinService,
-        IOptions<KuCoinConfig> kuCoinConfig)
+        IOptions<KuCoinConfig> kuCoinConfig,
+        INotifier notifier)
         : IRequestHandler<TradeSpotGridCommand>
     {
         private readonly ConcurrentDictionary<string, Kline> _spotPrice = new();
@@ -105,126 +107,139 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                     .Where(step => step.Status == SpotGridStepStatus.SellOrderPlaced
                                    && !string.IsNullOrWhiteSpace(step.OrderId))
                     .ToList();
-                return Task.WhenAll(ChangeStepStatusToBuyOrderPlaced(grid, awaitingBuySteps),
-                    ChangeStepStatusToAwaitingSell(grid, buyOrderPlacedSteps),
-                    ChangeStepStatusToSellOrderPlaced(grid, awaitingSellSteps),
-                    ChangeStepStatusToAwaitingBuy(grid, sellOrderPlacedSteps));
+
+                return Task.WhenAll(
+                    Task.WhenAll(awaitingBuySteps.Select(step => ChangeStepStatusToBuyOrderPlaced(grid, step))),
+                    Task.WhenAll(buyOrderPlacedSteps.Select(step => ChangeStepStatusToAwaitingSell(grid, step))),
+                    Task.WhenAll(awaitingSellSteps.Select(step => ChangeStepStatusToSellOrderPlaced(grid, step))),
+                    Task.WhenAll(sellOrderPlacedSteps.Select(step => ChangeStepStatusToAwaitingBuy(grid, step))));
             });
 
             await Task.WhenAll(tasks);
         }
 
-        private async Task ChangeStepStatusToBuyOrderPlaced(SpotGrid grid, List<SpotGridStep> gridSteps)
+        private async Task ChangeStepStatusToBuyOrderPlaced(SpotGrid grid, SpotGridStep step)
         {
-            var tasks = gridSteps
-                .Select(async step =>
-                {
-                    var orderId = await kuCoinService.PlaceOrder(new OrderRequest
-                        {
-                            Symbol = grid.Symbol,
-                            Side = "buy",
-                            Type = "limit",
-                            Price = step.BuyPrice.ToString(CultureInfo.InvariantCulture),
-                            Size = step.Qty.ToString(CultureInfo.InvariantCulture)
-                        },
-                        kuCoinConfig.Value);
-                    step.OrderId = orderId;
-                    step.Status = SpotGridStepStatus.BuyOrderPlaced;
-                });
-            await Task.WhenAll(tasks);
+            var orderReq = new OrderRequest
+            {
+                Symbol = grid.Symbol,
+                Side = "buy",
+                Type = "limit",
+                Price = step.BuyPrice.ToString(CultureInfo.InvariantCulture),
+                Size = step.Qty.ToString(CultureInfo.InvariantCulture)
+            };
+            var symbols = grid.Symbol.Split('-');
+            var alertMessage =
+                $"Bot {grid.Id}: Buy {step.Qty:G29} {symbols[0]} for {step.Qty * step.BuyPrice:G29} {symbols[1]} ({grid.Symbol})"; //BotId: {grid.Id}, Buy {grid.Symbol}: {step.Qty}-{step.Qty * step.BuyPrice}";
+            try
+            {
+                var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
+                step.OrderId = orderId;
+                step.Status = SpotGridStepStatus.BuyOrderPlaced;
+
+                await notifier.NotifyInfo(alertMessage, orderReq);
+            }
+            catch (Exception ex)
+            {
+                await notifier.NotifyError(alertMessage, ex);
+            }
         }
 
-        private async Task ChangeStepStatusToAwaitingSell(SpotGrid grid, List<SpotGridStep> gridSteps)
+        private async Task ChangeStepStatusToAwaitingSell(SpotGrid grid, SpotGridStep step)
         {
-            var tasks = gridSteps
-                .Select(async step =>
+            try
+            {
+                var orderDetails = await kuCoinService.GetOrderDetails(step.OrderId ?? "",
+                    kuCoinConfig.Value);
+                var executedQuantity = decimal.Parse(orderDetails.DealSize);
+                if (!orderDetails.IsActive && executedQuantity > 0)
                 {
-                    var orderDetails = await kuCoinService.GetOrderDetails(step.OrderId ?? "",
-                        kuCoinConfig.Value);
-                    var executedQuantity = decimal.Parse(orderDetails.DealSize);
-                    if (!orderDetails.IsActive && executedQuantity > 0)
+                    step.OrderId = null;
+                    step.Status = SpotGridStepStatus.AwaitingSell;
+                    step.Orders.Add(new SpotOrder
                     {
-                        step.OrderId = null;
-                        step.Status = SpotGridStepStatus.AwaitingSell;
-                        step.Orders.Add(new SpotOrder
-                        {
-                            UserId = grid.UserId,
-                            Symbol = grid.Symbol,
-                            OrderId = orderDetails.Id,
-                            ClientOrderId = orderDetails.ClientOid,
-                            Price = decimal.Parse(orderDetails.Price),
-                            OrigQty = decimal.Parse(orderDetails.Size),
-                            TimeInForce = orderDetails.TimeInForce,
-                            Type = orderDetails.Type,
-                            Side = orderDetails.Side,
-                            Fee = decimal.Parse(orderDetails.Fee),
-                            FeeCurrency = orderDetails.FeeCurrency,
-                            CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
-                            UpdatedAt = DateTime.UtcNow
-                        });
-                    }
-                });
-
-            await Task.WhenAll(tasks);
+                        UserId = grid.UserId,
+                        Symbol = grid.Symbol,
+                        OrderId = orderDetails.Id,
+                        ClientOrderId = orderDetails.ClientOid,
+                        Price = decimal.Parse(orderDetails.Price),
+                        OrigQty = decimal.Parse(orderDetails.Size),
+                        TimeInForce = orderDetails.TimeInForce,
+                        Type = orderDetails.Type,
+                        Side = orderDetails.Side,
+                        Fee = decimal.Parse(orderDetails.Fee),
+                        FeeCurrency = orderDetails.FeeCurrency,
+                        CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                await notifier.NotifyError(ex.Message, ex);
+            }
         }
 
-        private async Task ChangeStepStatusToSellOrderPlaced(SpotGrid grid, List<SpotGridStep> gridSteps)
+        private async Task ChangeStepStatusToSellOrderPlaced(SpotGrid grid, SpotGridStep step)
         {
-            var tasks = gridSteps
-                .Select(async step =>
-                {
-                    var buyOrder = step.Orders
-                        .Where(x => x.Side == "buy" && x.Price == step.BuyPrice)
-                        .OrderBy(x => x.CreatedAt)
-                        .Last();
-                    var orderId = await kuCoinService.PlaceOrder(new OrderRequest
-                        {
-                            Symbol = grid.Symbol,
-                            Side = "sell",
-                            Type = "limit",
-                            Price = step.SellPrice.ToString(CultureInfo.InvariantCulture),
-                            Size = buyOrder.OrigQty.ToString(CultureInfo.InvariantCulture)
-                        },
-                        kuCoinConfig.Value);
-                    step.OrderId = orderId;
-                    step.Status = SpotGridStepStatus.SellOrderPlaced;
-                });
-            await Task.WhenAll(tasks);
-        }
-
-        private async Task ChangeStepStatusToAwaitingBuy(SpotGrid grid, List<SpotGridStep> gridSteps)
-        {
-            var tasks = gridSteps
-                .Select(async step =>
-                {
-                    var orderDetails = await kuCoinService.GetOrderDetails(step.OrderId ?? "",
-                        kuCoinConfig.Value);
-                    var executedQuantity = decimal.Parse(orderDetails.DealSize);
-
-                    if (!orderDetails.IsActive && executedQuantity > 0)
+            try
+            {
+                var buyOrder = step.Orders
+                    .Where(x => x.Side == "buy" && x.Price == step.BuyPrice)
+                    .OrderBy(x => x.CreatedAt)
+                    .Last();
+                var orderId = await kuCoinService.PlaceOrder(new OrderRequest
                     {
-                        step.OrderId = null;
-                        step.Status = SpotGridStepStatus.AwaitingBuy;
-                        step.Orders.Add(new SpotOrder
-                        {
-                            UserId = grid.UserId,
-                            Symbol = grid.Symbol,
-                            OrderId = orderDetails.Id,
-                            ClientOrderId = orderDetails.ClientOid,
-                            Price = decimal.Parse(orderDetails.Price),
-                            OrigQty = decimal.Parse(orderDetails.Size),
-                            TimeInForce = orderDetails.TimeInForce,
-                            Type = orderDetails.Type,
-                            Side = orderDetails.Side,
-                            Fee = decimal.Parse(orderDetails.Fee),
-                            FeeCurrency = orderDetails.FeeCurrency,
-                            CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
-                            UpdatedAt = DateTime.UtcNow
-                        });
-                    }
-                });
+                        Symbol = grid.Symbol,
+                        Side = "sell",
+                        Type = "limit",
+                        Price = step.SellPrice.ToString(CultureInfo.InvariantCulture),
+                        Size = buyOrder.OrigQty.ToString(CultureInfo.InvariantCulture)
+                    },
+                    kuCoinConfig.Value);
+                step.OrderId = orderId;
+                step.Status = SpotGridStepStatus.SellOrderPlaced;
+            }
+            catch (Exception ex)
+            {
+                await notifier.NotifyError(ex.Message, ex);
+            }
+        }
 
-            await Task.WhenAll(tasks);
+        private async Task ChangeStepStatusToAwaitingBuy(SpotGrid grid, SpotGridStep step)
+        {
+            try
+            {
+                var orderDetails = await kuCoinService.GetOrderDetails(step.OrderId ?? "",
+                    kuCoinConfig.Value);
+                var executedQuantity = decimal.Parse(orderDetails.DealSize);
+
+                if (!orderDetails.IsActive && executedQuantity > 0)
+                {
+                    step.OrderId = null;
+                    step.Status = SpotGridStepStatus.AwaitingBuy;
+                    step.Orders.Add(new SpotOrder
+                    {
+                        UserId = grid.UserId,
+                        Symbol = grid.Symbol,
+                        OrderId = orderDetails.Id,
+                        ClientOrderId = orderDetails.ClientOid,
+                        Price = decimal.Parse(orderDetails.Price),
+                        OrigQty = decimal.Parse(orderDetails.Size),
+                        TimeInForce = orderDetails.TimeInForce,
+                        Type = orderDetails.Type,
+                        Side = orderDetails.Side,
+                        Fee = decimal.Parse(orderDetails.Fee),
+                        FeeCurrency = orderDetails.FeeCurrency,
+                        CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                await notifier.NotifyError(ex.Message, ex);
+            }
         }
     }
 }

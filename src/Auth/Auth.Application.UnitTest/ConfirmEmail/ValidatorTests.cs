@@ -29,42 +29,43 @@ namespace Auth.Application.UnitTest.ConfirmEmail
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfCommandIsEmpty()
+        public async void ThrowUnprocessableEntityException_IfCommandIsEmpty()
         {
             // Arrange
             _command = new ConfirmEmailCommand(string.Empty, string.Empty);
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"userId":"UserId is required.","code":"Code is required."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"userId\",\"errors\":[\"UserId is required.\"]},{\"name\":\"code\",\"errors\":[\"Code is required.\"]}]");
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfMissingCode()
+        public async void ThrowUnprocessableEntityException_IfMissingCode()
         {
             // Arrange
             _command.Code = string.Empty;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"code":"Code is required."}""");
+            exception.Message.ShouldBe("[{\"name\":\"code\",\"errors\":[\"Code is required.\"]}]");
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfMissingUserId()
+        public async void ThrowUnprocessableEntityException_IfMissingUserId()
         {
             // Arrange
             _command.UserId = string.Empty;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"userId":"UserId is required."}""");
+            exception.Message.ShouldBe("[{\"name\":\"userId\",\"errors\":[\"UserId is required.\"]}]");
         }
     }
 }

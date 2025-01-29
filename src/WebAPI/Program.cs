@@ -2,6 +2,7 @@ using Auth.Infrastructure;
 using Auth.Infrastructure.Data;
 using Cex.Infrastructure;
 using Lib.Application.Abstractions;
+using Lib.Notifications;
 using Serilog;
 using WebAPI.HostedServices;
 using WebAPI.Middleware;
@@ -34,6 +35,7 @@ builder.Services.AddTransient(_ =>
     new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
 builder.Services.AddControllers();
 builder.Services.AddOpenApiDocument();
+builder.Services.AddTelegramNotifier(builder.Configuration);
 builder.Services.AddAuthInfrastructureServices(builder.Configuration);
 builder.Services.AddCexInfrastructureServices(builder.Configuration);
 

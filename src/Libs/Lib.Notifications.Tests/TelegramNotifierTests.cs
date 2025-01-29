@@ -16,6 +16,7 @@ namespace Lib.Notifications.Tests
         public async void NotifyInfo_Success()
         {
             await _notifier.NotifyInfo("test message", "desc");
+            await _notifier.NotifyInfo("desc", new { firstName = "John", lastName = "Doe" });
         }
 
         [Fact]

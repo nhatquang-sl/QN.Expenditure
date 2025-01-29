@@ -15,6 +15,8 @@ namespace Lib.ExternalServices
         public static IServiceCollection AddLibExternalServices(this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddTransient<HttpDelegatingHandler>();
+
             services
                 .AddRefitClient<ICexService>()
                 .ConfigureHttpClient(c =>
@@ -34,7 +36,8 @@ namespace Lib.ExternalServices
             services.Configure<KuCoinConfig>(configuration.GetSection("KuCoinConfig"));
             services
                 .AddRefitClient<IKuCoinService>()
-                .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.kucoin.com"));
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.kucoin.com"))
+                .AddHttpMessageHandler<HttpDelegatingHandler>();
 
             services.AddEmailServices(configuration);
             return services;

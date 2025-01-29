@@ -19,10 +19,19 @@ namespace Lib.ExternalServices.Tests.KuCoin
                 Price = "100",
                 Size = "0.01"
             }, kuCoinConfig);
+            Assert.NotNull(orderId);
+            Assert.NotEmpty(orderId);
 
             var order = await kuCoinService.GetOrderDetails(orderId, kuCoinConfig);
+            Assert.NotNull(order);
+            Assert.Equal(orderId, order.Id);
 
             var res = await kuCoinService.GetOrders("done", kuCoinConfig);
+            Assert.NotNull(res);
+            Assert.True(res.Length > 0);
+
+            var cancelRes = await kuCoinService.CancelOrder(orderId, kuCoinConfig);
+            Assert.Contains(orderId, cancelRes);
         }
     }
 }

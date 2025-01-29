@@ -22,33 +22,33 @@ namespace Auth.Application.UnitTest.Register
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfMissing()
+        public async void ThrowUnprocessableEntityException_IfMissing()
         {
             // Arrange
             _command.Email = string.Empty;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"email":"Email is required."}""");
+            exception.Message.ShouldBe("[{\"name\":\"email\",\"errors\":[\"Email is required.\"]}]");
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfInvalid()
+        public async void ThrowUnprocessableEntityException_IfInvalid()
         {
             // Arrange
             _command.Email = "sunlighyopmail.com";
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"email":"Email is invalid."}""");
+            exception.Message.ShouldBe("[{\"name\":\"email\",\"errors\":[\"Email is invalid.\"]}]");
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfReachedMaximumLength()
+        public async void ThrowUnprocessableEntityException_IfReachedMaximumLength()
         {
             // Arrange
             _command.Email = string.Empty;
@@ -58,10 +58,11 @@ namespace Auth.Application.UnitTest.Register
             }
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"email":"Email has reached a maximum of 255 characters."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"email\",\"errors\":[\"Email has reached a maximum of 255 characters.\"]}]");
         }
     }
 }

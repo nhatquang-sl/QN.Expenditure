@@ -33,15 +33,16 @@ namespace Cex.Application.Grid.Commands.CreateSpotGrid
             entity.CreatedAt = entity.UpdatedAt = DateTime.UtcNow;
             entity.TriggerPrice = command.TriggerPrice;
             entity.GridMode = command.GridMode;
-            var range = command.UpperPrice - command.LowerPrice;
-            var amount = range / command.NumberOfGrids;
+            var stepSize = (command.UpperPrice - command.LowerPrice) / command.NumberOfGrids;
+            var investmentPerStep = command.Investment / command.NumberOfGrids;
+
             for (var i = 0; i < command.NumberOfGrids; i++)
             {
                 entity.GridSteps.Add(new SpotGridStep
                 {
-                    BuyPrice = (command.LowerPrice + amount * i).RoundDownStd(),
-                    SellPrice = (command.LowerPrice + amount * (i + 1)).RoundDownStd(),
-                    Qty = (command.Investment / (command.LowerPrice + amount * i)).RoundDownStd(),
+                    BuyPrice = (command.LowerPrice + stepSize * i).RoundDownStd(),
+                    SellPrice = (command.LowerPrice + stepSize * (i + 1)).RoundDownStd(),
+                    Qty = investmentPerStep / (command.LowerPrice + stepSize * i),
                     Status = SpotGridStepStatus.AwaitingBuy
                 });
             }

@@ -23,6 +23,7 @@ namespace Cex.Infrastructure.IntegrationTests
             var currentUserMock = new Mock<ICurrentUser>();
             currentUserMock.SetupGet(user => user.Id).Returns(Guid.NewGuid().ToString());
             ServiceCollection.AddSingleton(currentUserMock.Object);
+            ServiceCollection.AddSingleton(new Mock<INotifier>().Object);
         }
 
         public void Dispose()

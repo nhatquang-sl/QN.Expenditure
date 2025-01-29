@@ -18,7 +18,6 @@ namespace Lib.Notifications
                 .AddRefitClient<ITelegramService>()
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.telegram.org"))
                 .AddHttpMessageHandler<HttpDelegatingHandler>();
-            ;
 
             services.AddScoped<INotifier, TelegramNotifier>();
 

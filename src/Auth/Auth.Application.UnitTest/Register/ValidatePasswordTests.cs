@@ -30,10 +30,11 @@ namespace Auth.Application.UnitTest.Register
             _command.Password = input;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"password":"Password must contain at least one number."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"password\",\"errors\":[\"Password must contain at least one number.\"]}]");
         }
 
         [Theory]
@@ -45,10 +46,11 @@ namespace Auth.Application.UnitTest.Register
             _command.Password = input;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"password":"Password must contain at least one number."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"password\",\"errors\":[\"Password must contain at least one number.\"]}]");
         }
 
         [Theory]
@@ -60,11 +62,11 @@ namespace Auth.Application.UnitTest.Register
             _command.Password = input;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
             exception.Message.ShouldBe(
-                """{"password":"Password must have at least one uppercase (\u0027A\u0027-\u0027Z\u0027)."}""");
+                "[{\"name\":\"password\",\"errors\":[\"Password must have at least one uppercase (\\u0027A\\u0027-\\u0027Z\\u0027).\"]}]");
         }
 
         [Theory]
@@ -76,10 +78,11 @@ namespace Auth.Application.UnitTest.Register
             _command.Password = input;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"password":"Password must be at least 6 characters."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"password\",\"errors\":[\"Password must be at least 6 characters.\"]}]");
         }
 
         [Theory]

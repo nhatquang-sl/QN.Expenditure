@@ -14,13 +14,20 @@ namespace Lib.Notifications.Tests
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(@"D:\QN.Expenditure\src\WebAPI\QN.Expenditure.Credentials\appsettings.json")
                 .Build();
+            var pathUrl = configuration.GetValue<string>("Notifier:PathUrl");
+            var pathUrls = pathUrl?.Split(";");
+            if (pathUrls != null)
+            {
+                pathUrls[2] = "215";
+                pathUrl = string.Join(';', pathUrls);
+            }
 
             var mockConfiguration = new Mock<IConfiguration>();
             var mockSection = new Mock<IConfigurationSection>();
 
             // Mock the Value property of the IConfigurationSection
             mockSection.Setup(x => x.Value)
-                .Returns(configuration.GetValue<string>("Notifier:PathUrl") ?? "");
+                .Returns(pathUrl);
 
             // Mock the GetSection method of IConfiguration to return the mocked section
             mockConfiguration

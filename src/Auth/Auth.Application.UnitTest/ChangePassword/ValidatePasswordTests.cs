@@ -24,11 +24,11 @@ namespace Auth.Application.UnitTest.ChangePassword
             var command = new ChangePasswordCommand(ValidPassword, input, "a" + input);
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(command));
 
             // Assert
             exception.Message.ShouldBe(
-                """{"password":"Password must contain at least one number.","confirmPassword":"Confirm Password and New Password do not match."}""");
+                "[{\"name\":\"password\",\"errors\":[\"Password must contain at least one number.\"]},{\"name\":\"confirmPassword\",\"errors\":[\"Confirm Password and New Password do not match.\"]}]");
         }
 
         [Theory]
@@ -40,11 +40,11 @@ namespace Auth.Application.UnitTest.ChangePassword
             var command = new ChangePasswordCommand(ValidPassword, input, "a" + input);
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(command));
 
             // Assert
             exception.Message.ShouldBe(
-                """{"password":"Password must contain at least one number.","confirmPassword":"Confirm Password and New Password do not match."}""");
+                "[{\"name\":\"password\",\"errors\":[\"Password must contain at least one number.\"]},{\"name\":\"confirmPassword\",\"errors\":[\"Confirm Password and New Password do not match.\"]}]");
         }
 
         [Theory]
@@ -56,11 +56,11 @@ namespace Auth.Application.UnitTest.ChangePassword
             var command = new ChangePasswordCommand(ValidPassword, input, "a" + input);
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(command));
 
             // Assert
             exception.Message.ShouldBe(
-                """{"password":"Password must have at least one uppercase (\u0027A\u0027-\u0027Z\u0027).","confirmPassword":"Confirm Password and New Password do not match."}""");
+                "[{\"name\":\"password\",\"errors\":[\"Password must have at least one uppercase (\\u0027A\\u0027-\\u0027Z\\u0027).\"]},{\"name\":\"confirmPassword\",\"errors\":[\"Confirm Password and New Password do not match.\"]}]");
         }
 
         [Theory]
@@ -72,11 +72,11 @@ namespace Auth.Application.UnitTest.ChangePassword
             var command = new ChangePasswordCommand(ValidPassword, input, "a" + input);
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(command));
 
             // Assert
             exception.Message.ShouldBe(
-                """{"password":"Password must be at least 6 characters.","confirmPassword":"Confirm Password and New Password do not match."}""");
+                "[{\"name\":\"password\",\"errors\":[\"Password must be at least 6 characters.\"]},{\"name\":\"confirmPassword\",\"errors\":[\"Confirm Password and New Password do not match.\"]}]");
         }
 
         [Theory]
@@ -88,10 +88,11 @@ namespace Auth.Application.UnitTest.ChangePassword
             var command = new ChangePasswordCommand(ValidPassword, input, "a" + input);
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(command));
 
             // Assert
-            exception.Message.ShouldBe("""{"confirmPassword":"Confirm Password and New Password do not match."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"confirmPassword\",\"errors\":[\"Confirm Password and New Password do not match.\"]}]");
         }
 
         [Theory]

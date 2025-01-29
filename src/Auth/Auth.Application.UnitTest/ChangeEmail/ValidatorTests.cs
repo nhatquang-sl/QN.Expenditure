@@ -21,10 +21,10 @@ namespace Auth.Application.UnitTest.ChangeEmail
             var command = new ChangeEmailCommand(string.Empty);
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(command));
 
             // Assert
-            exception.Message.ShouldBe("""{"newEmail":"New Email is required."}""");
+            exception.Message.ShouldBe("[{\"name\":\"newEmail\",\"errors\":[\"New Email is required.\"]}]");
         }
 
         [Fact]
@@ -34,10 +34,10 @@ namespace Auth.Application.UnitTest.ChangeEmail
             var command = new ChangeEmailCommand("sunlighyopmail.com");
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(command));
 
             // Assert
-            exception.Message.ShouldBe("""{"newEmail":"New Email is invalid."}""");
+            exception.Message.ShouldBe("[{\"name\":\"newEmail\",\"errors\":[\"New Email is invalid.\"]}]");
         }
 
         [Fact]
@@ -53,10 +53,11 @@ namespace Auth.Application.UnitTest.ChangeEmail
             var command = new ChangeEmailCommand(email);
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(command));
 
             // Assert
-            exception.Message.ShouldBe("""{"newEmail":"New Email has reached a maximum of 255 characters."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"newEmail\",\"errors\":[\"New Email has reached a maximum of 255 characters.\"]}]");
         }
     }
 }

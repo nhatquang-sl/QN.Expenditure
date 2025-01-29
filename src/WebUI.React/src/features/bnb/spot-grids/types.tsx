@@ -10,8 +10,8 @@ export const GridOrderSchema = z
     numberOfGrids: z.number(),
     gridMode: z.number().default(SpotGridMode.ARITHMETIC),
     investment: z.number(),
-    takeProfit: z.coerce.number().optional(),
-    stopLoss: z.coerce.number().optional(),
+    takeProfit: z.coerce.number().nullable(),
+    stopLoss: z.coerce.number().nullable(),
   })
   .refine((data) => data.upperPrice > data.lowerPrice, {
     message: 'Upper Price must be greater than Lower Price',

@@ -27,6 +27,11 @@ namespace Lib.ExternalServices.KuCoin
 
             var res = await PlaceOrder(body, credentials.ApiKey, signature, timestamp,
                 credentials.ApiPassphrase);
+            if (res.Data == null || string.IsNullOrWhiteSpace(res.Data.OrderId))
+            {
+                throw new Exception(res.Msg);
+            }
+
             return res.Data.OrderId;
         }
 
@@ -41,6 +46,18 @@ namespace Lib.ExternalServices.KuCoin
             var res = await GetOrderDetails(orderId, credentials.ApiKey, signature,
                 timestamp, credentials.ApiPassphrase);
             return res.Data;
+        }
+
+        public Task<string> CancelOrder(
+            string orderId,
+            KuCoinConfig credentials
+        )
+        {
+            var (signature, timestamp) = GenerateSignature(credentials.ApiSecret, "DELETE",
+                $"/api/v1/orders/{orderId}");
+
+            return CancelOrder(orderId, credentials.ApiKey, signature,
+                timestamp, credentials.ApiPassphrase);
         }
 
         public async Task<string> GetOrders(
@@ -98,6 +115,16 @@ namespace Lib.ExternalServices.KuCoin
             [Header("KC-API-VERSION")] string apiVersion = "2"
         );
 
+        [Delete("/api/v1/orders/{orderId}")]
+        Task<string> CancelOrder(
+            string orderId,
+            [Header("KC-API-KEY")] string apiKey,
+            [Header("KC-API-SIGN")] string apiSign,
+            [Header("KC-API-TIMESTAMP")] string apiTimestamp,
+            [Header("KC-API-PASSPHRASE")] string apiPassphrase,
+            [Header("KC-API-VERSION")] string apiVersion = "2"
+        );
+
         // https://www.kucoin.com/docs/rest/spot-trading/orders/get-order-list
         [Get("/api/v1/orders")]
         Task<string> GetOrders(
@@ -141,8 +168,6 @@ namespace Lib.ExternalServices.KuCoin
 
     public class OrderRequest
     {
-        public string ClientOid { get; set; } // Unique order ID (UUID recommended)
-
         public string Side { get; init; } // buy or sell
 
         public string Symbol { get; init; } // e.g., BTC-USDT
@@ -196,6 +221,7 @@ namespace Lib.ExternalServices.KuCoin
     public class KuCoinResponse<T>
     {
         public string Code { get; set; }
+        public string Msg { get; set; }
         public T Data { get; set; }
     }
 }

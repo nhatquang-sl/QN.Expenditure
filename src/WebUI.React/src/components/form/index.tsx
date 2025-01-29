@@ -49,7 +49,7 @@ export default function Form(props: {
     try {
       setSubmitErrors([]);
       setErrorMessage('');
-
+      console.log('Form Submit', data);
       await props.onSubmit(data);
       reset();
     } catch (err: any) {
@@ -64,6 +64,10 @@ export default function Form(props: {
 
   const onCloseErrorMessage = () => {
     setErrorMessage('');
+  };
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log(event.target.value);
   };
 
   console.log(formError);
@@ -112,23 +116,24 @@ export default function Form(props: {
                   ))}
                 </TextField>
               );
-
+            console.log(el);
             return (
               <TextField
                 key={elId}
                 {...register(elId, {
                   setValueAs: (v) => {
-                    if (v === '') return '';
-                    if (el.type === 'number') return v === '' ? undefined : parseFloat(v);
-                    else return v;
+                    if (v === '') return null; // Ensure empty input is converted to null
+                    if (el.type === 'number') return isNaN(parseFloat(v)) ? null : parseFloat(v);
+                    return v;
                   },
                 })}
                 id={elId}
-                defaultValue={el.defaultValue}
+                defaultValue={el.label == 'Take Profit' ? null : el.defaultValue}
                 label={el.label}
                 type={el.type}
                 error={elErrors.length > 0}
                 helperText={<ErrorHelperText errors={elErrors} />}
+                onChange={handleChange}
                 sx={{ flex: el.flex }}
               />
             );

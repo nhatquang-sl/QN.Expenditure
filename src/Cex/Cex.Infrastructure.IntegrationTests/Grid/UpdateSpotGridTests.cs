@@ -27,8 +27,6 @@ namespace Cex.Infrastructure.IntegrationTests.Grid
         {
             // Arrange
             var createdAt = DateTime.UtcNow;
-            _context.SpotGrids.Add(new SpotGrid());
-            await _context.SaveChangesAsync(default);
             var updatedAt = DateTime.UtcNow.AddHours(1).ToUnixTimestampMilliseconds().ToDateTimeFromMilliseconds();
 
             // Act

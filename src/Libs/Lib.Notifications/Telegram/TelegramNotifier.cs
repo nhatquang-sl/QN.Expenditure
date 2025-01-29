@@ -1,4 +1,6 @@
+using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using Lib.Application.Abstractions;
 using Lib.ExternalServices.Telegram;
 using Lib.ExternalServices.Telegram.Models;
@@ -8,6 +10,11 @@ namespace Lib.Notifications.Telegram
 {
     public class TelegramNotifier : INotifier
     {
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            WriteIndented = true // Enables formatted (pretty-print) JSON output
+        };
+
         private readonly string _botToken;
         private readonly string _chatId;
         private readonly ITelegramService _httpClient;
@@ -27,9 +34,16 @@ namespace Lib.Notifications.Telegram
             return Notify(title, description, null, cancellationToken);
         }
 
-        public Task NotifyError(string title, object data, CancellationToken cancellationToken = default)
+        public Task NotifyInfo(string description, object data, CancellationToken cancellationToken = default)
         {
-            return Notify($"❌{title}❌", null, data, cancellationToken);
+            return Notify($"{DateTime.UtcNow}: {Assembly.GetCallingAssembly()?.GetName().Name}", description, data,
+                cancellationToken);
+        }
+
+        public Task NotifyError(string description, object data, CancellationToken cancellationToken = default)
+        {
+            var title = $"❌{DateTime.UtcNow}: {Assembly.GetCallingAssembly()?.GetName().Name}❌";
+            return Notify(title, description, data, cancellationToken);
         }
 
         private async Task Notify(string title, string? description, object? data,
@@ -47,6 +61,11 @@ namespace Lib.Notifications.Telegram
             }
 
             var pre = data?.ToString();
+            if (data is not Exception and not string)
+            {
+                pre = JsonSerializer.Serialize(data, JsonOptions);
+            }
+
             if (data is not null && !string.IsNullOrWhiteSpace(pre))
             {
                 formattedText.AppendLine($"<pre>{EscapeHtml(pre)}</pre>");

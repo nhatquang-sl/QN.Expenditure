@@ -19,7 +19,7 @@ import { GridOrderData, GridOrderSchema } from '../types';
 //   new InputOption(SpotGridMode.ARITHMETIC, 'arithmetic'),
 //   new InputOption(SpotGridMode.GEOMETRIC, 'geometric'),
 // ];
-const SYMBOLS = [new InputOption('BTCUSDT'), new InputOption('CYBERUSDT')];
+const SYMBOLS = [new InputOption('BTC-USDT'), new InputOption('CYBERUSDT')];
 export default function BnbCreateSpotGrids() {
   const onSubmit = async (data: GridOrderData) => {
     const range = data.upperPrice - data.lowerPrice;
@@ -35,6 +35,7 @@ export default function BnbCreateSpotGrids() {
       );
     }
     console.log(data.upperPrice - data.lowerPrice);
+    console.log(data);
     const res = await bnbSpotGridClient.create(data as CreateSpotGridCommand);
     console.log(res);
   };

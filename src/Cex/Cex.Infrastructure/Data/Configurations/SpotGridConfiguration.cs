@@ -8,6 +8,8 @@ namespace Cex.Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<SpotGrid> builder)
         {
+            builder.HasQueryFilter(t => t.DeletedAt == null);
+
             builder.Property(t => t.LowerPrice)
                 .HasPrecision(13, 6)
                 .IsRequired();

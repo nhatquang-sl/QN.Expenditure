@@ -34,7 +34,7 @@ export class InputElement {
   constructor(
     type: 'text' | 'select' | 'number',
     label: string,
-    defaultValue?: unknown,
+    defaultValue: unknown = null,
     flex: number | 'none' = 1
   ) {
     this.type = type;
@@ -45,7 +45,7 @@ export class InputElement {
   type: 'text' | 'select' | 'number' | undefined = 'text';
   label: string = '';
   flex: number | 'none';
-  defaultValue?: unknown;
+  defaultValue?: unknown = null;
   options: InputOption[] = [];
 }
 

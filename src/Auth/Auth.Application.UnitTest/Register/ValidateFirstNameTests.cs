@@ -22,35 +22,36 @@ namespace Auth.Application.UnitTest.Register
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfMissing()
+        public async void ThrowUnprocessableEntityException_IfMissing()
         {
             // Arrange
             _command.FirstName = string.Empty;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"firstName":"First Name is required."}""");
+            exception.Message.ShouldBe("[{\"name\":\"firstName\",\"errors\":[\"First Name is required.\"]}]");
         }
 
         [Theory]
         [InlineData("a")]
         [InlineData("b")]
-        public async void ThrowBadRequestException_IfTooShort(string input)
+        public async void ThrowUnprocessableEntityException_IfTooShort(string input)
         {
             // Arrange
             _command.FirstName = input;
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"firstName":"First Name must be at least 2 characters."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"firstName\",\"errors\":[\"First Name must be at least 2 characters.\"]}]");
         }
 
         [Fact]
-        public async void ThrowBadRequestException_IfTooLong()
+        public async void ThrowUnprocessableEntityException_IfTooLong()
         {
             // Arrange
             _command.FirstName = string.Empty;
@@ -60,10 +61,11 @@ namespace Auth.Application.UnitTest.Register
             }
 
             // Act
-            var exception = await Should.ThrowAsync<BadRequestException>(() => _sender.Send(_command));
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
 
             // Assert
-            exception.Message.ShouldBe("""{"firstName":"First Name has reached a maximum of 50 characters."}""");
+            exception.Message.ShouldBe(
+                "[{\"name\":\"firstName\",\"errors\":[\"First Name has reached a maximum of 50 characters.\"]}]");
         }
 
         [Theory]
