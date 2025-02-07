@@ -17,6 +17,7 @@ namespace Lib.Notifications.Telegram
 
         private readonly string _botToken;
         private readonly string _chatId;
+        private readonly bool _hasEnabled;
         private readonly ITelegramService _httpClient;
         private readonly string _msgThreadId;
 
@@ -27,6 +28,7 @@ namespace Lib.Notifications.Telegram
             _botToken = urlConfig?[0] ?? throw new InvalidOperationException();
             _chatId = urlConfig[1];
             _msgThreadId = urlConfig[2];
+            _hasEnabled = !string.IsNullOrWhiteSpace(_chatId) && !string.IsNullOrWhiteSpace(_msgThreadId);
         }
 
         public Task NotifyInfo(string title, string description, CancellationToken cancellationToken = default)
@@ -49,6 +51,11 @@ namespace Lib.Notifications.Telegram
         private async Task Notify(string title, string? description, object? data,
             CancellationToken cancellationToken = default)
         {
+            if (!_hasEnabled)
+            {
+                return;
+            }
+
             var formattedText = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(title))
             {

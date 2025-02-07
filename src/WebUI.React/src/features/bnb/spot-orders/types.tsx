@@ -37,15 +37,15 @@ export interface SummaryColumn {
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: any) => string | JSX.Element;
+  format?: (value: string | number) => string | JSX.Element;
 }
 export const summaryColumns: readonly SummaryColumn[] = [
   { id: 'symbol', label: 'Symbol' },
   { id: 'buy', label: 'Buy', format: (value) => round4Dec(value).toString() },
   { id: 'buyAvgPrice', label: 'Avg Price', format: (value) => round4Dec(value).toString() },
   { id: 'buyNew', label: 'Buy New' },
-  { id: 'sell', label: 'Sell', format: (value) => parseFloat(value).toString() },
-  { id: 'sellNew', label: 'Sell New', format: (value) => parseFloat(value).toString() },
+  { id: 'sell', label: 'Sell', format: (value) => parseFloat(value as string).toString() },
+  { id: 'sellNew', label: 'Sell New', format: (value) => parseFloat(value as string).toString() },
   {
     id: 'cumBuy',
     label: 'Cum Buy Quote',

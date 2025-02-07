@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const GridOrderSchema = z
   .object({
-    symbol: z.string(),
+    // symbol: z.string(),
     triggerPrice: z.number(),
     lowerPrice: z.number(),
     upperPrice: z.number(),

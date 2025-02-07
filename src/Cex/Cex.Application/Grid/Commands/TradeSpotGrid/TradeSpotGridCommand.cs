@@ -8,6 +8,7 @@ using Lib.ExternalServices.KuCoin;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Refit;
 
 namespace Cex.Application.Grid.Commands.TradeSpotGrid
 {
@@ -130,7 +131,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
             };
             var symbols = grid.Symbol.Split('-');
             var alertMessage =
-                $"Bot {grid.Id}: Buy {step.Qty:G29} {symbols[0]} for {step.Qty * step.BuyPrice:G29} {symbols[1]} ({grid.Symbol})"; //BotId: {grid.Id}, Buy {grid.Symbol}: {step.Qty}-{step.Qty * step.BuyPrice}";
+                $"Bot {grid.Id}: Buy {FormatPrice(step.Qty)} {symbols[0]} for {FormatPrice(step.Qty * step.BuyPrice)} {symbols[1]} ({grid.Symbol})"; //BotId: {grid.Id}, Buy {grid.Symbol}: {step.Qty}-{step.Qty * step.BuyPrice}";
             try
             {
                 var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
@@ -176,7 +177,13 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
             }
             catch (Exception ex)
             {
-                await notifier.NotifyError(ex.Message, ex);
+                var message = ex.Message;
+                if (ex is ApiException exception)
+                {
+                    message = exception.Content ?? exception.Message;
+                }
+
+                await notifier.NotifyError(message, ex);
             }
         }
 
@@ -187,7 +194,12 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                 var buyOrder = step.Orders
                     .Where(x => x.Side == "buy" && x.Price == step.BuyPrice)
                     .OrderBy(x => x.CreatedAt)
-                    .Last();
+                    .LastOrDefault();
+                if (buyOrder == null)
+                {
+                    return;
+                }
+
                 var orderId = await kuCoinService.PlaceOrder(new OrderRequest
                     {
                         Symbol = grid.Symbol,
@@ -202,6 +214,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
             }
             catch (Exception ex)
             {
+                logTrace.LogError("ChangeStepStatusToSellOrderPlaced()", ex);
                 await notifier.NotifyError(ex.Message, ex);
             }
         }
@@ -240,6 +253,17 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
             {
                 await notifier.NotifyError(ex.Message, ex);
             }
+        }
+
+        private string FormatPrice(decimal price)
+        {
+            var formatted = price.ToString("G29", CultureInfo.InvariantCulture);
+            if (formatted.Contains('E'))
+            {
+                formatted = price.ToString("F10").TrimEnd('0').TrimEnd('.');
+            }
+
+            return formatted;
         }
     }
 }

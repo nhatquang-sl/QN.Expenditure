@@ -32,7 +32,7 @@ function makeId(length: number = 5) {
 
 export class InputElement {
   constructor(
-    type: 'text' | 'select' | 'number',
+    type: 'text' | 'select' | 'number' | 'compute',
     label: string,
     defaultValue: unknown = null,
     flex: number | 'none' = 1
@@ -42,11 +42,12 @@ export class InputElement {
     this.flex = flex;
     this.defaultValue = defaultValue;
   }
-  type: 'text' | 'select' | 'number' | undefined = 'text';
+  type: 'text' | 'select' | 'number' | 'compute' = 'text';
   label: string = '';
   flex: number | 'none';
   defaultValue?: unknown = null;
   options: InputOption[] = [];
+  computedValue?: (getValues: (fieldId: string) => string) => string;
 }
 
 export class SelectElement extends InputElement {
@@ -74,7 +75,7 @@ export class InputOption {
     else this.label = label;
   }
   label: string | number;
-  value: any;
+  value: string | number;
 }
 
 export class ActionElement {

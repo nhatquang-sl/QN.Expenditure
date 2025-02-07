@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { LoadingButton } from '@mui/lab';
-import { Alert, Grid, MenuItem, TextField } from '@mui/material';
+import { Alert, Box, Grid, MenuItem, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import { UnprocessableEntity } from 'store/api-client';
@@ -28,22 +28,43 @@ function ErrorHelperText(props: { errors: string[] }) {
   );
 }
 
+import { useCallback, useRef } from 'react';
+
+export function useDebounce<T extends (...args: any[]) => void>(callback: T, delay = 300) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  return useCallback(
+    (...args: Parameters<T>) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  );
+}
+
 // https://www.youtube.com/watch?v=aCRaGQmUiQE
-export default function Form(props: {
+export default function Form<T extends Record<string, any>>(props: {
   blocks: Block[];
   resolver: Resolver;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: T) => Promise<void>;
 }) {
   const { blocks } = props;
   const {
     handleSubmit,
     register,
     reset,
+    getValues,
     formState: { errors: formError },
   } = useForm({ resolver: props.resolver });
   const [submitErrors, setSubmitErrors] = useState<UnprocessableEntity[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [computedValues, setComputedValues] = useState(new Map<string, string>());
+
   const onSubmit = async (data: any) => {
     setLoading(true);
     try {
@@ -66,11 +87,27 @@ export default function Form(props: {
     setErrorMessage('');
   };
 
+  const debouncedSearch = useDebounce((event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log({ value: event.target.value, id: event.target.id });
+    for (const block of blocks) {
+      for (const el of block.elements) {
+        if (el.computedValue) {
+          const computedId = camelCase(el.label);
+          const computedValue = el.computedValue((elId: string) => {
+            if (elId === event.target.id) return event.target.value;
+            return getValues(elId).toString();
+          });
+          computedValues.set(computedId, computedValue);
+          setComputedValues(new Map(computedValues));
+        }
+      }
+    }
+  }, 1000);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(event.target.value);
+    debouncedSearch(event);
   };
 
-  console.log(formError);
   return (
     <Grid
       container
@@ -108,6 +145,7 @@ export default function Form(props: {
                   error={elErrors.length > 0}
                   helperText={<ErrorHelperText errors={elErrors} />}
                   sx={{ minWidth: 120 }}
+                  size="small"
                 >
                   {el.options.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -116,7 +154,25 @@ export default function Form(props: {
                   ))}
                 </TextField>
               );
-            console.log(el);
+            else if (el.type === 'compute')
+              return (
+                <Box key={elId} sx={{ flex: el.flex }}>
+                  <Typography
+                    variant="subtitle2"
+                    gutterBottom
+                    dangerouslySetInnerHTML={{ __html: el.label }}
+                  />
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    gutterBottom
+                    dangerouslySetInnerHTML={{
+                      __html: computedValues.get(elId) ?? (el.defaultValue || ''),
+                    }}
+                  />
+                </Box>
+              );
+            // console.log(el);
             return (
               <TextField
                 key={elId}
@@ -128,13 +184,14 @@ export default function Form(props: {
                   },
                 })}
                 id={elId}
-                defaultValue={el.label == 'Take Profit' ? null : el.defaultValue}
+                defaultValue={el.defaultValue}
                 label={el.label}
                 type={el.type}
                 error={elErrors.length > 0}
                 helperText={<ErrorHelperText errors={elErrors} />}
                 onChange={handleChange}
                 sx={{ flex: el.flex }}
+                size="small"
               />
             );
           })}

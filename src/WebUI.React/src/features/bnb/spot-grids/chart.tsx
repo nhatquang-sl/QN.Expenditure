@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MenuItem, TextField } from '@mui/material';
+import { Paper } from '@mui/material';
 import { CandlestickData, IChartApi, ISeriesApi, createChart } from 'lightweight-charts';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import addBollingerBands from './handlers/add-bollinger-bands';
 import addCandlesticks from './handlers/add-candlesticks';
 import addVolume from './handlers/add-volume';
@@ -20,9 +20,8 @@ let boluSeries: ISeriesApi<'Line'>,
 let mainChart: IChartApi;
 let rsiChart: IChartApi;
 let markPriceWS: WebSocket | null = null;
-function Chart(props: { pair: string }) {
-  const { pair } = props;
-  const [interval, setInterval] = useState(localStorage.chartInterval ?? '5m');
+function Chart(props: { pair: string; interval: string }) {
+  const { pair, interval } = props;
   const resizeObserver = useRef<any>();
 
   const chartContainerRef = useRef<string | any>();
@@ -174,29 +173,15 @@ function Chart(props: { pair: string }) {
 
     return () => markPriceWS?.close();
   }, [pair, interval]);
-  const INTERVALS = ['5m', '15m', '1h', '4h', '1d'];
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInterval(event.target.value);
-    localStorage.chartInterval = event.target.value;
-  };
   return (
-    <>
-      <div style={{ zIndex: 2 }}>
-        <TextField size="small" select value={interval} onChange={handleChange}>
-          {INTERVALS.map((option) => (
-            <MenuItem key={option} value={option}>
-              {option}
-            </MenuItem>
-          ))}
-        </TextField>
-      </div>
+    <Paper elevation={0}>
       <div
         ref={chartContainerRef}
         style={{ position: 'relative', minHeight: '500px', minWidth: '400px' }}
       ></div>
       <div ref={rsiContainerRef} style={{ minHeight: '250px' }}></div>
-    </>
+    </Paper>
   );
 }
 

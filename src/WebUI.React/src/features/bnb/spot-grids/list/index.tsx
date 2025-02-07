@@ -12,11 +12,12 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { BackdropLoading } from 'components/backdrop-loading';
 
+import { Outlet } from 'react-router-dom';
 import { bnbSpotGridClient } from 'store';
 import SpotGridItem from './item';
 import { columns } from './types';
 
-export default function BnbSpotGrids() {
+export default function SpotGridList() {
   // Queries
   const { isLoading, data } = useQuery({
     queryKey: ['SpotGrids'],
@@ -57,6 +58,7 @@ export default function BnbSpotGrids() {
               </TableBody>
             </Table>
           </TableContainer>
+          <Outlet />
           <BackdropLoading loading={isLoading} />
         </Paper>
       </Grid>
