@@ -38,6 +38,9 @@ namespace Cex.Infrastructure.Migrations
                     NumberOfGrids = table.Column<int>(type: "int", nullable: false),
                     GridMode = table.Column<int>(type: "int", nullable: false),
                     Investment = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
+                    BaseBalance = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
+                    QuoteBalance = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
+                    Profit = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
                     TakeProfit = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: true),
                     StopLoss = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: true),
                     Status = table.Column<int>(type: "int", nullable: false),
@@ -74,6 +77,7 @@ namespace Cex.Infrastructure.Migrations
                     Qty = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
                     OrderId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Status = table.Column<string>(type: "nvarchar(16)", maxLength: 16, nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     SpotGridId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>

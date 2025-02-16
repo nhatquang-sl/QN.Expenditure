@@ -10,8 +10,12 @@ const fixedNumber = (value: number, fixed: number = 2): number => {
   return newValue / pow;
 };
 
+const fixedPercentNumber = (value: number, fixed: number = 2): number => {
+  return fixedNumber(value * 100, fixed);
+};
+
 const toKuCoinSymbol = (symbol: string) => {
   return symbol.replace('USDT', '-USDT');
 };
 
-export { fixedNumber, toKuCoinSymbol };
+export { fixedNumber, fixedPercentNumber, toKuCoinSymbol };

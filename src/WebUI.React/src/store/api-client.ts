@@ -1225,7 +1225,7 @@ export class BnbSpotGridClient {
         return Promise.resolve<SpotGridDto>(null as any);
     }
 
-    get( cancelToken?: CancelToken): Promise<SpotGridDto[]> {
+    getAll( cancelToken?: CancelToken): Promise<SpotGridDto[]> {
         let url_ = this.baseUrl + "/api/bnbspotgrid";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1245,11 +1245,11 @@ export class BnbSpotGridClient {
                 throw _error;
             }
         }).then((_response: AxiosResponse) => {
-            return this.processGet(_response);
+            return this.processGetAll(_response);
         });
     }
 
-    protected processGet(response: AxiosResponse): Promise<SpotGridDto[]> {
+    protected processGetAll(response: AxiosResponse): Promise<SpotGridDto[]> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1299,6 +1299,154 @@ export class BnbSpotGridClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
         return Promise.resolve<SpotGridDto[]>(null as any);
+    }
+
+    get(spotGridId: number, cancelToken?: CancelToken): Promise<SpotGridDto> {
+        let url_ = this.baseUrl + "/api/bnbspotgrid/{spotGridId}";
+        if (spotGridId === undefined || spotGridId === null)
+            throw new Error("The parameter 'spotGridId' must be defined.");
+        url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGet(_response);
+        });
+    }
+
+    protected processGet(response: AxiosResponse): Promise<SpotGridDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotGridDto.fromJS(resultData200);
+            return Promise.resolve<SpotGridDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto>(null as any);
+    }
+
+    update(spotGridId: number, command: UpdateSpotGridCommand, cancelToken?: CancelToken): Promise<SpotGridDto> {
+        let url_ = this.baseUrl + "/api/bnbspotgrid/{spotGridId}";
+        if (spotGridId === undefined || spotGridId === null)
+            throw new Error("The parameter 'spotGridId' must be defined.");
+        url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "PUT",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processUpdate(_response);
+        });
+    }
+
+    protected processUpdate(response: AxiosResponse): Promise<SpotGridDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotGridDto.fromJS(resultData200);
+            return Promise.resolve<SpotGridDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto>(null as any);
     }
 
     delete(spotGridId: number, cancelToken?: CancelToken): Promise<SpotGridDto> {
@@ -2136,6 +2284,7 @@ export class SpotGridDto {
     status!: SpotGridStatus;
     createdAt!: Date;
     updatedAt!: Date;
+    gridSteps!: SpotGridStepDto[];
 
     init(_data?: any) {
         if (_data) {
@@ -2153,6 +2302,11 @@ export class SpotGridDto {
             this.status = _data["status"];
             this.createdAt = _data["createdAt"] ? new Date(_data["createdAt"].toString()) : <any>undefined;
             this.updatedAt = _data["updatedAt"] ? new Date(_data["updatedAt"].toString()) : <any>undefined;
+            if (Array.isArray(_data["gridSteps"])) {
+                this.gridSteps = [] as any;
+                for (let item of _data["gridSteps"])
+                    this.gridSteps!.push(SpotGridStepDto.fromJS(item));
+            }
         }
     }
 
@@ -2179,6 +2333,11 @@ export class SpotGridDto {
         data["status"] = this.status;
         data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : <any>undefined;
         data["updatedAt"] = this.updatedAt ? this.updatedAt.toISOString() : <any>undefined;
+        if (Array.isArray(this.gridSteps)) {
+            data["gridSteps"] = [];
+            for (let item of this.gridSteps)
+                data["gridSteps"].push(item.toJSON());
+        }
         return data;
     }
 }
@@ -2194,6 +2353,44 @@ export enum SpotGridStatus {
     TAKE_PROFIT = 2,
     STOP_LOSS = 3,
     PAUSED = 4,
+}
+
+export class SpotGridStepDto {
+    id!: number;
+    buyPrice!: number;
+    sellPrice!: number;
+    qty!: number;
+    orderId!: string | undefined;
+    status!: string;
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.buyPrice = _data["buyPrice"];
+            this.sellPrice = _data["sellPrice"];
+            this.qty = _data["qty"];
+            this.orderId = _data["orderId"];
+            this.status = _data["status"];
+        }
+    }
+
+    static fromJS(data: any): SpotGridStepDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SpotGridStepDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["buyPrice"] = this.buyPrice;
+        data["sellPrice"] = this.sellPrice;
+        data["qty"] = this.qty;
+        data["orderId"] = this.orderId;
+        data["status"] = this.status;
+        return data;
+    }
 }
 
 export class CreateSpotGridCommand {
@@ -2231,6 +2428,53 @@ export class CreateSpotGridCommand {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["symbol"] = this.symbol;
+        data["lowerPrice"] = this.lowerPrice;
+        data["upperPrice"] = this.upperPrice;
+        data["triggerPrice"] = this.triggerPrice;
+        data["numberOfGrids"] = this.numberOfGrids;
+        data["gridMode"] = this.gridMode;
+        data["investment"] = this.investment;
+        data["takeProfit"] = this.takeProfit;
+        data["stopLoss"] = this.stopLoss;
+        return data;
+    }
+}
+
+export class UpdateSpotGridCommand {
+    id!: number;
+    lowerPrice!: number;
+    upperPrice!: number;
+    triggerPrice!: number;
+    numberOfGrids!: number;
+    gridMode!: SpotGridMode;
+    investment!: number;
+    takeProfit!: number | undefined;
+    stopLoss!: number | undefined;
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.lowerPrice = _data["lowerPrice"];
+            this.upperPrice = _data["upperPrice"];
+            this.triggerPrice = _data["triggerPrice"];
+            this.numberOfGrids = _data["numberOfGrids"];
+            this.gridMode = _data["gridMode"];
+            this.investment = _data["investment"];
+            this.takeProfit = _data["takeProfit"];
+            this.stopLoss = _data["stopLoss"];
+        }
+    }
+
+    static fromJS(data: any): UpdateSpotGridCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateSpotGridCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
         data["lowerPrice"] = this.lowerPrice;
         data["upperPrice"] = this.upperPrice;
         data["triggerPrice"] = this.triggerPrice;

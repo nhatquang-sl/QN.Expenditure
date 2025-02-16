@@ -1,6 +1,8 @@
 ﻿using Cex.Application.Grid.Commands.CreateSpotGrid;
 using Cex.Application.Grid.Commands.DeleteSpotGrid;
+using Cex.Application.Grid.Commands.UpdateSpotGrid;
 using Cex.Application.Grid.DTOs;
+using Cex.Application.Grid.Queries.GetSpotGridById;
 using Cex.Application.Grid.Queries.GetSpotGrids;
 using Lib.Application.Exceptions;
 using MediatR;
@@ -27,6 +29,21 @@ namespace WebAPI.Controllers
         public Task<List<SpotGridDto>> Get()
         {
             return sender.Send(new GetSpotGridsQuery());
+        }
+
+        [HttpGet("{spotGridId:long}")]
+        [ProducesResponseType(typeof(SpotGridDto), StatusCodes.Status200OK)]
+        public Task<SpotGridDto> Get(long spotGridId)
+        {
+            return sender.Send(new GetSpotGridByIdQuery(spotGridId));
+        }
+
+        [HttpPut("{spotGridId:long}")]
+        [ProducesResponseType(typeof(SpotGridDto), StatusCodes.Status200OK)]
+        public Task<SpotGridDto> Update(long spotGridId, UpdateSpotGridCommand command)
+        {
+            command.Id = spotGridId;
+            return sender.Send(command);
         }
 
         [HttpDelete("{spotGridId:long}")]

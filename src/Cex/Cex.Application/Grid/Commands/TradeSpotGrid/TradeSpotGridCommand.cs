@@ -71,7 +71,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
         {
             foreach (var grid in from grid in grids
                      let lowestPrice = _spotPrice[grid.Symbol].LowestPrice
-                     where grid.TriggerPrice <= lowestPrice
+                     where grid.TriggerPrice >= lowestPrice
                      select grid)
             {
                 grid.Status = SpotGridStatus.RUNNING;

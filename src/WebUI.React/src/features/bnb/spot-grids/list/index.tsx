@@ -21,7 +21,7 @@ export default function SpotGridList() {
   // Queries
   const { isLoading, data } = useQuery({
     queryKey: ['SpotGrids'],
-    queryFn: async () => await bnbSpotGridClient.get(),
+    queryFn: async () => await bnbSpotGridClient.getAll(),
   });
 
   console.log(data);

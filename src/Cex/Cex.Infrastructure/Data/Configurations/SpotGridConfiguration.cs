@@ -26,6 +26,18 @@ namespace Cex.Infrastructure.Data.Configurations
                 .HasPrecision(13, 6)
                 .IsRequired();
 
+            builder.Property(t => t.BaseBalance)
+                .HasPrecision(13, 6)
+                .IsRequired();
+
+            builder.Property(t => t.QuoteBalance)
+                .HasPrecision(13, 6)
+                .IsRequired();
+
+            builder.Property(t => t.Profit)
+                .HasPrecision(13, 6)
+                .IsRequired();
+
             builder.Property(t => t.TakeProfit)
                 .HasPrecision(13, 6);
 

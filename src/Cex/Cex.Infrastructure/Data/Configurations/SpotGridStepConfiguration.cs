@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Cex.Infrastructure.Data.Configurations
 {
-    public class SpotGridOrderConfiguration : IEntityTypeConfiguration<SpotGridStep>
+    public class SpotGridStepConfiguration : IEntityTypeConfiguration<SpotGridStep>
     {
         public void Configure(EntityTypeBuilder<SpotGridStep> builder)
         {
+            builder.HasQueryFilter(t => t.DeletedAt == null);
             builder.Property(t => t.BuyPrice)
                 .HasPrecision(13, 6)
                 .IsRequired();

@@ -14,17 +14,13 @@ namespace Cex.Application.Grid.Queries.GetSpotGrids
     public class GetSpotGridsQueryHandler(IMapper mapper, ICurrentUser currentUser, ICexDbContext cexDbContext)
         : IRequestHandler<GetSpotGridsQuery, List<SpotGridDto>>
     {
-        private readonly ICexDbContext _cexDbContext = cexDbContext;
-        private readonly ICurrentUser _currentUser = currentUser;
-        private readonly IMapper _mapper = mapper;
-
         public async Task<List<SpotGridDto>> Handle(GetSpotGridsQuery command, CancellationToken cancellationToken)
         {
-            var entities = await _cexDbContext.SpotGrids
-                .Where(x => x.UserId == _currentUser.Id && x.DeletedAt == null)
+            var entities = await cexDbContext.SpotGrids
+                .Where(x => x.UserId == currentUser.Id)
                 .ToListAsync(cancellationToken);
 
-            return _mapper.Map<List<SpotGridDto>>(entities) ?? [];
+            return mapper.Map<List<SpotGridDto>>(entities) ?? [];
         }
     }
 }

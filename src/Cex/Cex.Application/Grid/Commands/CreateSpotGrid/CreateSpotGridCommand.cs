@@ -33,6 +33,9 @@ namespace Cex.Application.Grid.Commands.CreateSpotGrid
             entity.CreatedAt = entity.UpdatedAt = DateTime.UtcNow;
             entity.TriggerPrice = command.TriggerPrice;
             entity.GridMode = command.GridMode;
+            entity.BaseBalance = 0;
+            entity.QuoteBalance = command.Investment;
+            entity.Profit = 0; 
             var stepSize = (command.UpperPrice - command.LowerPrice) / command.NumberOfGrids;
             var investmentPerStep = command.Investment / command.NumberOfGrids;
 

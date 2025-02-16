@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { LoadingButton } from '@mui/lab';
-import { Alert, Box, Grid, MenuItem, TextField, Typography } from '@mui/material';
-import { useState } from 'react';
+import { Alert, Grid, MenuItem, TextField } from '@mui/material';
+import React, { ReactElement, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import { UnprocessableEntity } from 'store/api-client';
 import { Block } from './types';
@@ -53,6 +53,32 @@ export default function Form<T extends Record<string, any>>(props: {
   onSubmit: (data: T) => Promise<void>;
 }) {
   const { blocks } = props;
+  const summary = (blocks: Block[]): Map<string, ReactElement> => {
+    console.log({ blocks });
+    const summaryels = new Map<string, ReactElement>();
+    for (const block of blocks) {
+      for (const el of block.elements) {
+        if (el.computedValue) {
+          const computedId = camelCase(el.label);
+          const computedValue = el.computedValue(getDefaultValues);
+          summaryels.set(computedId, computedValue);
+        }
+      }
+    }
+    return summaryels;
+  };
+
+  const getDefaultValues = (elId: string) => {
+    for (const block of blocks) {
+      for (const el of block.elements) {
+        if (elId === camelCase(el.label)) {
+          return el.defaultValue?.toString() || '';
+        }
+      }
+    }
+    return '';
+  };
+
   const {
     handleSubmit,
     register,
@@ -63,7 +89,7 @@ export default function Form<T extends Record<string, any>>(props: {
   const [submitErrors, setSubmitErrors] = useState<UnprocessableEntity[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [computedValues, setComputedValues] = useState(new Map<string, string>());
+  const [computedValues, setComputedValues] = useState(summary(blocks));
 
   const onSubmit = async (data: any) => {
     setLoading(true);
@@ -95,7 +121,7 @@ export default function Form<T extends Record<string, any>>(props: {
           const computedId = camelCase(el.label);
           const computedValue = el.computedValue((elId: string) => {
             if (elId === event.target.id) return event.target.value;
-            return getValues(elId).toString();
+            return getValues(elId)?.toString();
           });
           computedValues.set(computedId, computedValue);
           setComputedValues(new Map(computedValues));
@@ -155,23 +181,8 @@ export default function Form<T extends Record<string, any>>(props: {
                 </TextField>
               );
             else if (el.type === 'compute')
-              return (
-                <Box key={elId} sx={{ flex: el.flex }}>
-                  <Typography
-                    variant="subtitle2"
-                    gutterBottom
-                    dangerouslySetInnerHTML={{ __html: el.label }}
-                  />
-                  <Typography
-                    component="span"
-                    variant="body2"
-                    gutterBottom
-                    dangerouslySetInnerHTML={{
-                      __html: computedValues.get(elId) ?? (el.defaultValue || ''),
-                    }}
-                  />
-                </Box>
-              );
+              return <React.Fragment key={elId}>{computedValues.get(elId)}</React.Fragment>;
+
             // console.log(el);
             return (
               <TextField
@@ -191,6 +202,7 @@ export default function Form<T extends Record<string, any>>(props: {
                 helperText={<ErrorHelperText errors={elErrors} />}
                 onChange={handleChange}
                 sx={{ flex: el.flex }}
+                // disabled={el.disabled}
                 size="small"
               />
             );

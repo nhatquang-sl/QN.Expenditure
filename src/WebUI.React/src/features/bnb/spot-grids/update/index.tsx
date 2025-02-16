@@ -1,5 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Paper } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { BackdropLoading } from 'components/backdrop-loading';
 import Form from 'components/form';
 import {
   ActionBlock,
@@ -9,8 +11,9 @@ import {
   NumberElement,
 } from 'components/form/types';
 import { useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
 import { bnbSpotGridClient, RootState } from 'store';
-import { CreateSpotGridCommand } from 'store/api-client';
+import { UpdateSpotGridCommand } from 'store/api-client';
 import { GridOrderData, GridOrderSchema, SpotGridSummary } from '../types';
 import { toKuCoinSymbol } from '../utils';
 
@@ -20,50 +23,69 @@ import { toKuCoinSymbol } from '../utils';
 // ];
 // const SYMBOLS = [new InputOption('BTC-USDT'), new InputOption('CYBERUSDT')];
 
-export default function SpotGridCreate() {
+export default function SpotGridUpdate() {
   const { symbol } = useSelector((state: RootState) => state.spotGrid);
+  const { id } = useParams();
+  console.log({ id });
+  const { isLoading, data } = useQuery({
+    queryKey: ['SpotGrids', id],
+    queryFn: async () => await bnbSpotGridClient.get(parseInt(id ?? '0')),
+  });
 
   const onSubmit = async (data: GridOrderData) => {
-    const command = { ...data, symbol: toKuCoinSymbol(symbol) } as CreateSpotGridCommand;
-    await bnbSpotGridClient.create(command);
+    const command = UpdateSpotGridCommand.fromJS({
+      ...data,
+      symbol: toKuCoinSymbol(symbol),
+      id: id,
+    });
+    await bnbSpotGridClient.update(parseInt(id ?? '0'), command);
   };
-
+  data?.gridSteps;
   const profitOfGrid = new ComputeElement('Summary Grid');
   profitOfGrid.computedValue = (getValues) => {
     const lowerPrice = Number(getValues('lowerPrice'));
     const upperPrice = Number(getValues('upperPrice'));
     const numberOfGrids = Number(getValues('numberOfGrids'));
     const investment = Number(getValues('investment')) * 0.75;
+    console.log({ lowerPrice, upperPrice, numberOfGrids, investment });
     return (
       <SpotGridSummary
         lowerPrice={lowerPrice}
         upperPrice={upperPrice}
         numberOfGrids={numberOfGrids}
         investment={investment}
+        gridSteps={data?.gridSteps ?? []}
       />
     );
   };
 
+  if (isLoading) {
+    return <BackdropLoading loading={isLoading} />;
+  }
+
   return (
-    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <Paper sx={{ p: 2 }}>
       <Form
         onSubmit={onSubmit}
         resolver={zodResolver(GridOrderSchema)}
         blocks={[
           new Block([
-            new NumberElement('Lower Price', 2000),
-            new NumberElement('Upper Price', 5000),
-            new NumberElement('Trigger Price', 3000),
+            new NumberElement('Lower Price', data?.lowerPrice),
+            new NumberElement('Upper Price', data?.upperPrice),
+            new NumberElement('Trigger Price', data?.triggerPrice, false),
           ]),
           new Block([
-            new NumberElement('Number of Grids', 10),
-            new NumberElement('Investment', 100),
+            new NumberElement('Number of Grids', data?.numberOfGrids),
+            new NumberElement('Investment', data?.investment),
             // new SelectElement('Grid Mode', GRID_MODES[0].value, GRID_MODES, 'none'),
           ]),
-          new Block([new NumberElement('Take Profit'), new NumberElement('Stop Loss')]),
+          new Block([
+            new NumberElement('Take Profit', data?.takeProfit),
+            new NumberElement('Stop Loss', data?.stopLoss),
+          ]),
           new Block([profitOfGrid]),
 
-          new ActionBlock([new ActionElement('Add', 'submit')]),
+          new ActionBlock([new ActionElement('Update', 'submit')]),
         ]}
       />
     </Paper>

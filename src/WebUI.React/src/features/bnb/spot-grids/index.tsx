@@ -21,7 +21,7 @@ export default function SpotGrid() {
   const dispatch = useDispatch();
   const { symbol, interval } = useSelector((state: RootState) => state.spotGrid);
 
-  const [curPrice, setCurPrice] = useState('');
+  const [curPrice, setCurPrice] = useState(0);
   useEffect(() => {
     // WS: get market price
     const markPriceWS = new WebSocket(

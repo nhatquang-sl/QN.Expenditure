@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cex.Infrastructure.Migrations
 {
     [DbContext(typeof(CexDbContext))]
-    [Migration("20250207055951_InitialCreate")]
+    [Migration("20250214115510_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -51,6 +51,10 @@ namespace Cex.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<decimal>("BaseBalance")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -70,6 +74,14 @@ namespace Cex.Infrastructure.Migrations
 
                     b.Property<int>("NumberOfGrids")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("Profit")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
+
+                    b.Property<decimal>("QuoteBalance")
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -117,6 +129,9 @@ namespace Cex.Infrastructure.Migrations
                     b.Property<decimal>("BuyPrice")
                         .HasPrecision(13, 6)
                         .HasColumnType("decimal(13,6)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("OrderId")
                         .HasColumnType("nvarchar(max)");

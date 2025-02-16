@@ -4,6 +4,6 @@ qnapiclientgenerate() {
     curDir="$(pwd)"
     echo $curDir
     cd /d/QN.Expenditure/src/WebUI.React
-    npx nswag run nswag.nswag
+    npm run gen-api-client
     cd $curDir
 }

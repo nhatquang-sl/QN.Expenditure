@@ -1,4 +1,4 @@
-import { MouseEventHandler } from 'react';
+import { MouseEventHandler, ReactElement } from 'react';
 
 export class Block {
   constructor(elements: InputElement[] = [], actions: ActionElement[] = []) {
@@ -35,19 +35,20 @@ export class InputElement {
     type: 'text' | 'select' | 'number' | 'compute',
     label: string,
     defaultValue: unknown = null,
-    flex: number | 'none' = 1
+    disabled: boolean = false
   ) {
     this.type = type;
     this.label = label;
-    this.flex = flex;
     this.defaultValue = defaultValue;
+    this.disabled = disabled;
   }
   type: 'text' | 'select' | 'number' | 'compute' = 'text';
   label: string = '';
-  flex: number | 'none';
+  flex: number | 'none' = 1;
   defaultValue?: unknown = null;
   options: InputOption[] = [];
-  computedValue?: (getValues: (fieldId: string) => string) => string;
+  disabled: boolean = false;
+  computedValue?: (getValues: (fieldId: string) => string) => ReactElement;
 }
 
 export class SelectElement extends InputElement {
@@ -55,16 +56,23 @@ export class SelectElement extends InputElement {
     label: string,
     defaultValue?: unknown,
     options: InputOption[] = [],
-    flex: number | 'none' = 1
+    disabled: boolean = false
   ) {
-    super('select', label, defaultValue, flex);
+    super('select', label, defaultValue, disabled);
     this.options = options;
   }
 }
 
 export class NumberElement extends InputElement {
-  constructor(label: string, defaultValue?: unknown, flex: number | 'none' = 1) {
-    super('number', label, defaultValue, flex);
+  constructor(label: string, defaultValue?: unknown, disabled: boolean = false) {
+    super('number', label, defaultValue, disabled);
+    this.disabled = disabled;
+  }
+}
+
+export class ComputeElement extends InputElement {
+  constructor(label: string) {
+    super('compute', label);
   }
 }
 

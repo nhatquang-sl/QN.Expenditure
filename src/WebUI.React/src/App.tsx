@@ -12,6 +12,7 @@ import BnbSetting from 'features/bnb/setting';
 import SpotGrid from 'features/bnb/spot-grids';
 import SpotGridCreate from 'features/bnb/spot-grids/create';
 import SpotGridList from 'features/bnb/spot-grids/list';
+import SpotGridUpdate from 'features/bnb/spot-grids/update';
 import BnbSpotOrders from 'features/bnb/spot-orders';
 import BnbSpotOrdersSyncSettings from 'features/bnb/sync-settings';
 import Landing from 'features/landing';
@@ -70,6 +71,10 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <SpotGridList /> },
           { path: 'create', element: <SpotGridCreate /> },
+          {
+            path: ':id',
+            element: <SpotGridUpdate />,
+          },
         ],
       },
       // {

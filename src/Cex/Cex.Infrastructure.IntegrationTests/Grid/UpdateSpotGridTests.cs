@@ -33,8 +33,16 @@ namespace Cex.Infrastructure.IntegrationTests.Grid
             var resCreate =
                 await _sender.Send(new CreateSpotGridCommand("BTCUSDT", 60, 70, 50, 10, SpotGridMode.ARITHMETIC, 100,
                     110, 30));
-            var res = await _sender.Send(new UpdateSpotGridCommand(resCreate.Id, 50, 60, 40, 9, SpotGridMode.GEOMETRIC,
-                90));
+            var res = await _sender.Send(new UpdateSpotGridCommand
+            {
+                Id = resCreate.Id,
+                LowerPrice = 50,
+                UpperPrice = 60,
+                TriggerPrice = 40,
+                NumberOfGrids = 9,
+                GridMode = SpotGridMode.GEOMETRIC,
+                Investment = 90
+            });
 
             // Assert
             res.ShouldNotBeNull();
@@ -56,6 +64,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid
             var entity = _context.SpotGrids.FirstOrDefault(x => x.UserId == _currentUser.Id && x.Id == res.Id);
             entity.ShouldNotBeNull();
             entity.DeletedAt.ShouldBeNull();
+            entity.UpdatedAt.ShouldBeGreaterThan(updatedAt);
             res.Id.ShouldBe(entity.Id);
             res.UserId.ShouldBe(entity.UserId);
             res.Symbol.ShouldBe(entity.Symbol);

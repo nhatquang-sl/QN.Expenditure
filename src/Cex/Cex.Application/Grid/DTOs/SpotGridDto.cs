@@ -14,10 +14,15 @@ namespace Cex.Application.Grid.DTOs
         public int NumberOfGrids { get; set; }
         public SpotGridMode GridMode { get; set; }
         public decimal Investment { get; set; }
+        public decimal BaseBalance { get; set; }
+        public decimal QuoteBalance { get; set; }
+        public decimal Profit { get; set; }
         public decimal? TakeProfit { get; set; }
         public decimal? StopLoss { get; set; }
         public SpotGridStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+
+        public List<SpotGridStepDto> GridSteps { get; set; } = [];
     }
 }
