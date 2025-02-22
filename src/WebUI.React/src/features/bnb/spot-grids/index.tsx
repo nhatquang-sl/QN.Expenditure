@@ -6,38 +6,38 @@ import {
   Paper,
   Select,
   SelectChangeEvent,
-  Typography,
 } from '@mui/material';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Outlet } from 'react-router-dom';
 import { RootState } from 'store';
 import Chart from './chart';
-import { INTERVALS, setInterval, setSymbol, SYMBOLS } from './slice';
+import CurrentPrice from './components/current-price';
+import { INTERVALS, SYMBOLS, setInterval, setPrice, setSymbol } from './slice';
 import { fixedNumber } from './utils';
 
 export default function SpotGrid() {
   const dispatch = useDispatch();
   const { symbol, interval } = useSelector((state: RootState) => state.spotGrid);
 
-  const [curPrice, setCurPrice] = useState(0);
   useEffect(() => {
     // WS: get market price
     const markPriceWS = new WebSocket(
-      `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_1h`
+      `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`.toLowerCase()
     );
     markPriceWS.onmessage = function (event) {
       try {
         const json = JSON.parse(event.data);
-        setCurPrice(fixedNumber(parseFloat(json.k.c)));
+        const curPrice = fixedNumber(Number(json.k.c));
+        dispatch(setPrice([symbol, curPrice]));
       } catch (err) {
         console.error(err);
       }
     };
 
     return () => markPriceWS.close();
-  }, [symbol]);
+  }, [symbol, interval, dispatch]);
 
   const handleChange = (event: SelectChangeEvent) => {
     console.log(event.target);
@@ -90,7 +90,7 @@ export default function SpotGrid() {
               ))}
             </Select>
           </FormControl>
-          <Typography>{curPrice}</Typography>
+          <CurrentPrice symbol={symbol} />
         </Paper>
       </Grid>
       <Grid item xs={12}>

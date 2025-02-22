@@ -1,22 +1,28 @@
 import { Icon, IconButton, Menu, MenuItem, TableCell, TableRow } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { BackdropLoading } from 'components/backdrop-loading';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { bnbSpotGridClient } from 'store';
 import { SpotGridDto } from 'store/api-client';
+import CurrentPrice from '../components/current-price';
+import TotalProfit from '../components/total-profit';
+import { setPrice } from '../slice';
+import { fixedNumber } from '../utils';
 
 const SpotGridItem = (props: { spotGrid: SpotGridDto }) => {
-  const { spotGrid } = props;
+  const { id, symbol, investment, triggerPrice, lowerPrice, upperPrice, profit } = props.spotGrid;
   const navigate = useNavigate();
-  const [curPrice, setCurPrice] = useState(0);
+  const dispatch = useDispatch();
+  // const [curPrice, setCurPrice] = useState(0);
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: () => bnbSpotGridClient.delete(spotGrid.id),
+    mutationFn: () => bnbSpotGridClient.delete(id),
     onSuccess: (result) => {
       // Replace optimistic todo in the todos list with the result
       queryClient.setQueryData(['SpotGrids'], (spotGrids: SpotGridDto[]) =>
-        spotGrids.filter((spotGrid) => spotGrid.id != result.id)
+        spotGrids.filter((g) => g.id != result.id)
       );
     },
   });
@@ -24,39 +30,42 @@ const SpotGridItem = (props: { spotGrid: SpotGridDto }) => {
   useEffect(() => {
     // WS: get market price
     const markPriceWS = new WebSocket(
-      `wss://stream.binance.com:9443/ws/${spotGrid.symbol.toLowerCase()}@kline_1h`
+      `wss://stream.binance.com:9443/ws/${symbol.replace('-', '').toLowerCase()}@kline_1h`
     );
     markPriceWS.onmessage = function (event) {
       try {
         const json = JSON.parse(event.data);
-
-        setCurPrice(Number(json.k.c));
-        // console.log(json.k.c);
+        const curPrice = fixedNumber(Number(json.k.c));
+        dispatch(setPrice([symbol, curPrice]));
       } catch (err) {
         console.log(err);
       }
     };
 
     return () => markPriceWS.close();
-  }, [spotGrid.symbol]);
+  }, [symbol, dispatch]);
 
   return (
-    <TableRow hover tabIndex={-1} key={spotGrid.symbol} sx={{ position: 'relative' }}>
-      <TableCell>{spotGrid.symbol}</TableCell>
-      <TableCell align="right">{spotGrid.investment}</TableCell>
-      <TableCell align="right">{spotGrid.symbol}</TableCell>
-      <TableCell align="right">{spotGrid.symbol}</TableCell>
-      <TableCell align="right">{spotGrid.symbol}</TableCell>
-      <TableCell align="right">{curPrice.toLocaleString('en-US')}</TableCell>
-      <TableCell align="right">{spotGrid.triggerPrice}</TableCell>
+    <TableRow hover tabIndex={-1} key={symbol} sx={{ position: 'relative' }}>
+      <TableCell>{symbol}</TableCell>
+      <TableCell align="right">{investment}</TableCell>
       <TableCell align="right">
-        {spotGrid.lowerPrice} ~ {spotGrid.upperPrice}
+        <TotalProfit {...props} />
+      </TableCell>
+      <TableCell align="right">{profit}</TableCell>
+      <TableCell align="right">{symbol}</TableCell>
+      <TableCell align="right">
+        <CurrentPrice symbol={symbol} />
+      </TableCell>
+      <TableCell align="right">{triggerPrice}</TableCell>
+      <TableCell align="right">
+        {lowerPrice} ~ {upperPrice}
       </TableCell>
       <TableCell align="right">
         <MoreActions
           onDelete={async () => mutation.mutate()}
           onUpdate={() => {
-            navigate(`/bnb/spot-grids/${spotGrid.id}`, { replace: true });
+            navigate(`/bnb/spot-grids/${id}`, { replace: true });
           }}
         />
         <BackdropLoading loading={mutation.isPending} />

@@ -13,7 +13,7 @@ import {
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { bnbSpotGridClient, RootState } from 'store';
-import { UpdateSpotGridCommand } from 'store/api-client';
+import { SpotGridDto, UpdateSpotGridCommand } from 'store/api-client';
 import { GridOrderData, GridOrderSchema, SpotGridSummary } from '../types';
 import { toKuCoinSymbol } from '../utils';
 
@@ -54,7 +54,7 @@ export default function SpotGridUpdate() {
         upperPrice={upperPrice}
         numberOfGrids={numberOfGrids}
         investment={investment}
-        gridSteps={data?.gridSteps ?? []}
+        spotGrid={data ?? new SpotGridDto()}
       />
     );
   };

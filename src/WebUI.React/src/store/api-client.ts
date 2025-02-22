@@ -2279,6 +2279,9 @@ export class SpotGridDto {
     numberOfGrids!: number;
     gridMode!: SpotGridMode;
     investment!: number;
+    baseBalance!: number;
+    quoteBalance!: number;
+    profit!: number;
     takeProfit!: number | undefined;
     stopLoss!: number | undefined;
     status!: SpotGridStatus;
@@ -2297,6 +2300,9 @@ export class SpotGridDto {
             this.numberOfGrids = _data["numberOfGrids"];
             this.gridMode = _data["gridMode"];
             this.investment = _data["investment"];
+            this.baseBalance = _data["baseBalance"];
+            this.quoteBalance = _data["quoteBalance"];
+            this.profit = _data["profit"];
             this.takeProfit = _data["takeProfit"];
             this.stopLoss = _data["stopLoss"];
             this.status = _data["status"];
@@ -2328,6 +2334,9 @@ export class SpotGridDto {
         data["numberOfGrids"] = this.numberOfGrids;
         data["gridMode"] = this.gridMode;
         data["investment"] = this.investment;
+        data["baseBalance"] = this.baseBalance;
+        data["quoteBalance"] = this.quoteBalance;
+        data["profit"] = this.profit;
         data["takeProfit"] = this.takeProfit;
         data["stopLoss"] = this.stopLoss;
         data["status"] = this.status;

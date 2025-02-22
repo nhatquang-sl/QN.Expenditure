@@ -147,7 +147,7 @@ function Chart(props: { pair: string; interval: string }) {
     // WS: get market price
     markPriceWS != null && markPriceWS.close();
     markPriceWS = new WebSocket(
-      `wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@kline_${interval.toLowerCase()}`
+      `wss://stream.binance.com:9443/ws/${pair}@kline_${interval}`.toLowerCase()
     );
     markPriceWS.onmessage = function (event) {
       try {

@@ -10,8 +10,9 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { SpotGridMode, SpotGridStepDto } from 'store/api-client';
+import { SpotGridDto, SpotGridMode } from 'store/api-client';
 import { z } from 'zod';
+import TotalProfit from './components/total-profit';
 import { fixedNumber, fixedPercentNumber } from './utils';
 
 export const GridOrderSchema = z
@@ -116,29 +117,45 @@ function SummaryTab(props: {
   );
 }
 
-function StatusTab(props: { gridSteps?: SpotGridStepDto[] }) {
-  if (props.gridSteps == null) return <></>;
+function StatusTab(props: { spotGrid: SpotGridDto }) {
+  const { gridSteps, profit } = props.spotGrid;
   return (
-    <Table size="small" aria-label="a dense table">
-      <TableHead>
-        <TableRow>
-          <TableCell>Buy</TableCell>
-          <TableCell>Sell</TableCell>
-          <TableCell>Qty</TableCell>
-          <TableCell align="right">Status</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {props.gridSteps?.map((row) => (
-          <TableRow key={row.buyPrice} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-            <TableCell>{row.buyPrice}</TableCell>
-            <TableCell>{row.sellPrice}</TableCell>
-            <TableCell>{row.qty}</TableCell>
-            <TableCell align="right">{row.status}</TableCell>
+    <>
+      <Grid container spacing={0}>
+        <Grid item xs={6} md={2}>
+          <Typography variant="body2">Profit</Typography>
+        </Grid>
+        <Grid item xs={6} md={10}>
+          <Typography>{profit}</Typography>
+        </Grid>
+        <Grid item xs={6} md={2}>
+          <Typography variant="body2">Total Profit</Typography>
+        </Grid>
+        <Grid item xs={6} md={10}>
+          <TotalProfit {...props} />
+        </Grid>
+      </Grid>
+      <Table size="small" aria-label="a dense table">
+        <TableHead>
+          <TableRow>
+            <TableCell>Buy</TableCell>
+            <TableCell>Sell</TableCell>
+            <TableCell>Qty</TableCell>
+            <TableCell align="right">Status</TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHead>
+        <TableBody>
+          {gridSteps?.map((row) => (
+            <TableRow key={row.buyPrice} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+              <TableCell>{row.buyPrice}</TableCell>
+              <TableCell>{row.sellPrice}</TableCell>
+              <TableCell>{row.qty}</TableCell>
+              <TableCell align="right">{row.status}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </>
   );
 }
 
@@ -147,7 +164,7 @@ export function SpotGridSummary(props: {
   upperPrice: number;
   numberOfGrids: number;
   investment: number;
-  gridSteps?: SpotGridStepDto[];
+  spotGrid: SpotGridDto;
 }) {
   const [tabIndex, setTabIndex] = useState('summary');
   // const { lowerPrice, upperPrice, numberOfGrids, investment } = props;
@@ -162,8 +179,8 @@ export function SpotGridSummary(props: {
         <TabContext value={tabIndex}>
           <TabList onChange={handleChange} aria-label="lab API tabs example">
             <Tab label="Summary" value="summary" />
-            <Tab label="Status" value="status" />
-            <Tab label="History" value="history" />
+            {props.spotGrid && <Tab label="Status" value="status" />}
+            {props.spotGrid && <Tab label="History" value="history" />}
           </TabList>
           <TabPanel value="summary">
             <SummaryTab {...props} />
