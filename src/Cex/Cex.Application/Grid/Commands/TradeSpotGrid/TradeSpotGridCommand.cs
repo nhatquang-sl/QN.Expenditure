@@ -48,8 +48,9 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
             //   2.2 Check BuyOrderPlaced
             //   2.2 Check AwaitingSell
             //   2.2 Check SellOrderPlaced
-            HandleStatusNew(spotGrids.Where(x => x.Status == SpotGridStatus.NEW).ToList());
-            await HandleStatusRunning(spotGrids.Where(x => x.Status == SpotGridStatus.RUNNING).ToList());
+            // HandleStatusNew(spotGrids.Where(x => x.Status == SpotGridStatus.NEW).ToList());
+            // await HandleStatusRunning(spotGrids.Where(x => x.Status == SpotGridStatus.RUNNING).ToList());
+
 
             await cexDbContext.SaveChangesAsync(cancellationToken);
         }
@@ -137,6 +138,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                 var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
                 step.OrderId = orderId;
                 step.Status = SpotGridStepStatus.BuyOrderPlaced;
+                grid.QuoteBalance -= step.Qty * step.BuyPrice;
 
                 await notifier.NotifyInfo(alertMessage, orderReq);
             }
@@ -173,6 +175,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                         CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
                         UpdatedAt = DateTime.UtcNow
                     });
+                    grid.BaseBalance += step.Qty;
                 }
             }
             catch (Exception ex)
@@ -211,6 +214,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                     kuCoinConfig.Value);
                 step.OrderId = orderId;
                 step.Status = SpotGridStepStatus.SellOrderPlaced;
+                grid.BaseBalance -= step.Qty;
             }
             catch (Exception ex)
             {
@@ -247,11 +251,88 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                         CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
                         UpdatedAt = DateTime.UtcNow
                     });
+                    grid.Profit = (step.SellPrice - step.BuyPrice) * step.Qty;
                 }
             }
             catch (Exception ex)
             {
                 await notifier.NotifyError(ex.Message, ex);
+            }
+        }
+
+        private async Task HandleTakeProfit(List<SpotGrid> grids)
+        {
+            foreach (var grid in from grid in grids
+                     let closePrice = _spotPrice[grid.Symbol].ClosePrice
+                     where grid.TakeProfit != null && grid.TakeProfit <= closePrice
+                     select grid)
+            {
+                grid.Status = SpotGridStatus.TAKE_PROFIT;
+
+                foreach (var step in grid.GridSteps)
+                {
+                    if (string.IsNullOrWhiteSpace(step.OrderId))
+                    {
+                        continue;
+                    }
+
+                    var res = await kuCoinService.CancelOrder(step.OrderId, kuCoinConfig.Value);
+                    logTrace.LogInformation($"Cancel order {step.OrderId} of step {step.Id}", res);
+                }
+
+                var orderReq = new OrderRequest
+                {
+                    Symbol = grid.Symbol,
+                    Side = "sell",
+                    Type = "market",
+                    Size = grid.BaseBalance.ToString(CultureInfo.InvariantCulture)
+                };
+                var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
+                var order = await kuCoinService.GetOrderDetails(orderId, kuCoinConfig.Value);
+
+                var alertMessage = $"Take Profit {orderId}";
+                logTrace.LogInformation(alertMessage, order);
+                await notifier.NotifyInfo(alertMessage, orderReq);
+
+                cexDbContext.SpotGrids.Update(grid);
+            }
+        }
+
+        private async Task HandleStopLoss(List<SpotGrid> grids)
+        {
+            foreach (var grid in from grid in grids
+                     let closePrice = _spotPrice[grid.Symbol].ClosePrice
+                     where grid.TakeProfit != null && grid.TakeProfit <= closePrice
+                     select grid)
+            {
+                grid.Status = SpotGridStatus.STOP_LOSS;
+
+                foreach (var step in grid.GridSteps)
+                {
+                    if (string.IsNullOrWhiteSpace(step.OrderId))
+                    {
+                        continue;
+                    }
+
+                    var res = await kuCoinService.CancelOrder(step.OrderId, kuCoinConfig.Value);
+                    logTrace.LogInformation($"Cancel order {step.OrderId} of step {step.Id}", res);
+                }
+
+                var orderReq = new OrderRequest
+                {
+                    Symbol = grid.Symbol,
+                    Side = "sell",
+                    Type = "market",
+                    Size = grid.BaseBalance.ToString(CultureInfo.InvariantCulture)
+                };
+                var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
+                var order = await kuCoinService.GetOrderDetails(orderId, kuCoinConfig.Value);
+
+                var alertMessage = $"Stop Loss {orderId}";
+                logTrace.LogInformation(alertMessage, order);
+                await notifier.NotifyInfo(alertMessage, orderReq);
+
+                cexDbContext.SpotGrids.Update(grid);
             }
         }
 

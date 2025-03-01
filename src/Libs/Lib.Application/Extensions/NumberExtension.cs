@@ -15,9 +15,19 @@
 
     public static class DecimalExtension
     {
-        public static decimal RoundDownStd(this decimal value)
+        public static decimal FixedNumber(this decimal value, int fixedPlaces = 4)
         {
-            return Math.Floor(value * 10000) / 10000;
+            var powFixed = (long)Math.Pow(10, fixedPlaces - 1);
+            var pow = (long)Math.Pow(10, fixedPlaces);
+            var adjustedValue = value * pow;
+
+            while (adjustedValue < powFixed)
+            {
+                pow *= 10;
+                adjustedValue = value * pow;
+            }
+
+            return Math.Floor(adjustedValue) / pow;
         }
     }
 }

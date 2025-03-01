@@ -27,6 +27,13 @@ namespace Cex.Infrastructure.Data.Configurations
                     v => (SpotGridStepStatus)Enum.Parse(typeof(SpotGridStepStatus), v))
                 .HasMaxLength(16)
                 .IsRequired();
+
+            builder.Property(t => t.Type)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (SpotGridStepType)Enum.Parse(typeof(SpotGridStepType), v))
+                .HasMaxLength(16)
+                .IsRequired();
         }
     }
 }

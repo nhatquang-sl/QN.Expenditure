@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Cex.Application.Common.Abstractions;
 using Cex.Application.Grid.DTOs;
+using Cex.Application.Grid.Shared.Extensions;
 using Cex.Domain.Entities;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
@@ -24,31 +25,27 @@ namespace Cex.Application.Grid.Commands.CreateSpotGrid
     public class CreateSpotGridCommandHandler(IMapper mapper, ICurrentUser currentUser, ICexDbContext cexDbContext)
         : IRequestHandler<CreateSpotGridCommand, SpotGridDto>
     {
+        private const decimal InitialPercent = 0.25m;
+
         public async Task<SpotGridDto> Handle(CreateSpotGridCommand command, CancellationToken cancellationToken)
         {
             var entity = mapper.Map<SpotGrid>(command);
-
             entity.UserId = currentUser.Id;
             entity.Status = SpotGridStatus.NEW;
             entity.CreatedAt = entity.UpdatedAt = DateTime.UtcNow;
             entity.TriggerPrice = command.TriggerPrice;
             entity.GridMode = command.GridMode;
+            entity.Investment = command.Investment;
             entity.BaseBalance = 0;
             entity.QuoteBalance = command.Investment;
-            entity.Profit = 0; 
+            entity.Profit = 0;
             var stepSize = (command.UpperPrice - command.LowerPrice) / command.NumberOfGrids;
-            var investmentPerStep = command.Investment / command.NumberOfGrids;
+            var investmentPerStep = ((1 - InitialPercent) * command.Investment / command.NumberOfGrids).FixedNumber();
 
-            for (var i = 0; i < command.NumberOfGrids; i++)
-            {
-                entity.GridSteps.Add(new SpotGridStep
-                {
-                    BuyPrice = (command.LowerPrice + stepSize * i).RoundDownStd(),
-                    SellPrice = (command.LowerPrice + stepSize * (i + 1)).RoundDownStd(),
-                    Qty = investmentPerStep / (command.LowerPrice + stepSize * i),
-                    Status = SpotGridStepStatus.AwaitingBuy
-                });
-            }
+            entity.AddNormalSteps();
+            entity.AddOrUpdateInitialStep();
+            entity.AddTakeProfitStep();
+            entity.AddStopLossStep();
 
             cexDbContext.SpotGrids.Add(entity);
             await cexDbContext.SaveChangesAsync(cancellationToken);

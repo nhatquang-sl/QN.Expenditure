@@ -77,6 +77,7 @@ namespace Cex.Infrastructure.Migrations
                     Qty = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
                     OrderId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Status = table.Column<string>(type: "nvarchar(16)", maxLength: 16, nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(16)", maxLength: 16, nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     SpotGridId = table.Column<long>(type: "bigint", nullable: true)
                 },
@@ -110,6 +111,7 @@ namespace Cex.Infrastructure.Migrations
                     IsWorking = table.Column<bool>(type: "bit", nullable: false),
                     WorkingTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     SpotGridOrderId = table.Column<long>(type: "bigint", nullable: false),
+                    SpotGridId = table.Column<long>(type: "bigint", nullable: true),
                     SpotGridStepId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
@@ -120,11 +122,21 @@ namespace Cex.Infrastructure.Migrations
                         column: x => x.SpotGridStepId,
                         principalTable: "SpotGridSteps",
                         principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_SpotOrders_SpotGrids_SpotGridId",
+                        column: x => x.SpotGridId,
+                        principalTable: "SpotGrids",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_SpotGridSteps_SpotGridId",
                 table: "SpotGridSteps",
+                column: "SpotGridId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SpotOrders_SpotGridId",
+                table: "SpotOrders",
                 column: "SpotGridId");
 
             migrationBuilder.CreateIndex(
