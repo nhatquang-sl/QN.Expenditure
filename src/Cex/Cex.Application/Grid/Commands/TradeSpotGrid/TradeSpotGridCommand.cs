@@ -3,6 +3,7 @@ using System.Globalization;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Entities;
 using Lib.Application.Abstractions;
+using Lib.Application.Extensions;
 using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using MediatR;
@@ -138,7 +139,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                 var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
                 step.OrderId = orderId;
                 step.Status = SpotGridStepStatus.BuyOrderPlaced;
-                grid.QuoteBalance -= step.Qty * step.BuyPrice;
+                grid.QuoteBalance = (grid.QuoteBalance - step.Qty * step.BuyPrice).FixedNumber();
 
                 await notifier.NotifyInfo(alertMessage, orderReq);
             }

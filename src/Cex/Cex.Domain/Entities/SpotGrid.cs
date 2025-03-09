@@ -21,7 +21,6 @@
         public DateTime? DeletedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public ICollection<SpotGridStep> GridSteps { get; private set; } = new List<SpotGridStep>();
-        public ICollection<SpotOrder> Orders { get; private set; } = new List<SpotOrder>();
     }
 
     public enum SpotGridStatus

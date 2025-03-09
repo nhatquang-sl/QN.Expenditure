@@ -29,7 +29,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid
             _context = GetService<ICexDbContext>();
             _currentUser = GetService<ICurrentUser>();
 
-            _spotGridCreated = _sender.Send(new CreateSpotGridCommand("BTCUSDT", 60, 70, 50, 10,
+            _spotGridCreated = _sender.Send(new CreateSpotGridCommand("BTCUSDT", 60, 70, 50, 5,
                 SpotGridMode.ARITHMETIC, 100,
                 110, 30)).Result;
         }
@@ -38,12 +38,11 @@ namespace Cex.Infrastructure.IntegrationTests.Grid
         public async void Success()
         {
             // Arrange
-            var resCreate = _spotGridCreated;
 
             // Act
             var res = await _sender.Send(new UpdateSpotGridCommand
             {
-                Id = resCreate.Id,
+                Id = _spotGridCreated.Id,
                 LowerPrice = 50,
                 UpperPrice = 60,
                 TriggerPrice = 40,
@@ -89,26 +88,11 @@ namespace Cex.Infrastructure.IntegrationTests.Grid
             res.Status.ShouldBe(entity.Status);
         }
 
-        public static IEnumerable<object[]> GetGridStepTestData()
-        {
-            yield return new object[]
-            {
-                60m, 70m, new decimal[] { 60, 62, 64, 66, 68 },
-                new decimal[] { 62, 64, 66, 68, 70 },
-                new[] { 0.25m, 0.2419m, 0.2343m, 0.2272m, 0.2205m }
-            };
-            yield return new object[]
-            {
-                55m, 70m, new decimal[] { 55, 58, 61, 64, 67 },
-                new decimal[] { 58, 61, 64, 67, 70 },
-                new[] { 0.2727m, 0.2586m, 0.2459m, 0.2343m, 0.2238m }
-            };
-        }
-
         [Theory]
-        [MemberData(nameof(GetGridStepTestData))]
-        public async void Step_Normal_Success(decimal lowerPrice, decimal upperPrice,
-            decimal[] buyPrices, decimal[] sellPrices, decimal[] qties)
+        [InlineData(110, 100, 0.2272)]
+        [InlineData(120, 100, 0.2083)]
+        // triggerQty = (0.25m*investment/triggerPrice)
+        public async void Step_Initial_Success(decimal triggerPrice, decimal investment, decimal triggerQty)
         {
             // Arrange
 
@@ -116,48 +100,82 @@ namespace Cex.Infrastructure.IntegrationTests.Grid
             var res = await _sender.Send(new UpdateSpotGridCommand
             {
                 Id = _spotGridCreated.Id,
-                LowerPrice = lowerPrice,
-                UpperPrice = upperPrice,
+                LowerPrice = 30,
+                UpperPrice = 50,
+                TriggerPrice = triggerPrice,
+                NumberOfGrids = 5,
+                GridMode = SpotGridMode.GEOMETRIC,
+                Investment = investment
+            });
+
+            // Assert
+            var steps = _context.SpotGridSteps.Where(s => s.SpotGridId == res.Id);
+            var initStep = steps.FirstOrDefault(step => step.Type == SpotGridStepType.Initial);
+            initStep.ShouldNotBeNull();
+            initStep.BuyPrice.ShouldBe(triggerPrice);
+            initStep.SellPrice.ShouldBe(triggerPrice);
+            initStep.Qty.ShouldBe(triggerQty);
+            initStep.Status.ShouldBe(SpotGridStepStatus.AwaitingBuy);
+        }
+
+        [Theory]
+        [InlineData(110)]
+        [InlineData(120)]
+        public async void Step_TakeProfit_Success(decimal takeProfit)
+        {
+            // Arrange
+
+            // Act
+            var res = await _sender.Send(new UpdateSpotGridCommand
+            {
+                Id = _spotGridCreated.Id,
+                LowerPrice = 30,
+                UpperPrice = 50,
                 TriggerPrice = 40,
+                TakeProfit = takeProfit,
                 NumberOfGrids = 5,
                 GridMode = SpotGridMode.GEOMETRIC,
                 Investment = 100
             });
 
             // Assert
-            var entity = _context.SpotGrids
-                .FirstOrDefault(x => x.UserId == _currentUser.Id && x.Id == res.Id);
-            entity.ShouldNotBeNull();
+            var steps = _context.SpotGridSteps.Where(s => s.SpotGridId == res.Id).ToList();
+            var takeProfitStep = steps.FirstOrDefault(step => step.Type == SpotGridStepType.TakeProfit);
+            takeProfitStep.ShouldNotBeNull();
+            takeProfitStep.BuyPrice.ShouldBe(takeProfit);
+            takeProfitStep.SellPrice.ShouldBe(takeProfit);
+            takeProfitStep.Qty.ShouldBe(0);
+            takeProfitStep.Status.ShouldBe(SpotGridStepStatus.AwaitingBuy);
+        }
 
-            var steps = _context.SpotGridSteps.Where(s => s.SpotGridId == entity.Id)
-                .OrderBy(s => s.BuyPrice).ToList();
+        [Theory]
+        [InlineData(50)]
+        [InlineData(60)]
+        public async void Step_StopLoss_Success(decimal stopLoss)
+        {
+            // Arrange
 
-            steps.ShouldNotBeNull();
-            steps.Count.ShouldBe(5);
-            steps[0].BuyPrice.ShouldBe(buyPrices[0]);
-            steps[0].SellPrice.ShouldBe(sellPrices[0]);
-            steps[0].Qty.ShouldBe(qties[0]);
-            steps[0].Status.ShouldBe(SpotGridStepStatus.AwaitingBuy);
+            // Act
+            var res = await _sender.Send(new UpdateSpotGridCommand
+            {
+                Id = _spotGridCreated.Id,
+                LowerPrice = 30,
+                UpperPrice = 50,
+                TriggerPrice = 40,
+                StopLoss = stopLoss,
+                NumberOfGrids = 5,
+                GridMode = SpotGridMode.GEOMETRIC,
+                Investment = 100
+            });
 
-            steps[1].BuyPrice.ShouldBe(buyPrices[1]);
-            steps[1].SellPrice.ShouldBe(sellPrices[1]);
-            steps[1].Qty.ShouldBe(qties[1]);
-            steps[1].Status.ShouldBe(SpotGridStepStatus.AwaitingBuy);
-
-            steps[2].BuyPrice.ShouldBe(buyPrices[2]);
-            steps[2].SellPrice.ShouldBe(sellPrices[2]);
-            steps[2].Qty.ShouldBe(qties[2]);
-            steps[2].Status.ShouldBe(SpotGridStepStatus.AwaitingBuy);
-
-            steps[3].BuyPrice.ShouldBe(buyPrices[3]);
-            steps[3].SellPrice.ShouldBe(sellPrices[3]);
-            steps[3].Qty.ShouldBe(qties[3]);
-            steps[3].Status.ShouldBe(SpotGridStepStatus.AwaitingBuy);
-
-            steps[4].BuyPrice.ShouldBe(buyPrices[4]);
-            steps[4].SellPrice.ShouldBe(sellPrices[4]);
-            steps[4].Qty.ShouldBe(qties[4]);
-            steps[4].Status.ShouldBe(SpotGridStepStatus.AwaitingBuy);
+            // Assert
+            var steps = _context.SpotGridSteps.Where(s => s.SpotGridId == res.Id).ToList();
+            var stopLossStep = steps.FirstOrDefault(step => step.Type == SpotGridStepType.StopLoss);
+            stopLossStep.ShouldNotBeNull();
+            stopLossStep.BuyPrice.ShouldBe(stopLoss);
+            stopLossStep.SellPrice.ShouldBe(stopLoss);
+            stopLossStep.Qty.ShouldBe(0);
+            stopLossStep.Status.ShouldBe(SpotGridStepStatus.AwaitingBuy);
         }
     }
 }

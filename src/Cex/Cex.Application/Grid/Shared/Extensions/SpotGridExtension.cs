@@ -123,5 +123,31 @@ namespace Cex.Application.Grid.Shared.Extensions
                 takeProfitStep.DeletedAt = currentDateTime;
             }
         }
+
+        public static bool ShouldSkipStopLossUpdate(this SpotGrid entity, SpotGridStep stopLossStep)
+        {
+            // Stop Loss Price unchanged
+            if (entity.StopLoss.HasValue &&
+                stopLossStep.BuyPrice == entity.StopLoss.Value.FixedNumber())
+            {
+                return true;
+            }
+
+            // If SpotGrid is already in STOP_LOSS status
+            return entity.Status == SpotGridStatus.STOP_LOSS;
+        }
+
+        public static bool ShouldSkipTakeProfitUpdate(this SpotGrid entity, SpotGridStep takeProfitStep)
+        {
+            // Stop Loss Price unchanged
+            if (entity.TakeProfit.HasValue &&
+                takeProfitStep.BuyPrice == entity.TakeProfit.Value.FixedNumber())
+            {
+                return true;
+            }
+
+            // If SpotGrid is already in TAKE_PROFIT status
+            return entity.Status == SpotGridStatus.TAKE_PROFIT;
+        }
     }
 }

@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cex.Infrastructure.Data
 {
-    public class CexDbContext(DbContextOptions<CexDbContext> options) : DbContext(options), ICexDbContext
+    public class CexDbContext : DbContext, ICexDbContext
     {
+        public CexDbContext(DbContextOptions<CexDbContext> options) : base(options)
+        {
+            // ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        }
+
         public DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings { get; }
         public DbSet<SpotOrder> SpotOrders { get; }
         public DbSet<BnbSetting> BnbSettings { get; }

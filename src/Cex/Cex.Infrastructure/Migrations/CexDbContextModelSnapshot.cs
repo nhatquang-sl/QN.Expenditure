@@ -141,7 +141,7 @@ namespace Cex.Infrastructure.Migrations
                         .HasPrecision(13, 6)
                         .HasColumnType("decimal(13,6)");
 
-                    b.Property<long?>("SpotGridId")
+                    b.Property<long>("SpotGridId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Status")
@@ -193,12 +193,6 @@ namespace Cex.Infrastructure.Migrations
                     b.Property<string>("Side")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<long?>("SpotGridId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("SpotGridOrderId")
-                        .HasColumnType("bigint");
-
                     b.Property<long?>("SpotGridStepId")
                         .HasColumnType("bigint");
 
@@ -223,8 +217,6 @@ namespace Cex.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("OrderId");
-
-                    b.HasIndex("SpotGridId");
 
                     b.HasIndex("SpotGridStepId");
 
@@ -251,15 +243,13 @@ namespace Cex.Infrastructure.Migrations
                 {
                     b.HasOne("Cex.Domain.Entities.SpotGrid", null)
                         .WithMany("GridSteps")
-                        .HasForeignKey("SpotGridId");
+                        .HasForeignKey("SpotGridId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Cex.Domain.Entities.SpotOrder", b =>
                 {
-                    b.HasOne("Cex.Domain.Entities.SpotGrid", null)
-                        .WithMany("Orders")
-                        .HasForeignKey("SpotGridId");
-
                     b.HasOne("Cex.Domain.Entities.SpotGridStep", null)
                         .WithMany("Orders")
                         .HasForeignKey("SpotGridStepId");
@@ -268,8 +258,6 @@ namespace Cex.Infrastructure.Migrations
             modelBuilder.Entity("Cex.Domain.Entities.SpotGrid", b =>
                 {
                     b.Navigation("GridSteps");
-
-                    b.Navigation("Orders");
                 });
 
             modelBuilder.Entity("Cex.Domain.Entities.SpotGridStep", b =>

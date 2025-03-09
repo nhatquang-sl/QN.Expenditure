@@ -5,7 +5,6 @@ using Cex.Application.Grid.Shared.Extensions;
 using Cex.Domain.Entities;
 using Lib.Application.Abstractions;
 using Lib.Application.Exceptions;
-using Lib.Application.Extensions;
 using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using MediatR;
@@ -47,7 +46,16 @@ namespace Cex.Application.Grid.Commands.UpdateSpotGrid
                                  cancellationToken)
                          ?? throw new NotFoundException("Grid is not found.");
 
-            var curDateTime = DateTime.UtcNow;
+            var diff = command.Investment - entity.Investment;
+            var investmentWasChanged = diff != 0;
+            var triggerWasChanged = entity.TriggerPrice != command.TriggerPrice;
+            var shouldChangeNormalSteps = command.Investment != entity.Investment
+                                          || command.LowerPrice != entity.LowerPrice
+                                          || command.UpperPrice != entity.UpperPrice
+                                          || command.NumberOfGrids != entity.NumberOfGrids;
+            var shouldChangeInitialStep = triggerWasChanged || investmentWasChanged;
+
+            entity.QuoteBalance += diff;
             entity.LowerPrice = command.LowerPrice;
             entity.UpperPrice = command.UpperPrice;
             entity.TriggerPrice = command.TriggerPrice;
@@ -56,55 +64,48 @@ namespace Cex.Application.Grid.Commands.UpdateSpotGrid
             entity.Investment = command.Investment;
             entity.TakeProfit = command.TakeProfit;
             entity.StopLoss = command.StopLoss;
-            entity.UpdatedAt = curDateTime;
+            entity.UpdatedAt = _currentDateTime;
+
             var steps = cexDbContext.SpotGridSteps
                 .Where(s => s.SpotGridId == entity.Id)
                 .ToList();
-            await UpdateInitialStep(entity, steps.First(x => x.Type == SpotGridStepType.Initial));
+
+            if (shouldChangeInitialStep)
+            {
+                await UpdateInitialStep(entity, steps.First(x => x.Type == SpotGridStepType.Initial));
+            }
+
+            if (shouldChangeNormalSteps)
+            {
+                await CancelThenAddNormalSteps(entity,
+                    steps.Where(x => x.Type == SpotGridStepType.Normal).ToList());
+            }
+
             await UpdateTakeProfitStep(entity, steps.FirstOrDefault(x => x.Type == SpotGridStepType.TakeProfit));
             await UpdateStopLossStep(entity, steps.FirstOrDefault(x => x.Type == SpotGridStepType.StopLoss));
-            await CancelAllOrders(entity);
 
-            entity.AddNormalSteps();
-
-            cexDbContext.SpotGrids.Update(entity);
             await cexDbContext.SaveChangesAsync(cancellationToken);
 
             return mapper.Map<SpotGridDto>(entity) ?? new SpotGridDto();
         }
 
-        private async Task CancelAllOrders(SpotGrid grid)
+        private async Task CancelThenAddNormalSteps(SpotGrid grid, List<SpotGridStep> steps)
         {
-            var steps = cexDbContext.SpotGridSteps
-                .Where(s => s.SpotGridId == grid.Id).ToList()
-                .Select(async step =>
-                {
-                    step.DeletedAt = _currentDateTime;
-                    if (string.IsNullOrWhiteSpace(step.OrderId))
-                    {
-                        return;
-                    }
+            var tasks = steps.Select(async step =>
+            {
+                await CancelKuCoinOrder(step);
+                step.OrderId = null;
+                step.DeletedAt = _currentDateTime;
+            });
+            await Task.WhenAll(tasks);
 
-                    var res = await kuCoinService.CancelOrder(step.OrderId, kuCoinConfig.Value);
-                    logTrace.LogInformation($"Cancel order {step.OrderId} of step {step.Id}", res);
-                });
-            await Task.WhenAll(steps);
+            grid.AddNormalSteps();
         }
 
-        private async Task UpdateInitialStep(SpotGrid entity, SpotGridStep initStep)
+        private async Task UpdateInitialStep(SpotGrid entity, SpotGridStep initialStep)
         {
-            switch (initStep.Status)
-            {
-                case SpotGridStepStatus.AwaitingBuy:
-                case SpotGridStepStatus.BuyOrderPlaced:
-                    await CancelKuCoinOrder(initStep);
-                    entity.AddOrUpdateInitialStep(initStep);
-                    break;
-                case SpotGridStepStatus.AwaitingSell:
-                case SpotGridStepStatus.SellOrderPlaced:
-                default:
-                    return;
-            }
+            await CancelKuCoinOrder(initialStep);
+            entity.AddOrUpdateInitialStep(initialStep);
         }
 
         private async Task UpdateTakeProfitStep(SpotGrid entity, SpotGridStep? takeProfitStep)
@@ -115,9 +116,7 @@ namespace Cex.Application.Grid.Commands.UpdateSpotGrid
                 return;
             }
 
-            // Take Profit Price unchanged
-            if (entity.TakeProfit.HasValue &&
-                takeProfitStep.BuyPrice == entity.TakeProfit.Value.FixedNumber())
+            if (entity.ShouldSkipTakeProfitUpdate(takeProfitStep))
             {
                 return;
             }
@@ -144,9 +143,7 @@ namespace Cex.Application.Grid.Commands.UpdateSpotGrid
                 return;
             }
 
-            // Stop Loss Price unchanged
-            if (entity.StopLoss.HasValue &&
-                stopLossStep.BuyPrice == entity.StopLoss.Value.FixedNumber())
+            if (entity.ShouldSkipStopLossUpdate(stopLossStep))
             {
                 return;
             }

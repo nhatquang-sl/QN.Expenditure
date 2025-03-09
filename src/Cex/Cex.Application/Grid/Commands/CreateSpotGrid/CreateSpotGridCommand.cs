@@ -4,7 +4,6 @@ using Cex.Application.Grid.DTOs;
 using Cex.Application.Grid.Shared.Extensions;
 using Cex.Domain.Entities;
 using Lib.Application.Abstractions;
-using Lib.Application.Extensions;
 using MediatR;
 
 namespace Cex.Application.Grid.Commands.CreateSpotGrid
@@ -39,8 +38,6 @@ namespace Cex.Application.Grid.Commands.CreateSpotGrid
             entity.BaseBalance = 0;
             entity.QuoteBalance = command.Investment;
             entity.Profit = 0;
-            var stepSize = (command.UpperPrice - command.LowerPrice) / command.NumberOfGrids;
-            var investmentPerStep = ((1 - InitialPercent) * command.Investment / command.NumberOfGrids).FixedNumber();
 
             entity.AddNormalSteps();
             entity.AddOrUpdateInitialStep();

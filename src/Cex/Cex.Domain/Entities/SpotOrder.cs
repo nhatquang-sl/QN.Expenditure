@@ -19,6 +19,5 @@
         public DateTime UpdatedAt { get; set; }
         public bool IsWorking { get; set; }
         public DateTime WorkingTime { get; set; }
-        public long SpotGridOrderId { get; set; }
     }
 }

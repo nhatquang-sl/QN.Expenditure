@@ -12,28 +12,19 @@ namespace Cex.Infrastructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddCexInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddCexInfrastructureServices(this IServiceCollection services,
+            IConfiguration configuration)
         {
             services.AddSingleton(configuration);
             services.AddCexApplicationServices(configuration);
             services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
 
             var environment = configuration.GetValue<string>("Environment");
-            if (environment?.ToLower() == "test")
-            {
-                services.AddDbContext<CexDbContext>((options) =>
-                {
-                    options.UseInMemoryDatabase(Guid.NewGuid().ToString());
-                });
-            }
-            else
+            if (!(environment ?? "").Equals("test", StringComparison.OrdinalIgnoreCase))
             {
                 var cexConnectionString = configuration.GetConnectionString("CexConnection");
 
-                services.AddDbContext<CexDbContext>((options) =>
-                {
-                    options.UseSqlServer(cexConnectionString);
-                });
+                services.AddDbContext<CexDbContext>(options => { options.UseSqlServer(cexConnectionString); });
             }
 
             services.AddScoped<ICexDbContext>(provider => provider.GetRequiredService<CexDbContext>());
