@@ -1,4 +1,6 @@
-﻿namespace Lib.Application.Extensions
+﻿using System.Globalization;
+
+namespace Lib.Application.Extensions
 {
     public static class LongExtension
     {
@@ -28,6 +30,17 @@
             }
 
             return Math.Floor(adjustedValue) / pow;
+        }
+
+        public static string FormatPrice(this decimal price)
+        {
+            var formatted = price.ToString("G29", CultureInfo.InvariantCulture);
+            if (formatted.Contains('E'))
+            {
+                formatted = price.ToString("F10").TrimEnd('0').TrimEnd('.');
+            }
+
+            return formatted;
         }
     }
 }

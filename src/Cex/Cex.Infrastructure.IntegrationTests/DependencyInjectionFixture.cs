@@ -1,6 +1,10 @@
+using Cex.Application.Grid.Commands.CreateSpotGrid;
+using Cex.Application.Grid.DTOs;
+using Cex.Domain.Entities;
 using Cex.Infrastructure.Data;
 using Lib.Application.Abstractions;
 using Lib.ExternalServices.KuCoin;
+using MediatR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -13,8 +17,16 @@ namespace Cex.Infrastructure.IntegrationTests
     public class DependencyInjectionFixture : IDisposable
     {
         private readonly SqliteConnection _connection;
-        protected readonly CexDbContext Context;
+
+        protected readonly CreateSpotGridCommand CreateCommand = new("BTCUSDT", 60, 70
+            , 50, 5, SpotGridMode.ARITHMETIC, 100, 110, 30);
+
+        protected readonly Mock<IKuCoinService> KuCoinServiceMock = new();
+
         protected readonly ServiceCollection ServiceCollection;
+
+        protected readonly SpotGridDto SpotGridCreated;
+
         private IServiceScope? _scope;
 
 
@@ -28,9 +40,9 @@ namespace Cex.Infrastructure.IntegrationTests
                 .UseSqlite(_connection) // Use the same in-memory database
                 .Options;
 
-            Context = new CexDbContext(options);
-            Context.Database.EnsureCreated(); // Ensures the schema is created fresh
-            Context.Dispose();
+            var context = new CexDbContext(options);
+            context.Database.EnsureCreated(); // Ensures the schema is created fresh
+            context.Dispose();
 
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
@@ -49,6 +61,13 @@ namespace Cex.Infrastructure.IntegrationTests
             currentUserMock.SetupGet(user => user.Id).Returns(Guid.NewGuid().ToString());
             ServiceCollection.AddSingleton(currentUserMock.Object);
             ServiceCollection.AddSingleton(new Mock<INotifier>().Object);
+            ServiceCollection.AddSingleton(KuCoinServiceMock.Object);
+
+            var serviceProvider = ServiceCollection.BuildServiceProvider();
+            var scope = serviceProvider.CreateScope();
+            var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+            SpotGridCreated = sender.Send(CreateCommand).Result;
+            scope.Dispose();
         }
 
         public void Dispose()
@@ -72,35 +91,62 @@ namespace Cex.Infrastructure.IntegrationTests
             return _scope.ServiceProvider.GetRequiredService<T>();
         }
 
+        public static IEnumerable<object[]> GetNormalStepsBaseOnInvestment()
+        {
+            yield return new object[]
+            {
+                150m,
+                new decimal[] { 60, 62, 64, 66, 68 },
+                new decimal[] { 62, 64, 66, 68, 70 },
+                new[] { 0.375m, 0.3629m, 0.3515m, 0.3409m, 0.3308m }
+            };
+            yield return new object[]
+            {
+                110m,
+                new decimal[] { 60, 62, 64, 66, 68 },
+                new decimal[] { 62, 64, 66, 68, 70 },
+                new[] { 0.275m, 0.2661m, 0.2578m, 0.25m, 0.2426m }
+            };
+        }
+
+        public static IEnumerable<object[]> GetNormalStepsBaseOnNumOfGrids()
+        {
+            yield return new object[]
+            {
+                2,
+                new decimal[] { 60, 65 },
+                new decimal[] { 65, 70 },
+                new[] { 0.625m, 0.5769m }
+            };
+            yield return new object[]
+            {
+                3,
+                new[] { 60, 63.3333m, 66.6666m },
+                new[] { 63.3333m, 66.6666m, 70 },
+                new[] { 0.4166m, 0.3947m, 0.375m }
+            };
+            yield return new object[]
+            {
+                4,
+                new[] { 60, 62.5m, 65, 67.5m },
+                new[] { 62.5m, 65, 67.5m, 70 },
+                new[] { 0.3125m, 0.3m, 0.2884m, 0.2777m }
+            };
+        }
+
         public static IEnumerable<object[]> GetGridStepTestData()
         {
             yield return new object[]
             {
-                60m, 70m, new decimal[] { 60, 62, 64, 66, 68 },
-                new decimal[] { 62, 64, 66, 68, 70 },
-                new[] { 0.25m, 0.2419m, 0.2343m, 0.2272m, 0.2205m }
+                50m, 80m, new decimal[] { 50, 56, 62, 68, 74 },
+                new decimal[] { 56, 62, 68, 74, 80 },
+                new[] { 0.3m, 0.2678m, 0.2419m, 0.2205m, 0.2027m }
             };
             yield return new object[]
             {
                 55m, 70m, new decimal[] { 55, 58, 61, 64, 67 },
                 new decimal[] { 58, 61, 64, 67, 70 },
                 new[] { 0.2727m, 0.2586m, 0.2459m, 0.2343m, 0.2238m }
-            };
-        }
-
-        public static IEnumerable<object[]> GetGrid2StepAwaitingSellData()
-        {
-            yield return new object[]
-            {
-                60m, 70m, new decimal[] { 60, 62, 64, 66, 68 },
-                new decimal[] { 62, 64, 66, 68, 70 },
-                new[] { 0.175m, 0.1693m, 0.164m, 0.1591m, 0.1544m }
-            };
-            yield return new object[]
-            {
-                55m, 70m, new decimal[] { 55, 58, 61, 64, 67 },
-                new decimal[] { 58, 61, 64, 67, 70 },
-                new[] { 0.1909m, 0.181m, 0.1721m, 0.164m, 0.1567m }
             };
         }
     }

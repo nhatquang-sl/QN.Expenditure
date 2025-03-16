@@ -28,10 +28,23 @@ public enum SpotGridStepStatus
     <th>Actions</th>
   </tr>
   <tr>
-    <td rowspan="2">Trigger Price <br>Investment </td>
+    <td rowspan="2">Trigger Price </td>
     <td>NEW</td>
     <td> 
-        - Calculate Quote Balance (only for Investment) <br> 
+        - Cancel, then Update Initial Step<br /> 
+    </td>
+  </tr>
+  <tr>
+    <td>RUNNING</td>
+    <td> 
+        - Cancel, then Update Initial Step<br /> 
+    </td>
+  </tr>
+  <tr>
+    <td rowspan="2">Investment </td>
+    <td>NEW</td>
+    <td> 
+        - Calculate Quote Balance <br> 
         - Cancel, then Update Initial Step<br /> 
         - Cancel, Delete then Add all Normal Steps <br>
     </td>
@@ -39,7 +52,7 @@ public enum SpotGridStepStatus
   <tr>
     <td>RUNNING</td>
     <td> 
-        - Calculate Quote Balance (only for Investment) <br> 
+        - Calculate Quote Balance <br> 
         - Cancel, then Update Initial Step<br /> 
         - Cancel, Delete then Add all Normal Steps <br>
         - <b>NOTE:</b> Change Investment for update Initial Order as a DCA
@@ -52,7 +65,6 @@ public enum SpotGridStepStatus
     </td>
     <td>NEW</td>
     <td> 
-        - Calculate Quote Balance <br> 
         - Cancel, Delete then Add all Normal Steps <br>
     </td>
   </tr>

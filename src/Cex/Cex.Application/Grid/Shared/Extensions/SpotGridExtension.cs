@@ -28,12 +28,6 @@ namespace Cex.Application.Grid.Shared.Extensions
                 return;
             }
 
-            // Trigger Price unchanged
-            if (initStep.BuyPrice == grid.TriggerPrice.FixedNumber())
-            {
-                return;
-            }
-
             initStep.BuyPrice = grid.TriggerPrice.FixedNumber();
             initStep.SellPrice = grid.TriggerPrice.FixedNumber();
             initStep.Qty = grid.GetInitStepQty();

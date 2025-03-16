@@ -1,15 +1,12 @@
 ﻿using System.Collections.Concurrent;
-using System.Globalization;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Entities;
-using Lib.Application.Abstractions;
-using Lib.Application.Extensions;
 using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Refit;
 
 namespace Cex.Application.Grid.Commands.TradeSpotGrid
 {
@@ -22,7 +19,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
         ICexDbContext cexDbContext,
         IKuCoinService kuCoinService,
         IOptions<KuCoinConfig> kuCoinConfig,
-        INotifier notifier)
+        IServiceScopeFactory scopeFactory)
         : IRequestHandler<TradeSpotGridCommand>
     {
         private readonly ConcurrentDictionary<string, Kline> _spotPrice = new();
@@ -42,17 +39,10 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
             // Get all prices
             await GetPrices(symbols);
 
-            // 1. Handle SpotGridStatus.NEW
-            //   1.1 Change SpotGridStatus.RUNNING if the market price has reached the TriggerPrice  
-            // 2. Handle SpotGridStatus.RUNNING
-            //   2.1 Check AwaitingBuy
-            //   2.2 Check BuyOrderPlaced
-            //   2.2 Check AwaitingSell
-            //   2.2 Check SellOrderPlaced
-            // HandleStatusNew(spotGrids.Where(x => x.Status == SpotGridStatus.NEW).ToList());
-            // await HandleStatusRunning(spotGrids.Where(x => x.Status == SpotGridStatus.RUNNING).ToList());
-
-
+            await HandleInitialStep(spotGrids, cancellationToken);
+            await HandleStatusRunning(spotGrids, cancellationToken);
+            await HandleTakeProfit(spotGrids, cancellationToken);
+            await HandleStopLoss(spotGrids, cancellationToken);
             await cexDbContext.SaveChangesAsync(cancellationToken);
         }
 
@@ -69,283 +59,76 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
             await Task.WhenAll(tasks);
         }
 
-        private void HandleStatusNew(List<SpotGrid> grids)
+        private async Task HandleInitialStep(List<SpotGrid> grids, CancellationToken cancellationToken)
         {
-            foreach (var grid in from grid in grids
-                     let lowestPrice = _spotPrice[grid.Symbol].LowestPrice
-                     where grid.TriggerPrice >= lowestPrice
-                     select grid)
-            {
-                grid.Status = SpotGridStatus.RUNNING;
-                cexDbContext.SpotGrids.Update(grid);
-            }
+            var tasks = grids
+                .Where(g => g.GridSteps.Any(s =>
+                    s is
+                    {
+                        Type: SpotGridStepType.Initial,
+                        Status: SpotGridStepStatus.AwaitingBuy or SpotGridStepStatus.BuyOrderPlaced
+                    }))
+                .ToList()
+                .Select(async grid =>
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    // Resolve services within the new scope
+                    var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+
+                    await sender.Send(new InitCommand(grid, _spotPrice[grid.Symbol]),
+                        cancellationToken);
+                });
+            await Task.WhenAll(tasks);
         }
 
-        private async Task HandleStatusRunning(List<SpotGrid> grids)
+        private async Task HandleStatusRunning(List<SpotGrid> grids, CancellationToken cancellationToken)
         {
-            var tasks = grids.Select(grid =>
+            var tasks = grids.Select(async grid =>
             {
-                var lowestPrice = _spotPrice[grid.Symbol].LowestPrice;
-                var lowestPriceThreshold = lowestPrice * (decimal)0.9;
-                var highestPrice = _spotPrice[grid.Symbol].HighestPrice;
-                var highestPriceThreshold = highestPrice * (decimal)1.1;
-                var awaitingBuySteps = grid.GridSteps
-                    .Where(step => step.Status == SpotGridStepStatus.AwaitingBuy
-                                   && step.BuyPrice <= lowestPrice
-                                   && step.BuyPrice >= lowestPriceThreshold)
-                    .ToList();
+                using var scope = scopeFactory.CreateScope();
+                var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
-                var buyOrderPlacedSteps = grid.GridSteps
-                    .Where(step => step.Status == SpotGridStepStatus.BuyOrderPlaced
-                                   && !string.IsNullOrWhiteSpace(step.OrderId))
-                    .ToList();
-
-                var awaitingSellSteps = grid.GridSteps
-                    .Where(step => step.Status == SpotGridStepStatus.AwaitingSell
-                                   && step.SellPrice >= highestPrice
-                                   && step.SellPrice <= highestPriceThreshold)
-                    .ToList();
-
-                var sellOrderPlacedSteps = grid.GridSteps
-                    .Where(step => step.Status == SpotGridStepStatus.SellOrderPlaced
-                                   && !string.IsNullOrWhiteSpace(step.OrderId))
-                    .ToList();
-
-                return Task.WhenAll(
-                    Task.WhenAll(awaitingBuySteps.Select(step => ChangeStepStatusToBuyOrderPlaced(grid, step))),
-                    Task.WhenAll(buyOrderPlacedSteps.Select(step => ChangeStepStatusToAwaitingSell(grid, step))),
-                    Task.WhenAll(awaitingSellSteps.Select(step => ChangeStepStatusToSellOrderPlaced(grid, step))),
-                    Task.WhenAll(sellOrderPlacedSteps.Select(step => ChangeStepStatusToAwaitingBuy(grid, step))));
+                await sender.Send(new RunCommand(grid, _spotPrice[grid.Symbol]),
+                    cancellationToken);
             });
 
             await Task.WhenAll(tasks);
         }
 
-        private async Task ChangeStepStatusToBuyOrderPlaced(SpotGrid grid, SpotGridStep step)
+        private async Task HandleTakeProfit(List<SpotGrid> grids, CancellationToken cancellationToken)
         {
-            var orderReq = new OrderRequest
-            {
-                Symbol = grid.Symbol,
-                Side = "buy",
-                Type = "limit",
-                Price = step.BuyPrice.ToString(CultureInfo.InvariantCulture),
-                Size = step.Qty.ToString(CultureInfo.InvariantCulture)
-            };
-            var symbols = grid.Symbol.Split('-');
-            var alertMessage =
-                $"Bot {grid.Id}: Buy {FormatPrice(step.Qty)} {symbols[0]} for {FormatPrice(step.Qty * step.BuyPrice)} {symbols[1]} ({grid.Symbol})"; //BotId: {grid.Id}, Buy {grid.Symbol}: {step.Qty}-{step.Qty * step.BuyPrice}";
-            try
-            {
-                var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
-                step.OrderId = orderId;
-                step.Status = SpotGridStepStatus.BuyOrderPlaced;
-                grid.QuoteBalance = (grid.QuoteBalance - step.Qty * step.BuyPrice).FixedNumber();
+            var tasks = grids
+                .Where(g => g is { Status: SpotGridStatus.RUNNING, TakeProfit: not null }
+                            && g.TakeProfit > _spotPrice[g.Symbol].ClosePrice
+                )
+                .ToList()
+                .Select(async grid =>
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
-                await notifier.NotifyInfo(alertMessage, orderReq);
-            }
-            catch (Exception ex)
-            {
-                await notifier.NotifyError(alertMessage, ex);
-            }
+                    await sender.Send(new TakeProfitCommand(grid, _spotPrice[grid.Symbol]),
+                        cancellationToken);
+                });
+            await Task.WhenAll(tasks);
         }
 
-        private async Task ChangeStepStatusToAwaitingSell(SpotGrid grid, SpotGridStep step)
+        private async Task HandleStopLoss(List<SpotGrid> grids, CancellationToken cancellationToken)
         {
-            try
-            {
-                var orderDetails = await kuCoinService.GetOrderDetails(step.OrderId ?? "",
-                    kuCoinConfig.Value);
-                var executedQuantity = decimal.Parse(orderDetails.DealSize);
-                if (!orderDetails.IsActive && executedQuantity > 0)
+            var tasks = grids
+                .Where(g => g is { Status: SpotGridStatus.RUNNING, StopLoss: not null }
+                            && g.StopLoss > _spotPrice[g.Symbol].ClosePrice
+                )
+                .ToList()
+                .Select(async grid =>
                 {
-                    step.OrderId = null;
-                    step.Status = SpotGridStepStatus.AwaitingSell;
-                    step.Orders.Add(new SpotOrder
-                    {
-                        UserId = grid.UserId,
-                        Symbol = grid.Symbol,
-                        OrderId = orderDetails.Id,
-                        ClientOrderId = orderDetails.ClientOid,
-                        Price = decimal.Parse(orderDetails.Price),
-                        OrigQty = decimal.Parse(orderDetails.Size),
-                        TimeInForce = orderDetails.TimeInForce,
-                        Type = orderDetails.Type,
-                        Side = orderDetails.Side,
-                        Fee = decimal.Parse(orderDetails.Fee),
-                        FeeCurrency = orderDetails.FeeCurrency,
-                        CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
-                        UpdatedAt = DateTime.UtcNow
-                    });
-                    grid.BaseBalance += step.Qty;
-                }
-            }
-            catch (Exception ex)
-            {
-                var message = ex.Message;
-                if (ex is ApiException exception)
-                {
-                    message = exception.Content ?? exception.Message;
-                }
+                    using var scope = scopeFactory.CreateScope();
+                    var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
-                await notifier.NotifyError(message, ex);
-            }
-        }
-
-        private async Task ChangeStepStatusToSellOrderPlaced(SpotGrid grid, SpotGridStep step)
-        {
-            try
-            {
-                var buyOrder = step.Orders
-                    .Where(x => x.Side == "buy" && x.Price == step.BuyPrice)
-                    .OrderBy(x => x.CreatedAt)
-                    .LastOrDefault();
-                if (buyOrder == null)
-                {
-                    return;
-                }
-
-                var orderId = await kuCoinService.PlaceOrder(new OrderRequest
-                    {
-                        Symbol = grid.Symbol,
-                        Side = "sell",
-                        Type = "limit",
-                        Price = step.SellPrice.ToString(CultureInfo.InvariantCulture),
-                        Size = buyOrder.OrigQty.ToString(CultureInfo.InvariantCulture)
-                    },
-                    kuCoinConfig.Value);
-                step.OrderId = orderId;
-                step.Status = SpotGridStepStatus.SellOrderPlaced;
-                grid.BaseBalance -= step.Qty;
-            }
-            catch (Exception ex)
-            {
-                logTrace.LogError("ChangeStepStatusToSellOrderPlaced()", ex);
-                await notifier.NotifyError(ex.Message, ex);
-            }
-        }
-
-        private async Task ChangeStepStatusToAwaitingBuy(SpotGrid grid, SpotGridStep step)
-        {
-            try
-            {
-                var orderDetails = await kuCoinService.GetOrderDetails(step.OrderId ?? "",
-                    kuCoinConfig.Value);
-                var executedQuantity = decimal.Parse(orderDetails.DealSize);
-
-                if (!orderDetails.IsActive && executedQuantity > 0)
-                {
-                    step.OrderId = null;
-                    step.Status = SpotGridStepStatus.AwaitingBuy;
-                    step.Orders.Add(new SpotOrder
-                    {
-                        UserId = grid.UserId,
-                        Symbol = grid.Symbol,
-                        OrderId = orderDetails.Id,
-                        ClientOrderId = orderDetails.ClientOid,
-                        Price = decimal.Parse(orderDetails.Price),
-                        OrigQty = decimal.Parse(orderDetails.Size),
-                        TimeInForce = orderDetails.TimeInForce,
-                        Type = orderDetails.Type,
-                        Side = orderDetails.Side,
-                        Fee = decimal.Parse(orderDetails.Fee),
-                        FeeCurrency = orderDetails.FeeCurrency,
-                        CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
-                        UpdatedAt = DateTime.UtcNow
-                    });
-                    grid.Profit = (step.SellPrice - step.BuyPrice) * step.Qty;
-                }
-            }
-            catch (Exception ex)
-            {
-                await notifier.NotifyError(ex.Message, ex);
-            }
-        }
-
-        private async Task HandleTakeProfit(List<SpotGrid> grids)
-        {
-            foreach (var grid in from grid in grids
-                     let closePrice = _spotPrice[grid.Symbol].ClosePrice
-                     where grid.TakeProfit != null && grid.TakeProfit <= closePrice
-                     select grid)
-            {
-                grid.Status = SpotGridStatus.TAKE_PROFIT;
-
-                foreach (var step in grid.GridSteps)
-                {
-                    if (string.IsNullOrWhiteSpace(step.OrderId))
-                    {
-                        continue;
-                    }
-
-                    var res = await kuCoinService.CancelOrder(step.OrderId, kuCoinConfig.Value);
-                    logTrace.LogInformation($"Cancel order {step.OrderId} of step {step.Id}", res);
-                }
-
-                var orderReq = new OrderRequest
-                {
-                    Symbol = grid.Symbol,
-                    Side = "sell",
-                    Type = "market",
-                    Size = grid.BaseBalance.ToString(CultureInfo.InvariantCulture)
-                };
-                var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
-                var order = await kuCoinService.GetOrderDetails(orderId, kuCoinConfig.Value);
-
-                var alertMessage = $"Take Profit {orderId}";
-                logTrace.LogInformation(alertMessage, order);
-                await notifier.NotifyInfo(alertMessage, orderReq);
-
-                cexDbContext.SpotGrids.Update(grid);
-            }
-        }
-
-        private async Task HandleStopLoss(List<SpotGrid> grids)
-        {
-            foreach (var grid in from grid in grids
-                     let closePrice = _spotPrice[grid.Symbol].ClosePrice
-                     where grid.TakeProfit != null && grid.TakeProfit <= closePrice
-                     select grid)
-            {
-                grid.Status = SpotGridStatus.STOP_LOSS;
-
-                foreach (var step in grid.GridSteps)
-                {
-                    if (string.IsNullOrWhiteSpace(step.OrderId))
-                    {
-                        continue;
-                    }
-
-                    var res = await kuCoinService.CancelOrder(step.OrderId, kuCoinConfig.Value);
-                    logTrace.LogInformation($"Cancel order {step.OrderId} of step {step.Id}", res);
-                }
-
-                var orderReq = new OrderRequest
-                {
-                    Symbol = grid.Symbol,
-                    Side = "sell",
-                    Type = "market",
-                    Size = grid.BaseBalance.ToString(CultureInfo.InvariantCulture)
-                };
-                var orderId = await kuCoinService.PlaceOrder(orderReq, kuCoinConfig.Value);
-                var order = await kuCoinService.GetOrderDetails(orderId, kuCoinConfig.Value);
-
-                var alertMessage = $"Stop Loss {orderId}";
-                logTrace.LogInformation(alertMessage, order);
-                await notifier.NotifyInfo(alertMessage, orderReq);
-
-                cexDbContext.SpotGrids.Update(grid);
-            }
-        }
-
-        private string FormatPrice(decimal price)
-        {
-            var formatted = price.ToString("G29", CultureInfo.InvariantCulture);
-            if (formatted.Contains('E'))
-            {
-                formatted = price.ToString("F10").TrimEnd('0').TrimEnd('.');
-            }
-
-            return formatted;
+                    await sender.Send(new StopLossCommand(grid, _spotPrice[grid.Symbol]),
+                        cancellationToken);
+                });
+            await Task.WhenAll(tasks);
         }
     }
 }
