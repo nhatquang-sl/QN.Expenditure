@@ -10,5 +10,8 @@ namespace Lib.Application.Abstractions
 
         Task NotifyError(string description, object data,
             CancellationToken cancellationToken = default);
+
+        Task NotifyError(string description, Exception ex,
+            CancellationToken cancellationToken = default);
     }
 }

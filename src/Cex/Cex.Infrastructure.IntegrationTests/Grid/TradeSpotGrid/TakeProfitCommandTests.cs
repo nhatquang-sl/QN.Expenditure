@@ -13,13 +13,13 @@ using Shouldly;
 
 namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
 {
-    public class StopLossCommandTests : DependencyInjectionFixture
+    public class TakeProfitCommandTests : DependencyInjectionFixture
     {
         private readonly ICexDbContext _context;
         private readonly Mock<IKuCoinService> _kuCoinServiceMock = new();
         private readonly ISender _sender;
 
-        public StopLossCommandTests()
+        public TakeProfitCommandTests()
         {
             _kuCoinServiceMock.Setup(x =>
                     x.PlaceOrder(
@@ -27,7 +27,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
                             order.Side == "sell" && order.Type == "market" && order.Symbol == CreateCommand.Symbol &&
                             order.Size == "2.9"),
                         It.IsAny<KuCoinConfig>()))
-                .ReturnsAsync("fake_new_order_id_29");
+                .ReturnsAsync("fake_new_order_id_2.9");
 
             _kuCoinServiceMock.Setup(x =>
                     x.PlaceOrder(
@@ -35,33 +35,33 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
                             order.Side == "sell" && order.Type == "market" && order.Symbol == CreateCommand.Symbol &&
                             order.Size == "4.3"),
                         It.IsAny<KuCoinConfig>()))
-                .ReturnsAsync("fake_new_order_id_30");
+                .ReturnsAsync("fake_new_order_id_4.3");
 
             _kuCoinServiceMock.Setup(x =>
-                    x.GetOrderDetails(It.Is<string>(o => o == "fake_new_order_id_29")
+                    x.GetOrderDetails(It.Is<string>(o => o == "fake_new_order_id_2.9")
                         , It.IsAny<KuCoinConfig>()))
                 .ReturnsAsync(new OrderDetails
                 {
-                    Id = "fake_new_order_id_29",
+                    Id = "fake_new_order_id_2.9",
                     Type = "market",
                     Side = "sell",
                     Size = "2.9",
-                    Price = "29",
+                    Price = "110",
                     Fee = "1",
                     FeeCurrency = "USDT",
                     CreatedAt = DateTime.UtcNow.ToUnixTimestampMilliseconds()
                 });
 
             _kuCoinServiceMock.Setup(x =>
-                    x.GetOrderDetails(It.Is<string>(o => o == "fake_new_order_id_30")
+                    x.GetOrderDetails(It.Is<string>(o => o == "fake_new_order_id_4.3")
                         , It.IsAny<KuCoinConfig>()))
                 .ReturnsAsync(new OrderDetails
                 {
-                    Id = "fake_new_order_id_30",
+                    Id = "fake_new_order_id_4.3",
                     Type = "market",
                     Side = "sell",
                     Size = "4.3",
-                    Price = "30",
+                    Price = "111",
                     Fee = "1",
                     FeeCurrency = "USDT",
                     CreatedAt = DateTime.UtcNow.ToUnixTimestampMilliseconds()
@@ -74,19 +74,19 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
         }
 
         /// <summary>
-        ///     Stop Loss Step is triggered
+        ///     Take Profit Step is triggered
         ///     Expect:
         ///     - KuCoinService.CancelOrder called twice
         ///     - KucCoinService.PlaceOrder called once
         ///     - KuCoinService.GetOrderDetails called once
-        ///     - Grid status should be STOP_LOSS
-        ///     - StopLoss step order id is not null
-        ///     - StopLoss step order quantity is base balance
+        ///     - Grid status should be TAKE_PROFIT
+        ///     - TakeProfit step order id is not null
+        ///     - TakeProfit step order quantity is base balance
         /// </summary>
         [Theory]
-        [InlineData(29, 2.9, "fake_new_order_id_29")]
-        [InlineData(30, 4.3, "fake_new_order_id_30")]
-        public async Task Handle_Should_ExecuteStopLossLogic_When_StopLossTriggered(decimal lowestPrice,
+        [InlineData(110, 2.9, "fake_new_order_id_2.9")]
+        [InlineData(111, 4.3, "fake_new_order_id_4.3")]
+        public async Task Handle_Should_ExecuteTakeProfitLogic_When_StopLossTriggered(decimal closePrice,
             decimal baseBalance, string orderId)
         {
             // Arrange
@@ -102,11 +102,11 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
             await _context.SaveChangesAsync(default);
 
             // Act
-            await _sender.Send(new StopLossCommand(oGrid, new Kline { LowestPrice = lowestPrice }));
+            await _sender.Send(new TakeProfitCommand(oGrid, new Kline { ClosePrice = closePrice }));
 
             // Assert:
             var grid = _context.SpotGrids.First(x => x.Id == SpotGridCreated.Id);
-            var stopLossStep = grid.GridSteps.First(x => x.Type == SpotGridStepType.StopLoss);
+            var takeProfitStep = grid.GridSteps.First(x => x.Type == SpotGridStepType.TakeProfit);
 
             // 1. Verify CancelOrder is called for the canceled step.
             _kuCoinServiceMock.Verify(s => s.CancelOrder("fake_order_id_1", It.IsAny<KuCoinConfig>()), Times.Once);
@@ -122,32 +122,64 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
             _kuCoinServiceMock.Verify(s =>
                 s.GetOrderDetails(orderId, It.IsAny<KuCoinConfig>()), Times.Once);
 
-            // 3. Check that grid.Status is updated to STOP_LOSS.
-            grid.Status.ShouldBe(SpotGridStatus.STOP_LOSS);
+            // 3. Check that grid.Status is updated to TAKE_PROFIT.
+            grid.Status.ShouldBe(SpotGridStatus.TAKE_PROFIT);
 
             // 4. The cancel order should have cleared the previous order id
-            stopLossStep.OrderId.ShouldBe(orderId);
-            stopLossStep.Status.ShouldBe(SpotGridStepStatus.SellOrderPlaced);
+            takeProfitStep.OrderId.ShouldBe(orderId);
+            takeProfitStep.Status.ShouldBe(SpotGridStepStatus.SellOrderPlaced);
 
             // 5. Check that a new order was added.
-            stopLossStep.Orders.ShouldHaveSingleItem();
-            var createdOrder = stopLossStep.Orders.First();
+            takeProfitStep.Orders.ShouldHaveSingleItem();
+            var createdOrder = takeProfitStep.Orders.First();
             createdOrder.OrderId.ShouldBe(orderId);
-            createdOrder.Price.ShouldBe(lowestPrice);
+            createdOrder.Price.ShouldBe(closePrice);
             createdOrder.OrigQty.ShouldBe(baseBalance);
         }
 
         /// <summary>
-        ///     Stop Loss is null
+        ///     Take Profit price is not reached
         ///     Expect:
-        ///     - Grid status should NOT be STOP_LOSS
-        ///     - StopLoss step should be null
+        ///     - Grid status should NOT be TAKE_PROFIT
+        ///     - KuCoinService.CancelOrder not called
+        ///     - KucCoinService.PlaceOrder not called
+        ///     - KuCoinService.GetOrderDetails not called
+        /// </summary>
+        [Theory]
+        [InlineData(108)]
+        [InlineData(109)]
+        public async Task Handle_Should_NotUpdate_When_TakeProfitNotMatch(decimal closePrice)
+        {
+            // Arrange
+            var originalGrid = _context.SpotGrids.First(x => x.Id == SpotGridCreated.Id);
+            var kline = new Kline { ClosePrice = closePrice };
+
+            // Act
+            await _sender.Send(new TakeProfitCommand(originalGrid, kline));
+
+            // Assert
+            var grid = _context.SpotGrids.First(x => x.Id == SpotGridCreated.Id);
+            grid.Status.ShouldNotBe(SpotGridStatus.TAKE_PROFIT);
+
+            // KuCoin services are not invoked.
+            _kuCoinServiceMock.Verify(s => s.CancelOrder(It.IsAny<string>(), It.IsAny<KuCoinConfig>()), Times.Never);
+            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.IsAny<OrderRequest>(), It.IsAny<KuCoinConfig>()),
+                Times.Never);
+            _kuCoinServiceMock.Verify(s => s.GetOrderDetails(It.IsAny<string>(), It.IsAny<KuCoinConfig>()),
+                Times.Never);
+        }
+
+        /// <summary>
+        ///     Take Profit is null
+        ///     Expect:
+        ///     - Grid status should NOT be TAKE_PROFIT
+        ///     - TakeProfit step should be null
         ///     - KuCoinService.CancelOrder not called
         ///     - KucCoinService.PlaceOrder not called
         ///     - KuCoinService.GetOrderDetails not called
         /// </summary>
         [Fact]
-        public async Task Handle_Should_NotUpdate_When_StopLossIsNull()
+        public async Task Handle_Should_NotUpdate_When_TaskProfitIsNull()
         {
             // Arrange
             await _sender.Send(new UpdateSpotGridCommand
@@ -159,56 +191,24 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
                 NumberOfGrids = CreateCommand.NumberOfGrids,
                 GridMode = SpotGridMode.GEOMETRIC,
                 Investment = CreateCommand.Investment,
-                StopLoss = null
+                StopLoss = CreateCommand.StopLoss,
+                TakeProfit = null
             });
             var originalGrid = _context.SpotGrids
                 .Include(x => x.GridSteps)
                 .First(x => x.Id == SpotGridCreated.Id);
 
             // Act
-            await _sender.Send(new StopLossCommand(originalGrid, new Kline()));
+            await _sender.Send(new TakeProfitCommand(originalGrid, new Kline()));
 
             // Assert
             var grid = _context.SpotGrids.First(x => x.Id == SpotGridCreated.Id);
-            var stopLossStep = _context.SpotGridSteps.FirstOrDefault(step =>
-                step.SpotGridId == grid.Id && step.Type == SpotGridStepType.StopLoss);
+            var takeProfitStep = _context.SpotGridSteps.FirstOrDefault(step =>
+                step.SpotGridId == grid.Id && step.Type == SpotGridStepType.TakeProfit);
 
-            grid.Status.ShouldNotBe(SpotGridStatus.STOP_LOSS);
+            grid.Status.ShouldNotBe(SpotGridStatus.TAKE_PROFIT);
 
-            stopLossStep.ShouldBeNull();
-
-            // KuCoin services are not invoked.
-            _kuCoinServiceMock.Verify(s => s.CancelOrder(It.IsAny<string>(), It.IsAny<KuCoinConfig>()), Times.Never);
-            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.IsAny<OrderRequest>(), It.IsAny<KuCoinConfig>()),
-                Times.Never);
-            _kuCoinServiceMock.Verify(s => s.GetOrderDetails(It.IsAny<string>(), It.IsAny<KuCoinConfig>()),
-                Times.Never);
-        }
-
-        /// <summary>
-        ///     Stop Loss price is not reached
-        ///     Expect:
-        ///     - Grid status should NOT be STOP_LOSS
-        ///     - KuCoinService.CancelOrder not called
-        ///     - KucCoinService.PlaceOrder not called
-        ///     - KuCoinService.GetOrderDetails not called
-        /// </summary>
-        [Theory]
-        [InlineData(31)]
-        [InlineData(32)]
-        public async Task Handle_Should_NotUpdate_When_StopLossNotMatch(decimal lowestPrice)
-        {
-            // Arrange
-            var originalGrid = _context.SpotGrids
-                .First(x => x.Id == SpotGridCreated.Id);
-            var kline = new Kline { LowestPrice = lowestPrice };
-
-            // Act
-            await _sender.Send(new StopLossCommand(originalGrid, kline));
-
-            // Assert
-            var grid = _context.SpotGrids.First(x => x.Id == SpotGridCreated.Id);
-            grid.Status.ShouldNotBe(SpotGridStatus.STOP_LOSS);
+            takeProfitStep.ShouldBeNull();
 
             // KuCoin services are not invoked.
             _kuCoinServiceMock.Verify(s => s.CancelOrder(It.IsAny<string>(), It.IsAny<KuCoinConfig>()), Times.Never);

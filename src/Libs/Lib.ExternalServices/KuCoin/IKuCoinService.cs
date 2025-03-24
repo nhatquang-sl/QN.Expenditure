@@ -14,7 +14,7 @@ namespace Lib.ExternalServices.KuCoin
             var body = new Dictionary<string, string>
             {
                 { "clientOid", Guid.NewGuid().ToString() },
-                { "symbol", order.Symbol },
+                { "symbol", order.Symbol.ToKcSymbol() },
                 { "side", order.Side },
                 { "type", order.Type },
                 { "price", order.Price },
@@ -45,6 +45,11 @@ namespace Lib.ExternalServices.KuCoin
 
             var res = await GetOrderDetails(orderId, credentials.ApiKey, signature,
                 timestamp, credentials.ApiPassphrase);
+            if (!string.IsNullOrWhiteSpace(res.Data.Symbol))
+            {
+                res.Data.Symbol = res.Data.Symbol.ToNormalSymbol();
+            }
+
             return res.Data;
         }
 
@@ -80,8 +85,8 @@ namespace Lib.ExternalServices.KuCoin
             var endAtUnix = new DateTimeOffset(endAt).ToUnixTimeSeconds();
 
             var (signature, timestamp) = GenerateSignature(credentials.ApiSecret, "GET",
-                $"/api/v1/market/candles?symbol={symbol}&type={type}&startAt={startAt}&endAt={endAt}");
-            var res = await GetKlines(symbol, type, startAtUnix, endAtUnix, credentials.ApiKey,
+                $"/api/v1/market/candles?symbol={symbol.ToKcSymbol()}&type={type}&startAt={startAt}&endAt={endAt}");
+            var res = await GetKlines(symbol.ToKcSymbol(), type, startAtUnix, endAtUnix, credentials.ApiKey,
                 signature, timestamp, credentials.ApiPassphrase);
             return res.Data.Select(x => new Kline
             {

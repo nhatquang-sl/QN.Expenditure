@@ -22,24 +22,19 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.UpdateSpotGrid
             _sender = GetService<ISender>();
             _context = GetService<ICexDbContext>();
 
-
             _context.SpotGrids
                 .Where(x => x.Id == SpotGridCreated.Id)
                 .ExecuteUpdate(setters => setters
                         .SetProperty(x => x.Status, SpotGridStatus.RUNNING) // Update only the Status property
                 );
+            var grid = _context.SpotGrids.First(g => g.Id == SpotGridCreated.Id);
+            grid.Status = SpotGridStatus.RUNNING;
 
             // Initial Step has placed success
-            _context.SpotGridSteps
-                .Where(s => s.SpotGridId == SpotGridCreated.Id
-                            && s.Type == SpotGridStepType.Initial)
-                .ExecuteUpdate(setters => setters
-                    .SetProperty(s => s.Status, SpotGridStepStatus.AwaitingSell)
-                );
-
-            var grid = _context.SpotGrids.Local
-                .First(s => s.Id == SpotGridCreated.Id);
-            _context.SpotGrids.Entry(grid).State = EntityState.Detached;
+            var initialStep = _context.SpotGridSteps
+                .First(s => s.SpotGridId == SpotGridCreated.Id && s.Type == SpotGridStepType.Initial);
+            initialStep.Status = SpotGridStepStatus.AwaitingSell;
+            _context.SaveChangesAsync(default).GetAwaiter().GetResult();
         }
 
         /// <summary>

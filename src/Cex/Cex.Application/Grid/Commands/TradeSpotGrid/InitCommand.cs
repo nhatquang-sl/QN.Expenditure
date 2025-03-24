@@ -1,7 +1,6 @@
 using System.Globalization;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Entities;
-using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
 using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
@@ -19,7 +18,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
         ICexDbContext cexDbContext,
         IKuCoinService kuCoinService,
         IOptions<KuCoinConfig> kuCoinConfig,
-        INotifier notifier)
+        IPublisher publisher)
         : IRequestHandler<InitCommand>
     {
         public async Task Handle(InitCommand command, CancellationToken cancellationToken)
@@ -53,7 +52,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
 
                     cexDbContext.SpotGrids.Update(grid);
                     await cexDbContext.SaveChangesAsync(cancellationToken);
-                    await NotifyBuyOrderPlaced(grid, orderReq, cancellationToken);
+                    await publisher.Publish(new PlaceOrderNotification(grid, orderReq), cancellationToken);
                     break;
                 case SpotGridStepStatus.BuyOrderPlaced:
                     if (string.IsNullOrWhiteSpace(step.OrderId))
@@ -97,19 +96,6 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                 default:
                     break;
             }
-        }
-
-        private async Task NotifyBuyOrderPlaced(SpotGrid grid, OrderRequest orderReq,
-            CancellationToken cancellationToken)
-        {
-            var step = grid.GridSteps.First(x => x.Type == SpotGridStepType.Initial);
-
-            const string quoteCurrency = "USDT";
-            var symbols = new[] { grid.Symbol.Replace(quoteCurrency, ""), quoteCurrency };
-            //BotId: {grid.Id}, Buy {grid.Symbol}: {step.Qty}-{step.Qty * step.BuyPrice}";
-            var alertMessage =
-                $"Bot {grid.Id}: Buy {step.Qty.FormatPrice()} {symbols[0]} for {(step.Qty * step.BuyPrice).FormatPrice()} {symbols[1]} ({grid.Symbol})";
-            await notifier.NotifyInfo(alertMessage, orderReq, cancellationToken);
         }
     }
 }

@@ -164,7 +164,7 @@ export function SpotGridSummary(props: {
   upperPrice: number;
   numberOfGrids: number;
   investment: number;
-  spotGrid: SpotGridDto;
+  spotGrid?: SpotGridDto;
 }) {
   const [tabIndex, setTabIndex] = useState('summary');
   // const { lowerPrice, upperPrice, numberOfGrids, investment } = props;
@@ -186,7 +186,7 @@ export function SpotGridSummary(props: {
             <SummaryTab {...props} />
           </TabPanel>
           <TabPanel value="status">
-            <StatusTab {...props} />
+            {props.spotGrid && <StatusTab spotGrid={props.spotGrid} />}
           </TabPanel>
           <TabPanel value="history">Item Three</TabPanel>
         </TabContext>

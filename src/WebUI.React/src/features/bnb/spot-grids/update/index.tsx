@@ -15,7 +15,6 @@ import { useParams } from 'react-router-dom';
 import { bnbSpotGridClient, RootState } from 'store';
 import { SpotGridDto, UpdateSpotGridCommand } from 'store/api-client';
 import { GridOrderData, GridOrderSchema, SpotGridSummary } from '../types';
-import { toKuCoinSymbol } from '../utils';
 
 // const GRID_MODES = [
 //   new InputOption(SpotGridMode.ARITHMETIC, 'arithmetic'),
@@ -35,7 +34,7 @@ export default function SpotGridUpdate() {
   const onSubmit = async (data: GridOrderData) => {
     const command = UpdateSpotGridCommand.fromJS({
       ...data,
-      symbol: toKuCoinSymbol(symbol),
+      symbol: symbol,
       id: id,
     });
     await bnbSpotGridClient.update(parseInt(id ?? '0'), command);

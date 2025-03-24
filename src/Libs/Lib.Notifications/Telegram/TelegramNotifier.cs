@@ -48,6 +48,21 @@ namespace Lib.Notifications.Telegram
             return Notify(title, description, data, cancellationToken);
         }
 
+        public Task NotifyError(string description, Exception ex,
+            CancellationToken cancellationToken = default)
+        {
+            var title = $"❌{DateTime.UtcNow}: {Assembly.GetCallingAssembly()?.GetName().Name}❌";
+            var sb = new StringBuilder(ex.Message);
+            var exception = ex.InnerException;
+            while (exception != null)
+            {
+                sb.Append(exception.Message);
+                exception = exception.InnerException;
+            }
+
+            return Notify(title, description, sb.ToString(), cancellationToken);
+        }
+
         private async Task Notify(string title, string? description, object? data,
             CancellationToken cancellationToken = default)
         {

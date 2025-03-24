@@ -25,7 +25,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
         {
             var grid = command.Grid;
             var kline = command.Kline;
-            if (!grid.TakeProfit.HasValue || grid.TakeProfit.Value < kline.ClosePrice)
+            if (!grid.TakeProfit.HasValue || grid.TakeProfit.Value > kline.ClosePrice)
             {
                 return;
             }

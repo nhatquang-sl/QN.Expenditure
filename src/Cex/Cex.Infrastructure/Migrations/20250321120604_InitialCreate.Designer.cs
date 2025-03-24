@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cex.Infrastructure.Migrations
 {
     [DbContext(typeof(CexDbContext))]
-    [Migration("20250303131629_InitialCreate")]
+    [Migration("20250321120604_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

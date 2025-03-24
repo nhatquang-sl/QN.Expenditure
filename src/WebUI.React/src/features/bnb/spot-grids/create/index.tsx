@@ -12,7 +12,6 @@ import { useSelector } from 'react-redux';
 import { bnbSpotGridClient, RootState } from 'store';
 import { CreateSpotGridCommand } from 'store/api-client';
 import { GridOrderData, GridOrderSchema, SpotGridSummary } from '../types';
-import { toKuCoinSymbol } from '../utils';
 
 // const GRID_MODES = [
 //   new InputOption(SpotGridMode.ARITHMETIC, 'arithmetic'),
@@ -24,7 +23,7 @@ export default function SpotGridCreate() {
   const { symbol } = useSelector((state: RootState) => state.spotGrid);
 
   const onSubmit = async (data: GridOrderData) => {
-    const command = { ...data, symbol: toKuCoinSymbol(symbol) } as CreateSpotGridCommand;
+    const command = { ...data, symbol: symbol } as CreateSpotGridCommand;
     await bnbSpotGridClient.create(command);
   };
 
