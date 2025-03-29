@@ -30,12 +30,11 @@ const AddSyncSetting = (props: { onAddNew: OnChangeCallback }) => {
     console.log({ data });
     console.log(data.lastSyncAt.unix() * 1000);
     try {
-      var syncSetting = await bnbSpotClient.createSyncSetting(
-        new CreateSyncSettingCommand({
-          symbol: data.symbol,
-          lastSyncAt: data.lastSyncAt.unix() * 1000,
-        })
-      );
+      var syncSetting = await bnbSpotClient.createSyncSetting({
+        symbol: data.symbol,
+        lastSyncAt: data.lastSyncAt.unix() * 1000,
+      } as CreateSyncSettingCommand);
+
       onAddNew(syncSetting);
     } catch (err: any) {
       if (err instanceof Conflict) {

@@ -155,7 +155,7 @@ export default function Form<T extends Record<string, any>>(props: {
           {b.elements.map((el) => {
             const elId = camelCase(el.label);
             let elErrors: string[] = [];
-            if (formError[elId]?.message) elErrors.push(formError[elId]?.message?.toString());
+            if (formError[elId]?.message) elErrors.push(formError[elId]?.message?.toString() ?? '');
             const apiError = submitErrors.filter((x) => x.name == elId)[0]?.errors;
             if (apiError?.length) elErrors = elErrors.concat(apiError);
 

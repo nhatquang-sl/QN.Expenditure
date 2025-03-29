@@ -28,7 +28,7 @@ function RegisterForm() {
   const onSubmit: SubmitHandler<RegisterData> = async (data) => {
     setLoading(true);
     try {
-      await authClient.register(new RegisterCommand(data));
+      await authClient.register(data as unknown as RegisterCommand);
       navigate('/request-activate-email', { replace: true });
     } catch (err: any) {
       if (err instanceof Conflict) {

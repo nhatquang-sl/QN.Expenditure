@@ -71,7 +71,7 @@ export default function BnbSetting() {
     setLoading(true);
     console.log({ data });
 
-    await bnbSettingClient.updateSetting(new UpdateBnbSettingCommand(data));
+    await bnbSettingClient.updateSetting(data as UpdateBnbSettingCommand);
 
     setLoading(false);
   };

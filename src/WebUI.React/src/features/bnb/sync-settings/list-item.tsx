@@ -32,12 +32,9 @@ const SyncSettingItem = (props: {
     setLoading(true);
 
     try {
-      await bnbSpotClient.updateSyncSetting(
-        syncSetting.symbol,
-        new SpotOrderSyncSettingUpdateDto({
-          lastSyncAt: lastSyncAt.unix() * 1000,
-        })
-      );
+      await bnbSpotClient.updateSyncSetting(syncSetting.symbol, {
+        lastSyncAt: lastSyncAt.unix() * 1000,
+      } as SpotOrderSyncSettingUpdateDto);
     } catch (err: any) {
       setLastSyncAt(dayjs(syncSetting.lastSyncAt));
       if (err instanceof BadRequest) {
