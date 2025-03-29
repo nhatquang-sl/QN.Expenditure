@@ -1,4 +1,4 @@
-# docker build . --no-cache --progress plain -t nq.expenditure:v1.4 -f src/WebAPI/Dockerfile
+# docker build . --no-cache --progress plain -t nq.expenditure:v1.1 -f src/WebAPI/Dockerfile
 # docker build . -t nq.expenditure:v1.4 -f src/WebAPI/Dockerfile
 # docker run -it --rm -p 8000:8080 nq.expenditure:v1.4
 # http://localhost:8000/api/weatherforecast
@@ -23,14 +23,17 @@ WORKDIR /src
 
 # Copy project files and restore as distinct layers
 COPY ["src/WebAPI/WebAPI.csproj", "src/WebAPI/"]
-COPY ["src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj", "src/Cex/Cex.Infrastructure/"]
+COPY ["src/Auth/Auth.Application/Auth.Application.csproj", "src/Auth/Auth.Application/"]
+COPY ["src/Auth/Auth.Domain/Auth.Domain.csproj", "src/Auth/Auth.Domain/"]
+COPY ["src/Auth/Auth.Infrastructure/Auth.Infrastructure.csproj", "src/Auth/Auth.Infrastructure/"]
+
 COPY ["src/Cex/Cex.Application/Cex.Application.csproj", "src/Cex/Cex.Application/"]
+COPY ["src/Cex/Cex.Domain/Cex.Domain.csproj", "src/Cex/Cex.Domain/"]
+COPY ["src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj", "src/Cex/Cex.Infrastructure/"]
+
 COPY ["src/Libs/Lib.Application/Lib.Application.csproj", "src/Libs/Lib.Application/"]
 COPY ["src/Libs/Lib.ExternalServices/Lib.ExternalServices.csproj", "src/Libs/Lib.ExternalServices/"]
-COPY ["src/Cex/Cex.Domain/Cex.Domain.csproj", "src/Cex/Cex.Domain/"]
-COPY ["src/Infrastructure/Infrastructure.csproj", "src/Infrastructure/"]
-COPY ["src/Application/Application.csproj", "src/Application/"]
-COPY ["src/Domain/Domain.csproj", "src/Domain/"]
+COPY ["src/Libs/Lib.Notifications/Lib.Notifications.csproj", "src/Libs/Lib.Notifications/"]
 
 RUN dotnet restore "./src/WebAPI/WebAPI.csproj"
 
