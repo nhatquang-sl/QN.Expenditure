@@ -1139,7 +1139,7 @@ export class BnbSpotClient {
     }
 }
 
-export class BnbSpotGridClient {
+export class SpotGridClient {
     protected instance: AxiosInstance;
     protected baseUrl: string;
     protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
@@ -1153,7 +1153,7 @@ export class BnbSpotGridClient {
     }
 
     create(command: CreateSpotGridCommand, cancelToken?: CancelToken): Promise<SpotGridDto> {
-        let url_ = this.baseUrl + "/api/bnbspotgrid";
+        let url_ = this.baseUrl + "/api/spotgrid";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -1226,7 +1226,7 @@ export class BnbSpotGridClient {
     }
 
     getAll( cancelToken?: CancelToken): Promise<SpotGridDto[]> {
-        let url_ = this.baseUrl + "/api/bnbspotgrid";
+        let url_ = this.baseUrl + "/api/spotgrid";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1302,7 +1302,7 @@ export class BnbSpotGridClient {
     }
 
     get(spotGridId: number, cancelToken?: CancelToken): Promise<SpotGridDto> {
-        let url_ = this.baseUrl + "/api/bnbspotgrid/{spotGridId}";
+        let url_ = this.baseUrl + "/api/spotgrid/{spotGridId}";
         if (spotGridId === undefined || spotGridId === null)
             throw new Error("The parameter 'spotGridId' must be defined.");
         url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));
@@ -1374,7 +1374,7 @@ export class BnbSpotGridClient {
     }
 
     update(spotGridId: number, command: UpdateSpotGridCommand, cancelToken?: CancelToken): Promise<SpotGridDto> {
-        let url_ = this.baseUrl + "/api/bnbspotgrid/{spotGridId}";
+        let url_ = this.baseUrl + "/api/spotgrid/{spotGridId}";
         if (spotGridId === undefined || spotGridId === null)
             throw new Error("The parameter 'spotGridId' must be defined.");
         url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));
@@ -1450,7 +1450,7 @@ export class BnbSpotGridClient {
     }
 
     delete(spotGridId: number, cancelToken?: CancelToken): Promise<SpotGridDto> {
-        let url_ = this.baseUrl + "/api/bnbspotgrid/{spotGridId}";
+        let url_ = this.baseUrl + "/api/spotgrid/{spotGridId}";
         if (spotGridId === undefined || spotGridId === null)
             throw new Error("The parameter 'spotGridId' must be defined.");
         url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));

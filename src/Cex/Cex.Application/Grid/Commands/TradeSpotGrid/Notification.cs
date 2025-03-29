@@ -1,7 +1,7 @@
 using Cex.Domain.Entities;
 using Lib.Application.Abstractions;
 using Lib.Application.Logging;
-using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Refit;
 
@@ -12,12 +12,12 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
     {
         public readonly Exception? Exception;
         public readonly SpotGrid Grid;
-        public readonly OrderRequest? Order;
+        public readonly PlaceOrderRequest? PlaceOrder;
 
-        public PlaceOrderNotification(SpotGrid grid, OrderRequest order)
+        public PlaceOrderNotification(SpotGrid grid, PlaceOrderRequest placeOrder)
         {
             Grid = grid;
-            Order = order;
+            PlaceOrder = placeOrder;
         }
 
         public PlaceOrderNotification(SpotGrid grid, Exception exception)
@@ -33,7 +33,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
         public async Task Handle(PlaceOrderNotification notification, CancellationToken cancellationToken)
         {
             var grid = notification.Grid;
-            var order = notification.Order;
+            var order = notification.PlaceOrder;
             const string quoteCurrency = "USDT";
             var symbols = new[] { grid.Symbol.Replace(quoteCurrency, ""), quoteCurrency };
             var message = "";
@@ -51,10 +51,13 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                 return;
             }
 
-            message =
-                $"Bot {grid.Id}: {order.Side.ToUpper()} {order.Size} {symbols[0]} for {order.Price} ({grid.Symbol})";
-            await notifier.NotifyInfo(message, order, cancellationToken);
-            logTrace.LogInformation(message, order);
+            if (order != null)
+            {
+                message =
+                    $"Bot {grid.Id}: Place {order.Side.ToUpper()} {order.Size} {symbols[0]} for {order.Price} ({grid.Symbol})";
+                logTrace.LogInformation(message, order);
+                await notifier.NotifyInfo(message, order, cancellationToken);
+            }
         }
     }
 
@@ -101,10 +104,13 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                 return;
             }
 
-            message =
-                $"Bot {grid.Id}: {order.Side.ToUpper()} {order.Size} {symbols[0]} for {order.Price} ({grid.Symbol})";
-            await notifier.NotifyInfo(message, order, cancellationToken);
-            logTrace.LogInformation(message, order);
+            if (order != null)
+            {
+                message =
+                    $"Bot {grid.Id}: Fill {order.Side.ToUpper()} {order.Size} {symbols[0]} for {order.Price} ({grid.Symbol})";
+                logTrace.LogInformation(message, order);
+                await notifier.NotifyInfo(message, order, cancellationToken);
+            }
         }
     }
 }

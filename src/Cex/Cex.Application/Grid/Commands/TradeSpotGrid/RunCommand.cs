@@ -1,9 +1,10 @@
 using System.Globalization;
 using Cex.Application.Common.Abstractions;
+using Cex.Application.Grid.Shared.Extensions;
 using Cex.Domain.Entities;
 using Lib.Application.Extensions;
-using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.Extensions.Options;
 
@@ -14,7 +15,6 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
     }
 
     public class RunCommandHandler(
-        ILogTrace logTrace,
         ICexDbContext cexDbContext,
         IKuCoinService kuCoinService,
         IOptions<KuCoinConfig> kuCoinConfig,
@@ -23,57 +23,58 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
     {
         public async Task Handle(RunCommand command, CancellationToken cancellationToken)
         {
-            var grid = command.Grid;
-            var kline = command.Kline;
-            var lowestPrice = kline.LowestPrice;
-            var highestPrice = kline.HighestPrice;
+            var (grid, kline) = command;
+            var (lowestPrice, highestPrice) = (kline.LowestPrice, kline.HighestPrice);
 
-            var awaitingBuySteps = grid.GridSteps
-                .Where(step => step is { Type: SpotGridStepType.Normal, Status: SpotGridStepStatus.AwaitingBuy }
-                               && IsPriceWithinThreshold(step.BuyPrice, lowestPrice, highestPrice))
-                .ToList();
+            var steps = grid.GridSteps
+                .Where(step => step.Type == SpotGridStepType.Normal)
+                .ToLookup(step => step.Status);
 
-            var buyOrderPlacedSteps = grid.GridSteps
-                .Where(step => step is { Type: SpotGridStepType.Normal, Status: SpotGridStepStatus.BuyOrderPlaced }
-                               && !string.IsNullOrWhiteSpace(step.OrderId))
-                .ToList();
+            var tasks = new List<Task>();
 
-            var awaitingSellSteps = grid.GridSteps
-                .Where(step => step is { Type: SpotGridStepType.Normal, Status: SpotGridStepStatus.AwaitingSell }
-                               && IsPriceWithinThreshold(step.SellPrice, lowestPrice, highestPrice))
-                .ToList();
+            if (steps.Contains(SpotGridStepStatus.AwaitingBuy))
+            {
+                tasks.AddRange(steps[SpotGridStepStatus.AwaitingBuy]
+                    .Where(step => IsPriceWithinThreshold(step.BuyPrice, lowestPrice, highestPrice))
+                    .Select(step => AwaitingBuyStep(grid, step)));
+            }
 
-            var sellOrderPlacedSteps = grid.GridSteps
-                .Where(step => step is { Type: SpotGridStepType.Normal, Status: SpotGridStepStatus.SellOrderPlaced }
-                               && !string.IsNullOrWhiteSpace(step.OrderId))
-                .ToList();
+            if (steps.Contains(SpotGridStepStatus.BuyOrderPlaced))
+            {
+                tasks.AddRange(steps[SpotGridStepStatus.BuyOrderPlaced]
+                    .Where(step => !string.IsNullOrWhiteSpace(step.OrderId))
+                    .Select(step => BuyOrderPlacedStep(grid, step)));
+            }
 
-            await Task.WhenAll(
-                Task.WhenAll(awaitingBuySteps.Select(step => AwaitingBuyStep(grid, step))),
-                Task.WhenAll(buyOrderPlacedSteps.Select(step => BuyOrderPlacedStep(grid, step))),
-                Task.WhenAll(awaitingSellSteps.Select(step => AwaitingSellStep(grid, step))),
-                Task.WhenAll(sellOrderPlacedSteps.Select(step => SellOrderPlacedStep(grid, step))));
+            if (steps.Contains(SpotGridStepStatus.AwaitingSell))
+            {
+                tasks.AddRange(steps[SpotGridStepStatus.AwaitingSell]
+                    .Where(step => IsPriceWithinThreshold(step.SellPrice, lowestPrice, highestPrice))
+                    .Select(step => AwaitingSellStep(grid, step)));
+            }
 
+            if (steps.Contains(SpotGridStepStatus.SellOrderPlaced))
+            {
+                tasks.AddRange(steps[SpotGridStepStatus.SellOrderPlaced]
+                    .Where(step => !string.IsNullOrWhiteSpace(step.OrderId))
+                    .Select(step => SellOrderPlacedStep(grid, step)));
+            }
+
+            await Task.WhenAll(tasks);
             await cexDbContext.SaveChangesAsync(cancellationToken);
         }
 
         private static bool IsPriceWithinThreshold(decimal price, decimal lowestPrice, decimal highestPrice)
         {
-            var lowerThreshold = price * 0.95m;
-            var upperThreshold = price * 1.05m;
-            if (lowerThreshold <= lowestPrice && lowestPrice <= upperThreshold)
-            {
-                return true;
-            }
-
-            return lowerThreshold <= highestPrice && highestPrice <= upperThreshold;
+            var threshold = price * 0.05m;
+            return Math.Abs(lowestPrice - price) <= threshold || Math.Abs(highestPrice - price) <= threshold;
         }
 
         private async Task AwaitingBuyStep(SpotGrid grid, SpotGridStep step)
         {
             try
             {
-                var orderReq = new OrderRequest
+                var orderReq = new PlaceOrderRequest
                 {
                     Symbol = grid.Symbol,
                     Side = "buy",
@@ -103,24 +104,8 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
                     kuCoinConfig.Value);
                 if (!orderDetails.IsActive)
                 {
-                    step.OrderId = null;
-                    step.Status = SpotGridStepStatus.AwaitingSell;
-                    step.Orders.Add(new SpotOrder
-                    {
-                        UserId = grid.UserId,
-                        Symbol = grid.Symbol,
-                        OrderId = orderDetails.Id,
-                        ClientOrderId = orderDetails.ClientOid,
-                        Price = decimal.Parse(orderDetails.Price),
-                        OrigQty = decimal.Parse(orderDetails.Size),
-                        TimeInForce = orderDetails.TimeInForce,
-                        Type = orderDetails.Type,
-                        Side = orderDetails.Side,
-                        Fee = decimal.Parse(orderDetails.Fee),
-                        FeeCurrency = orderDetails.FeeCurrency,
-                        CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
-                        UpdatedAt = DateTime.UtcNow
-                    });
+                    step.AddOrderDetails(grid, SpotGridStepStatus.AwaitingSell, orderDetails);
+
                     grid.BaseBalance += step.Qty;
 
                     await publisher.Publish(new FillOrderNotification(grid, orderDetails));
@@ -136,7 +121,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
         {
             try
             {
-                var orderReq = new OrderRequest
+                var orderReq = new PlaceOrderRequest
                 {
                     Symbol = grid.Symbol,
                     Side = "sell",
@@ -155,7 +140,6 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
             }
             catch (Exception ex)
             {
-                logTrace.LogError("ChangeStepStatusToSellOrderPlaced()", ex);
                 await publisher.Publish(new PlaceOrderNotification(grid, ex));
             }
         }
@@ -170,24 +154,8 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
 
                 if (!orderDetails.IsActive && executedQuantity > 0)
                 {
-                    step.OrderId = null;
-                    step.Status = SpotGridStepStatus.AwaitingBuy;
-                    step.Orders.Add(new SpotOrder
-                    {
-                        UserId = grid.UserId,
-                        Symbol = grid.Symbol,
-                        OrderId = orderDetails.Id,
-                        ClientOrderId = orderDetails.ClientOid,
-                        Price = decimal.Parse(orderDetails.Price),
-                        OrigQty = decimal.Parse(orderDetails.Size),
-                        TimeInForce = orderDetails.TimeInForce,
-                        Type = orderDetails.Type,
-                        Side = orderDetails.Side,
-                        Fee = decimal.Parse(orderDetails.Fee),
-                        FeeCurrency = orderDetails.FeeCurrency,
-                        CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(orderDetails.CreatedAt).UtcDateTime,
-                        UpdatedAt = DateTime.UtcNow
-                    });
+                    step.AddOrderDetails(grid, SpotGridStepStatus.AwaitingBuy, orderDetails);
+
                     grid.Profit = (step.SellPrice - step.BuyPrice) * step.Qty;
                     grid.QuoteBalance = (grid.QuoteBalance + step.Qty * step.SellPrice).FixedNumber();
                     await publisher.Publish(new FillOrderNotification(grid, orderDetails));

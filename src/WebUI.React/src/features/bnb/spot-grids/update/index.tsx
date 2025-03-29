@@ -12,7 +12,7 @@ import {
 } from 'components/form/types';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { bnbSpotGridClient, RootState } from 'store';
+import { RootState, spotGridClient } from 'store';
 import { SpotGridDto, UpdateSpotGridCommand } from 'store/api-client';
 import { GridOrderData, GridOrderSchema, SpotGridSummary } from '../types';
 
@@ -28,7 +28,7 @@ export default function SpotGridUpdate() {
   console.log({ id });
   const { isLoading, data } = useQuery({
     queryKey: ['SpotGrids', id],
-    queryFn: async () => await bnbSpotGridClient.get(parseInt(id ?? '0')),
+    queryFn: async () => await spotGridClient.get(parseInt(id ?? '0')),
   });
 
   const onSubmit = async (data: GridOrderData) => {
@@ -37,7 +37,7 @@ export default function SpotGridUpdate() {
       symbol: symbol,
       id: id,
     });
-    await bnbSpotGridClient.update(parseInt(id ?? '0'), command);
+    await spotGridClient.update(parseInt(id ?? '0'), command);
   };
   data?.gridSteps;
   const profitOfGrid = new ComputeElement('Summary Grid');

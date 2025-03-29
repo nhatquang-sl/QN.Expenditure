@@ -3,6 +3,7 @@ using Cex.Application.Common.Abstractions;
 using Cex.Domain.Entities;
 using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

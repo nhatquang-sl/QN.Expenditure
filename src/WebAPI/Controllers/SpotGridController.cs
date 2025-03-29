@@ -6,16 +6,18 @@ using Cex.Application.Grid.Queries.GetSpotGridById;
 using Cex.Application.Grid.Queries.GetSpotGrids;
 using Lib.Application.Exceptions;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebAPI.Middleware;
 
 namespace WebAPI.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     [ProducesResponseType(typeof(BadRequest), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(UnprocessableEntity[]), StatusCodes.Status422UnprocessableEntity)]
-    public class BnbSpotGridController(ISender sender) : ControllerBase
+    public class SpotGridController(ISender sender) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(SpotGridDto), StatusCodes.Status200OK)]

@@ -1,4 +1,5 @@
 using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using Microsoft.Extensions.Options;
 
 namespace Lib.ExternalServices.Tests.KuCoin
@@ -6,12 +7,13 @@ namespace Lib.ExternalServices.Tests.KuCoin
     public class KuCoinServiceTests : DependencyInjectionFixture
     {
         [Fact]
-        public async void PlaceOrder_GetOrders_CancelOrder()
+        public async Task PlaceOrder_GetOrders_CancelOrder()
         {
             var config = GetService<IOptions<KuCoinConfig>>();
             var kuCoinConfig = config.Value;
             var kuCoinService = GetService<IKuCoinService>();
-            var orderId = await kuCoinService.PlaceOrder(new OrderRequest
+
+            var orderId = await kuCoinService.PlaceOrder(new PlaceOrderRequest
             {
                 Symbol = "BTC-USDT",
                 Side = "buy",
@@ -32,6 +34,21 @@ namespace Lib.ExternalServices.Tests.KuCoin
 
             var cancelRes = await kuCoinService.CancelOrder(orderId, kuCoinConfig);
             Assert.Contains(orderId, cancelRes);
+        }
+
+        [Fact]
+        public async Task GetAccounts()
+        {
+            var config = GetService<IOptions<KuCoinConfig>>();
+            var kuCoinConfig = config.Value;
+            var kuCoinService = GetService<IKuCoinService>();
+            var accounts = await kuCoinService.GetAccounts("trade", "USDT", kuCoinConfig);
+
+            Assert.NotNull(accounts);
+            var account = Assert.Single(accounts);
+            Assert.NotNull(account.Id);
+            Assert.Equal("trade", account.Type);
+            Assert.Equal("USDT", account.Currency);
         }
     }
 }

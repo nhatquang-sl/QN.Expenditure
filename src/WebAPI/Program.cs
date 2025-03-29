@@ -3,6 +3,8 @@ using Auth.Infrastructure.Data;
 using Cex.Infrastructure;
 using Lib.Application.Abstractions;
 using Lib.Notifications;
+using NSwag;
+using NSwag.Generation.Processors.Security;
 using Serilog;
 using WebAPI.HostedServices;
 using WebAPI.Middleware;
@@ -24,8 +26,8 @@ builder.Services.AddCors(options =>
 
 
 builder.Configuration
-    .AddJsonFile("QN.Expenditure.Credentials/appsettings.json");
-//.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+    .AddJsonFile("QN.Expenditure.Credentials/appsettings.json")
+    .AddJsonFile($"QN.Expenditure.Credentials/appsettings.{builder.Environment.EnvironmentName}.json", true, true);
 
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ReadFrom.Configuration(context.Configuration)
@@ -34,7 +36,6 @@ builder.Host.UseSerilog((context, loggerConfig) =>
 builder.Services.AddTransient(_ =>
     new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
 builder.Services.AddControllers();
-builder.Services.AddOpenApiDocument();
 builder.Services.AddTelegramNotifier(builder.Configuration);
 builder.Services.AddAuthInfrastructureServices(builder.Configuration);
 builder.Services.AddCexInfrastructureServices(builder.Configuration);
@@ -48,6 +49,42 @@ builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true
 //builder.Services.AddHostedService<ArbitrageService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
+builder.Services.AddOpenApiDocument(options =>
+{
+    // Add JWT bearer token security scheme
+    options.AddSecurity("JWT", new OpenApiSecurityScheme
+    {
+        Type = OpenApiSecuritySchemeType.ApiKey,
+        Name = "Authorization",
+        In = OpenApiSecurityApiKeyLocation.Header,
+        Description = "Type into the textbox: Bearer {your JWT token}"
+    });
+
+    // Apply the security scheme to all operations
+    options.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
+
+    // Post process the document information
+    options.PostProcess = document =>
+    {
+        document.Info = new OpenApiInfo
+        {
+            Version = "v1",
+            Title = builder.Environment.EnvironmentName
+            // Description = "An ASP.NET Core Web API for managing ToDo items",
+            // TermsOfService = "https://example.com/terms",
+            // Contact = new OpenApiContact
+            // {
+            //     Name = "Example Contact",
+            //     Url = "https://example.com/contact"
+            // },
+            // License = new OpenApiLicense
+            // {
+            //     Name = "Example License",
+            //     Url = "https://example.com/license"
+            // }
+        };
+    };
+});
 
 var app = builder.Build();
 

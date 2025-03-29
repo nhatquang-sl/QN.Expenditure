@@ -9,9 +9,6 @@ using Shouldly;
 
 namespace Cex.Infrastructure.IntegrationTests.Grid.UpdateSpotGrid
 {
-    // Init Step is AwaitingSell => Can't update
-    // Update normal steps 
-    //  - 
     public class GridRunningStateTests : DependencyInjectionFixture
     {
         private readonly ICexDbContext _context;
@@ -188,7 +185,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.UpdateSpotGrid
             await _context.SaveChangesAsync(default);
 
             // Act
-            var res = await _sender.Send(new UpdateSpotGridCommand
+            await _sender.Send(new UpdateSpotGridCommand
             {
                 Id = SpotGridCreated.Id,
                 LowerPrice = CreateCommand.LowerPrice,
@@ -348,7 +345,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.UpdateSpotGrid
             // Arrange
 
             // Act
-            var res = await _sender.Send(new UpdateSpotGridCommand
+            await _sender.Send(new UpdateSpotGridCommand
             {
                 Id = SpotGridCreated.Id,
                 LowerPrice = lowerPrice,
@@ -523,7 +520,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.UpdateSpotGrid
             // Arrange
 
             // Act
-            var res = await _sender.Send(new UpdateSpotGridCommand
+            await _sender.Send(new UpdateSpotGridCommand
             {
                 Id = SpotGridCreated.Id,
                 LowerPrice = CreateCommand.LowerPrice,
@@ -695,7 +692,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.UpdateSpotGrid
             // Arrange
 
             // Act
-            var res = await _sender.Send(new UpdateSpotGridCommand
+            await _sender.Send(new UpdateSpotGridCommand
             {
                 Id = SpotGridCreated.Id,
                 LowerPrice = CreateCommand.LowerPrice,

@@ -8,7 +8,7 @@ namespace WebAPI.Services
     {
         public CurrentUser(IHttpContextAccessor httpContextAccessor)
         {
-            if (!(httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false))
+            if (!(httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false))
             {
                 return;
             }

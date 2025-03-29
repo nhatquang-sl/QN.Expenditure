@@ -16,11 +16,13 @@ namespace Lib.ExternalServices.Tests
                 .Build();
 
             var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<HttpDelegatingHandler>();
 
             serviceCollection.Configure<KuCoinConfig>(configuration.GetSection("KuCoinConfig"));
             serviceCollection
                 .AddRefitClient<IKuCoinService>()
-                .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.kucoin.com"));
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.kucoin.com"))
+                .AddHttpMessageHandler<HttpDelegatingHandler>();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
             _scope = serviceProvider.CreateScope();

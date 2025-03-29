@@ -4,7 +4,7 @@ import { BackdropLoading } from 'components/backdrop-loading';
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { bnbSpotGridClient } from 'store';
+import { spotGridClient } from 'store';
 import { SpotGridDto } from 'store/api-client';
 import CurrentPrice from '../components/current-price';
 import TotalProfit from '../components/total-profit';
@@ -18,7 +18,7 @@ const SpotGridItem = (props: { spotGrid: SpotGridDto }) => {
   // const [curPrice, setCurPrice] = useState(0);
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: () => bnbSpotGridClient.delete(id),
+    mutationFn: () => spotGridClient.delete(id),
     onSuccess: (result) => {
       // Replace optimistic todo in the todos list with the result
       queryClient.setQueryData(['SpotGrids'], (spotGrids: SpotGridDto[]) =>

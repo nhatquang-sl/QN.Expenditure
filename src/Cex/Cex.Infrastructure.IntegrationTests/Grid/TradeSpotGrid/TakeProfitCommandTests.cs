@@ -5,6 +5,7 @@ using Cex.Application.Grid.Commands.UpdateSpotGrid;
 using Cex.Domain.Entities;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +24,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
         {
             _kuCoinServiceMock.Setup(x =>
                     x.PlaceOrder(
-                        It.Is<OrderRequest>(order =>
+                        It.Is<PlaceOrderRequest>(order =>
                             order.Side == "sell" && order.Type == "market" && order.Symbol == CreateCommand.Symbol &&
                             order.Size == "2.9"),
                         It.IsAny<KuCoinConfig>()))
@@ -31,7 +32,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
 
             _kuCoinServiceMock.Setup(x =>
                     x.PlaceOrder(
-                        It.Is<OrderRequest>(order =>
+                        It.Is<PlaceOrderRequest>(order =>
                             order.Side == "sell" && order.Type == "market" && order.Symbol == CreateCommand.Symbol &&
                             order.Size == "4.3"),
                         It.IsAny<KuCoinConfig>()))
@@ -80,7 +81,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
         ///     - KucCoinService.PlaceOrder called once
         ///     - KuCoinService.GetOrderDetails called once
         ///     - Grid status should be TAKE_PROFIT
-        ///     - TakeProfit step order id is not null
+        ///     - TakeProfit step order id is null
         ///     - TakeProfit step order quantity is base balance
         /// </summary>
         [Theory]
@@ -113,7 +114,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
             _kuCoinServiceMock.Verify(s => s.CancelOrder("fake_order_id_2", It.IsAny<KuCoinConfig>()), Times.Once);
 
             // 2. Verify PlaceOrder and GetOrderDetails are called.
-            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.Is<OrderRequest>(req =>
+            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.Is<PlaceOrderRequest>(req =>
                 req.Symbol == grid.Symbol &&
                 req.Side == "sell" &&
                 req.Type == "market" &&
@@ -125,8 +126,8 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
             // 3. Check that grid.Status is updated to TAKE_PROFIT.
             grid.Status.ShouldBe(SpotGridStatus.TAKE_PROFIT);
 
-            // 4. The cancel order should have cleared the previous order id
-            takeProfitStep.OrderId.ShouldBe(orderId);
+            // 4. The Take Profit step should have order id null and status SellOrderPlaced.
+            takeProfitStep.OrderId.ShouldBeNull();
             takeProfitStep.Status.ShouldBe(SpotGridStepStatus.SellOrderPlaced);
 
             // 5. Check that a new order was added.
@@ -163,7 +164,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
 
             // KuCoin services are not invoked.
             _kuCoinServiceMock.Verify(s => s.CancelOrder(It.IsAny<string>(), It.IsAny<KuCoinConfig>()), Times.Never);
-            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.IsAny<OrderRequest>(), It.IsAny<KuCoinConfig>()),
+            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.IsAny<PlaceOrderRequest>(), It.IsAny<KuCoinConfig>()),
                 Times.Never);
             _kuCoinServiceMock.Verify(s => s.GetOrderDetails(It.IsAny<string>(), It.IsAny<KuCoinConfig>()),
                 Times.Never);
@@ -212,7 +213,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
 
             // KuCoin services are not invoked.
             _kuCoinServiceMock.Verify(s => s.CancelOrder(It.IsAny<string>(), It.IsAny<KuCoinConfig>()), Times.Never);
-            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.IsAny<OrderRequest>(), It.IsAny<KuCoinConfig>()),
+            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.IsAny<PlaceOrderRequest>(), It.IsAny<KuCoinConfig>()),
                 Times.Never);
             _kuCoinServiceMock.Verify(s => s.GetOrderDetails(It.IsAny<string>(), It.IsAny<KuCoinConfig>()),
                 Times.Never);

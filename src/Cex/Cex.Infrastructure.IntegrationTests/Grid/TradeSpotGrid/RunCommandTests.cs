@@ -4,6 +4,7 @@ using Cex.Application.Grid.Commands.TradeSpotGrid;
 using Cex.Domain.Entities;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +31,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
         {
             // Arrange
             var kuCoinServiceMock = new Mock<IKuCoinService>();
-            kuCoinServiceMock.Setup(x => x.PlaceOrder(It.IsAny<OrderRequest>(), It.IsAny<KuCoinConfig>()))
+            kuCoinServiceMock.Setup(x => x.PlaceOrder(It.IsAny<PlaceOrderRequest>(), It.IsAny<KuCoinConfig>()))
                 .ReturnsAsync("fake_order_id");
             ServiceCollection.AddSingleton(kuCoinServiceMock.Object);
 
@@ -58,7 +59,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
 
             grid.QuoteBalance.ShouldBe((quoteBalance - step.Qty * step.BuyPrice).FixedNumber());
 
-            kuCoinServiceMock.Verify(s => s.PlaceOrder(It.Is<OrderRequest>(req =>
+            kuCoinServiceMock.Verify(s => s.PlaceOrder(It.Is<PlaceOrderRequest>(req =>
                     req.Symbol == grid.Symbol &&
                     req.Side == "buy" &&
                     req.Type == "limit" &&
@@ -164,7 +165,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
         {
             // Arrange
             var kuCoinServiceMock = new Mock<IKuCoinService>();
-            kuCoinServiceMock.Setup(x => x.PlaceOrder(It.IsAny<OrderRequest>(), It.IsAny<KuCoinConfig>()))
+            kuCoinServiceMock.Setup(x => x.PlaceOrder(It.IsAny<PlaceOrderRequest>(), It.IsAny<KuCoinConfig>()))
                 .ReturnsAsync("fake_order_id");
             ServiceCollection.AddSingleton(kuCoinServiceMock.Object);
 
@@ -203,7 +204,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
             // 2. Verify Grid base balance is decreased by Qty.
             grid.BaseBalance.ShouldBe(baseBalance - step.Qty);
 
-            kuCoinServiceMock.Verify(s => s.PlaceOrder(It.Is<OrderRequest>(req =>
+            kuCoinServiceMock.Verify(s => s.PlaceOrder(It.Is<PlaceOrderRequest>(req =>
                     req.Symbol == grid.Symbol &&
                     req.Side == "sell" &&
                     req.Type == "limit" &&

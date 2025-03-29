@@ -16,10 +16,6 @@
         <ProjectReference Include="..\Libs\Lib.Notifications\Lib.Notifications.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <Folder Include="QN.Expenditure.Credentials\"/>
-    </ItemGroup>
-
 
     <ItemGroup>
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.4"/>
@@ -28,5 +24,12 @@
         <PackageReference Include="Serilog.Sinks.Loggly" Version="5.4.0"/>
         <PackageReference Include="Serilog.Sinks.Seq" Version="5.2.3"/>
         <PackageReference Include="SocketIOClient" Version="3.1.2"/>
+    </ItemGroup>
+
+
+    <ItemGroup>
+        <Content Update="QN.Expenditure.Credentials\appsettings.Development.json">
+            <DependentUpon>appsettings.json</DependentUpon>
+        </Content>
     </ItemGroup>
 </Project>

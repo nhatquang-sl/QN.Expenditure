@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BackdropLoading } from 'components/backdrop-loading';
 
 import { Outlet } from 'react-router-dom';
-import { bnbSpotGridClient } from 'store';
+import { spotGridClient } from 'store';
 import SpotGridItem from './item';
 import { columns } from './types';
 
@@ -21,7 +21,7 @@ export default function SpotGridList() {
   // Queries
   const { isLoading, data } = useQuery({
     queryKey: ['SpotGrids'],
-    queryFn: async () => await bnbSpotGridClient.getAll(),
+    queryFn: async () => await spotGridClient.getAll(),
   });
 
   console.log(data);

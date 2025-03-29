@@ -1,6 +1,6 @@
 using System.Globalization;
 using Cex.Domain.Entities;
-using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 
 namespace Cex.Infrastructure.IntegrationTests.Grid
 {

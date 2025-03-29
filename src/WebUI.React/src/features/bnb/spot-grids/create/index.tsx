@@ -9,7 +9,7 @@ import {
   NumberElement,
 } from 'components/form/types';
 import { useSelector } from 'react-redux';
-import { bnbSpotGridClient, RootState } from 'store';
+import { RootState, spotGridClient } from 'store';
 import { CreateSpotGridCommand } from 'store/api-client';
 import { GridOrderData, GridOrderSchema, SpotGridSummary } from '../types';
 
@@ -24,7 +24,7 @@ export default function SpotGridCreate() {
 
   const onSubmit = async (data: GridOrderData) => {
     const command = { ...data, symbol: symbol } as CreateSpotGridCommand;
-    await bnbSpotGridClient.create(command);
+    await spotGridClient.create(command);
   };
 
   const profitOfGrid = new ComputeElement('Summary Grid');

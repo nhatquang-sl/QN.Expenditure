@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Lib.ExternalServices.KuCoin.Models;
 using Refit;
 
 namespace Lib.ExternalServices.KuCoin
@@ -8,17 +9,17 @@ namespace Lib.ExternalServices.KuCoin
     public interface IKuCoinService
     {
         public async Task<string> PlaceOrder(
-            OrderRequest order, KuCoinConfig credentials
+            PlaceOrderRequest placeOrder, KuCoinConfig credentials
         )
         {
             var body = new Dictionary<string, string>
             {
                 { "clientOid", Guid.NewGuid().ToString() },
-                { "symbol", order.Symbol.ToKcSymbol() },
-                { "side", order.Side },
-                { "type", order.Type },
-                { "price", order.Price },
-                { "size", order.Size }
+                { "symbol", placeOrder.Symbol.ToKcSymbol() },
+                { "side", placeOrder.Side },
+                { "type", placeOrder.Type },
+                { "price", placeOrder.Price },
+                { "size", placeOrder.Size }
             };
 
             var bodyStr = JsonSerializer.Serialize(body);
@@ -100,6 +101,16 @@ namespace Lib.ExternalServices.KuCoin
             }).ToList();
         }
 
+        public async Task<List<Account>> GetAccounts(string type, string currency, KuCoinConfig credentials)
+        {
+            var (signature, timestamp) = GenerateSignature(credentials.ApiSecret, "GET",
+                $"/api/v1/accounts?type={type}&currency={currency}");
+            var res = await GetAccounts(type, currency, credentials.ApiKey, signature, timestamp,
+                credentials.ApiPassphrase);
+
+            return res.Data.ToList();
+        }
+
         [Get("/api/v1/market/candles?symbol={symbol}&type={type}&startAt={startAt}&endAt={endAt}")]
         Task<KuCoinResponse<string[][]>> GetKlines(
             string symbol, string type, long startAt, long endAt,
@@ -143,7 +154,17 @@ namespace Lib.ExternalServices.KuCoin
 
         // https://www.kucoin.com/docs/rest/spot-trading/orders/place-order
         [Post("/api/v1/orders")]
-        Task<KuCoinResponse<OrderResponse>> PlaceOrder([Body] Dictionary<string, string> order,
+        Task<KuCoinResponse<PlaceOrderResponse>> PlaceOrder([Body] Dictionary<string, string> order,
+            [Header("KC-API-KEY")] string apiKey,
+            [Header("KC-API-SIGN")] string signature,
+            [Header("KC-API-TIMESTAMP")] string timestamp,
+            [Header("KC-API-PASSPHRASE")] string passphrase,
+            [Header("KC-API-VERSION")] string apiVersion = "2");
+
+        // https://www.kucoin.com/docs/rest/account/basic-info/get-account-list-spot-margin-trade_hf
+        [Get("/api/v1/accounts?type={type}&currency={currency}")]
+        Task<KuCoinResponse<Account[]>> GetAccounts(
+            string type, string currency,
             [Header("KC-API-KEY")] string apiKey,
             [Header("KC-API-SIGN")] string signature,
             [Header("KC-API-TIMESTAMP")] string timestamp,
@@ -158,75 +179,5 @@ namespace Lib.ExternalServices.KuCoin
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(apiSecret));
             return (Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(preHash))), timestamp);
         }
-    }
-
-    public class Kline
-    {
-        public DateTime OpenTime { get; set; }
-        public decimal OpenPrice { get; set; }
-        public decimal ClosePrice { get; set; }
-        public decimal HighestPrice { get; set; }
-        public decimal LowestPrice { get; set; }
-        public decimal Volume { get; set; }
-        public decimal Amount { get; set; }
-    }
-
-    public class OrderRequest
-    {
-        public string Side { get; init; } // buy or sell
-
-        public string Symbol { get; init; } // e.g., BTC-USDT
-
-        public string Type { get; init; } // limit or market
-
-        public string Price { get; init; } // required for limit orders
-
-        public string Size { get; init; } // required for both limit and market orders
-    }
-
-    public class OrderResponse
-    {
-        public string OrderId { get; set; }
-    }
-
-    public class OrderDetails
-    {
-        public string Id { get; set; }
-        public string Symbol { get; set; }
-        public string OpType { get; set; }
-        public string Type { get; set; }
-        public string Side { get; set; }
-        public string Price { get; set; }
-        public string Size { get; set; }
-        public string Funds { get; set; }
-        public string DealFunds { get; set; }
-        public string DealSize { get; set; }
-        public string Fee { get; set; }
-        public string FeeCurrency { get; set; }
-        public string Stp { get; set; }
-        public string Stop { get; set; }
-        public bool StopTriggered { get; set; }
-        public string StopPrice { get; set; }
-        public string TimeInForce { get; set; }
-        public bool PostOnly { get; set; }
-        public bool Hidden { get; set; }
-        public bool Iceberg { get; set; }
-        public string VisibleSize { get; set; }
-        public int CancelAfter { get; set; }
-        public string Channel { get; set; }
-        public string ClientOid { get; set; }
-        public string Remark { get; set; }
-        public string Tags { get; set; }
-        public bool IsActive { get; set; }
-        public bool CancelExist { get; set; }
-        public long CreatedAt { get; set; }
-        public string TradeType { get; set; }
-    }
-
-    public class KuCoinResponse<T>
-    {
-        public string Code { get; set; }
-        public string Msg { get; set; }
-        public T Data { get; set; }
     }
 }

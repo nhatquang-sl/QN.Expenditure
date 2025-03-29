@@ -4,6 +4,7 @@ using Cex.Application.Grid.Commands.TradeSpotGrid;
 using Cex.Domain.Entities;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
 
         public InitCommandTests()
         {
-            _kuCoinServiceMock.Setup(x => x.PlaceOrder(It.IsAny<OrderRequest>(), It.IsAny<KuCoinConfig>()))
+            _kuCoinServiceMock.Setup(x => x.PlaceOrder(It.IsAny<PlaceOrderRequest>(), It.IsAny<KuCoinConfig>()))
                 .ReturnsAsync("fake_order_id");
 
             _kuCoinServiceMock.Setup(x =>
@@ -83,7 +84,7 @@ namespace Cex.Infrastructure.IntegrationTests.Grid.TradeSpotGrid
             initialStep.OrderId.ShouldBe("fake_order_id");
             initialStep.Status.ShouldBe(SpotGridStepStatus.BuyOrderPlaced);
 
-            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.Is<OrderRequest>(req =>
+            _kuCoinServiceMock.Verify(s => s.PlaceOrder(It.Is<PlaceOrderRequest>(req =>
                 req.Symbol == originalGrid.Symbol &&
                 req.Side == "buy" &&
                 req.Type == "limit" &&
