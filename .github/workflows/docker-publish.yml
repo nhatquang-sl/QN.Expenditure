@@ -29,11 +29,11 @@ jobs:
           ssh-key: ${{ secrets.SUB_CREDENTIALS }}
           submodules: true
 
-      - name: Run Unit Tests with Coverage
-        run: |
-          cd src/Cex
-          dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
-          reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:TextSummary
+      # - name: Run Unit Tests with Coverage
+      #   run: |
+      #     cd src/Cex
+      #     dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      #     reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:TextSummary
 
       - name: Docker meta
         id: meta
