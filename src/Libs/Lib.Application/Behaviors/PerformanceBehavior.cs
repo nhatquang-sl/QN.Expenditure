@@ -34,7 +34,7 @@ namespace Lib.Application.Behaviors
 
                 var requestName = typeof(TRequest).Name;
                 var logLevel = elapsedMilliseconds > 500 ? LogLevel.Warning : LogLevel.Information;
-                _logTrace.Log(new LogEntry(logLevel, $"Processed Time: {requestName} ({elapsedMilliseconds} milliseconds)", request));
+                _logTrace.Log(new LogEntry(logLevel, $"Processed Time: {requestName} ({elapsedMilliseconds} milliseconds)",null));
             }
         }
     }
