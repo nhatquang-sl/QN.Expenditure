@@ -24,7 +24,7 @@ namespace Cex.Application.BnbSpotOrder.Commands.Arbitrage
         {
             var BASE_TOKEN = "USDT";
             var bridgeToken = "BTC";
-            var mainTokens = new List<string> { "1INCH", "AAVE", "ACA", "ACE", "ACH", "ADA", "ADX", "TIA", "SOL", "BNB" };
+            var mainTokens = new List<string> { "TIA", "SOL", "BNB" };
             //mainTokens = ["ACH"];
 
             var tasks = mainTokens.Select(async mainToken =>
