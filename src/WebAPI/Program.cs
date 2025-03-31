@@ -44,7 +44,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
-builder.Services.AddHostedService<BnbSpotGridService>();
+builder.Services.AddHostedService<SpotGridService>();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 //builder.Services.AddHostedService<ArbitrageService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();

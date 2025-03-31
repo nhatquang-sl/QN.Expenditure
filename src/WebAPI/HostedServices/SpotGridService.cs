@@ -8,13 +8,12 @@ using Serilog;
 
 namespace WebAPI.HostedServices
 {
-    public class BnbSpotGridService(
-        IConfiguration configuration,
-        IKuCoinService kuCoinService,
-        IOptions<KuCoinConfig> kuCoinConfig) : BackgroundService
+    public class SpotGridService(
+        IConfiguration configuration) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            var startedAt = DateTime.UtcNow;
             var services = new ServiceCollection();
             services.AddCexInfrastructureServices(configuration);
             services.AddTelegramNotifier(configuration);
@@ -23,7 +22,7 @@ namespace WebAPI.HostedServices
             await Task.Factory.StartNew(async () =>
             {
                 var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
-                logger.Information("Start {serviceName} started at {startAt}", GetType().Name, DateTime.UtcNow);
+                logger.Information("Start {serviceName} started at {startAt}", GetType().Name, startedAt);
                 while (true)
                 {
                     try
