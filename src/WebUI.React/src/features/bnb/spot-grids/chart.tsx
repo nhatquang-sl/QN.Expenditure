@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Paper } from '@mui/material';
-import { CandlestickData, IChartApi, ISeriesApi, createChart } from 'lightweight-charts';
+import { CandlestickData, IChartApi, ISeriesApi, LineData, createChart } from 'lightweight-charts';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import addBollingerBands from './handlers/add-bollinger-bands';
 import addCandlesticks from './handlers/add-candlesticks';
 import addVolume from './handlers/add-volume';
 import getCandlesticks from './handlers/get-candlesticks';
+import { GridDetails } from './types';
 import { defaultChartLayout } from './utils/constants';
 
 // https://github.com/tradingview/lightweight-charts/issues/50
@@ -17,11 +18,12 @@ let boluSeries: ISeriesApi<'Line'>,
   boldSeries: ISeriesApi<'Line'> | null = null,
   rsiSeries: ISeriesApi<'Line'>,
   supportSeries: ISeriesApi<'Line'>[] = [];
+const gridSeries: ISeriesApi<'Line'>[] = [];
 let mainChart: IChartApi;
 let rsiChart: IChartApi;
 let markPriceWS: WebSocket | null = null;
-function Chart(props: { pair: string; interval: string }) {
-  const { pair, interval } = props;
+function Chart(props: { pair: string; interval: string; gridDetails: GridDetails[] }) {
+  const { pair, interval, gridDetails } = props;
   const resizeObserver = useRef<any>();
 
   const chartContainerRef = useRef<string | any>();
@@ -92,8 +94,13 @@ function Chart(props: { pair: string; interval: string }) {
     sma20Series && mainChart.removeSeries(sma20Series);
     boldSeries && mainChart.removeSeries(boldSeries);
     rsiSeries && rsiChart.removeSeries(rsiSeries);
+
     if (supportSeries.length)
       for (const s of supportSeries) {
+        mainChart.removeSeries(s);
+      }
+    if (gridSeries.length)
+      for (const s of gridSeries) {
         mainChart.removeSeries(s);
       }
 
@@ -122,7 +129,21 @@ function Chart(props: { pair: string; interval: string }) {
       const dataPoint = getCrosshairDataPoint(boluSeries, param);
       syncCrosshair(rsiChart, rsiSeries, dataPoint);
     });
-  }, [pair, interval]);
+    console.log({ gridDetails });
+    gridDetails.forEach((item) => {
+      const grid = mainChart.addLineSeries({
+        color: 'red',
+        lineWidth: 1,
+        crosshairMarkerVisible: false,
+        lastValueVisible: false,
+      });
+      grid.setData(
+        klines.map((k) => ({ time: k.openTime / 1000, value: item.buyPrice } as LineData))
+      );
+
+      gridSeries.push(grid);
+    });
+  }, [pair, interval, gridDetails]);
 
   useEffect(() => {
     initialChart();
@@ -185,4 +206,5 @@ function Chart(props: { pair: string; interval: string }) {
   );
 }
 
-export default memo(Chart);
+const MemoizedChart = memo(Chart);
+export default MemoizedChart;

@@ -3,7 +3,10 @@ import axios from 'axios';
 import snackbarReducer from 'components/snackbar/slice';
 import authReducer from 'features/auth/slice';
 
-import spotGridReducer, { spotPriceReducer } from 'features/bnb/spot-grids/slice';
+import spotGridReducer, {
+  spotGridDetailsReducer,
+  spotPriceReducer,
+} from 'features/bnb/spot-grids/slice';
 
 import counterReducer from 'features/counter/slice';
 import layoutReducer from 'features/layout/slice';
@@ -18,6 +21,7 @@ export const store = configureStore({
     layout: layoutReducer,
     spotGrid: spotGridReducer,
     spotPrice: spotPriceReducer,
+    spotGridDetails: spotGridDetailsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

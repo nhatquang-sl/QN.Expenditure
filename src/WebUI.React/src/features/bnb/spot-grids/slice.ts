@@ -1,10 +1,31 @@
 // The name slice comes from splitting up redux state objects into multiple slices of state. So slice is a collection of reducer logic and actions for a single feature in the app. E.g a blog might have a slice for posts and another slice for comments, you would handle the logic of each differently, so they each get their own slice.
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from 'store';
+import { GridDetails } from './types';
 
 const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'DOGEUSDT', 'APTUSDT', 'ICPUSDT'];
 const INTERVALS = ['5m', '15m', '1h', '4h', '1d'];
-const initialState = {
+
+type GridDetailsState = { gridDetails: GridDetails[] };
+
+const gridDetailsInitialState: GridDetailsState = {
+  gridDetails: [],
+};
+export const spotGridDetailsSlice = createSlice({
+  name: 'spotGridDetails',
+  initialState: gridDetailsInitialState,
+  reducers: {
+    setGridDetails: (state, action: PayloadAction<GridDetails[]>) => {
+      state.gridDetails = action.payload;
+    },
+  },
+});
+
+type SpotGridState = {
+  symbol: string;
+  interval: string;
+};
+const initialState: SpotGridState = {
   symbol: localStorage.chartSymbol ?? SYMBOLS[0],
   interval: localStorage.chartInterval ?? INTERVALS[0],
 };
@@ -44,10 +65,13 @@ const spotPriceSlice = createSlice({
 });
 
 export const { setSymbol, setInterval } = spotGridSlice.actions;
+export const { setGridDetails } = spotGridDetailsSlice.actions;
 export const { setPrice } = spotPriceSlice.actions;
 // Custom selector to retrieve a price by symbol
 export const selectPrice = (symbol: string) => (state: RootState) =>
   state.spotPrice.prices[symbol] ?? 0;
 export { INTERVALS, SYMBOLS };
+
+export const { reducer: spotGridDetailsReducer } = spotGridDetailsSlice;
 export const { reducer: spotPriceReducer } = spotPriceSlice;
 export default spotGridSlice.reducer;

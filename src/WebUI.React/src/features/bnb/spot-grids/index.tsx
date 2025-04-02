@@ -20,6 +20,7 @@ import { fixedNumber } from './utils';
 export default function SpotGrid() {
   const dispatch = useDispatch();
   const { symbol, interval } = useSelector((state: RootState) => state.spotGrid);
+  const { gridDetails } = useSelector((state: RootState) => state.spotGridDetails);
 
   useEffect(() => {
     // WS: get market price
@@ -94,7 +95,7 @@ export default function SpotGrid() {
         </Paper>
       </Grid>
       <Grid item xs={12}>
-        <Chart pair={symbol} interval={interval}></Chart>
+        <Chart pair={symbol} interval={interval} gridDetails={gridDetails}></Chart>
       </Grid>
       <Grid item xs={12}>
         <Outlet />

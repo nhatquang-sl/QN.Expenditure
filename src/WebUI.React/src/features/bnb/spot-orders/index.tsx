@@ -47,7 +47,7 @@ export default function BnbSpotOrders() {
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
-    var spotOrders = await bnbSpotClient.getSpotOrders();
+    const spotOrders = await bnbSpotClient.getSpotOrders();
 
     const symbolMap = new Map<string, number>();
     const summaries: OrderSummary[] = [];
@@ -57,7 +57,7 @@ export default function BnbSpotOrders() {
         symbolMap.set(order.symbol, summaries.length);
         summaries.push(new OrderSummary(order.symbol));
       }
-      let summary = summaries[symbolMap.get(order.symbol) ?? 0];
+      const summary = summaries[symbolMap.get(order.symbol) ?? 0];
       switch (`${order.side}_${order.status}`) {
         case 'BUY_FILLED':
           summary.buy += parseFloat(order.executedQty);

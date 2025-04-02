@@ -11,7 +11,8 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState, spotGridClient } from 'store';
 import { CreateSpotGridCommand } from 'store/api-client';
-import { GridOrderData, GridOrderSchema, SpotGridSummary } from '../types';
+import Tabs from '../components/tabs';
+import { GridOrderData, GridOrderSchema } from '../types';
 
 // const GRID_MODES = [
 //   new InputOption(SpotGridMode.ARITHMETIC, 'arithmetic'),
@@ -33,8 +34,29 @@ export default function SpotGridCreate() {
     const upperPrice = Number(getValues('upperPrice'));
     const numberOfGrids = Number(getValues('numberOfGrids'));
     const investment = Number(getValues('investment')) * 0.75;
+
+    // const differentPrice = (upperPrice - lowerPrice) / numberOfGrids;
+
+    // const fee = 0.1 / 100;
+    // const amountPerGrid = investment / numberOfGrids;
+    // const gridDetails: GridDetails[] = [];
+    // for (let i = 0; i < numberOfGrids; i++) {
+    //   const buyPrice = fixedNumber(lowerPrice + i * differentPrice);
+    //   const sellPrice = fixedNumber(lowerPrice + (i + 1) * differentPrice);
+    //   const profitPercent = fixedPercentNumber(((1 - fee) * differentPrice) / buyPrice - 2 * fee);
+    //   const grid = {
+    //     buyPrice: buyPrice,
+    //     sellPrice: sellPrice,
+    //     profit: amountPerGrid ? fixedNumber((amountPerGrid * profitPercent) / 100) : 0,
+    //     profitPercent: profitPercent,
+    //   };
+    //   console.log(grid);
+    //   gridDetails.push(grid);
+    // }
+
+    // dispatch(setGridDetails(gridDetails));
     return (
-      <SpotGridSummary
+      <Tabs
         lowerPrice={lowerPrice}
         upperPrice={upperPrice}
         numberOfGrids={numberOfGrids}
@@ -50,8 +72,8 @@ export default function SpotGridCreate() {
         resolver={zodResolver(GridOrderSchema)}
         blocks={[
           new Block([
-            new NumberElement('Lower Price', 2000),
-            new NumberElement('Upper Price', 5000),
+            new NumberElement('Lower Price', 80000),
+            new NumberElement('Upper Price', 100000),
             new NumberElement('Trigger Price', 3000),
           ]),
           new Block([

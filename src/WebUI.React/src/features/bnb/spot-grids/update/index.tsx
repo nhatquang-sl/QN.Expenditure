@@ -14,7 +14,8 @@ import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { RootState, spotGridClient } from 'store';
 import { SpotGridDto, UpdateSpotGridCommand } from 'store/api-client';
-import { GridOrderData, GridOrderSchema, SpotGridSummary } from '../types';
+import Tabs from '../components/tabs';
+import { GridOrderData, GridOrderSchema } from '../types';
 
 // const GRID_MODES = [
 //   new InputOption(SpotGridMode.ARITHMETIC, 'arithmetic'),
@@ -48,7 +49,7 @@ export default function SpotGridUpdate() {
     const investment = Number(getValues('investment')) * 0.75;
     console.log({ lowerPrice, upperPrice, numberOfGrids, investment });
     return (
-      <SpotGridSummary
+      <Tabs
         lowerPrice={lowerPrice}
         upperPrice={upperPrice}
         numberOfGrids={numberOfGrids}
