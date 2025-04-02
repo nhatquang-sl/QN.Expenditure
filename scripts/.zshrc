@@ -1,11 +1,6 @@
-export QNEDIR="D:"
-if [[ $(uname) == "Darwin" ]]; then
-    export QNEDIR="/Users/quang"
-fi
-
-source ${QNEDIR}/QN.Expenditure/scripts/qnapiclientgenerate.zsh
-source ${QNEDIR}/QN.Expenditure/scripts/qnapistart.zsh
-source ${QNEDIR}/QN.Expenditure/scripts/qndbinit.zsh
-source ${QNEDIR}/QN.Expenditure/scripts/qndbremove.zsh
-source ${QNEDIR}/QN.Expenditure/scripts/qndbupdate.zsh
-source ${QNEDIR}/QN.Expenditure/scripts/qnuistart.zsh
+source $QNEDIR/scripts/qnapiclientgenerate.zsh
+source $QNEDIR/scripts/qnapistart.zsh
+source $QNEDIR/scripts/qndbinit.zsh
+source $QNEDIR/scripts/qndbremove.zsh
+source $QNEDIR/scripts/qndbupdate.zsh
+source $QNEDIR/scripts/qnuistart.zsh 

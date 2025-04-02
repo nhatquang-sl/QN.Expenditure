@@ -3,6 +3,6 @@
 qnuistart() {
     curDir="$(pwd)"
     echo $curDir
-    cd /d/QN.Expenditure/src/WebUI.React
+    cd $QNEDIR/src/WebUI.React
     npm run dev
 }
