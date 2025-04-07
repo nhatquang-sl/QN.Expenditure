@@ -49,6 +49,7 @@ export class InputElement {
   options: InputOption[] = [];
   disabled: boolean = false;
   computedValue?: (getValues: (fieldId: string) => string) => ReactElement;
+  watch?: (value: string) => void;
 }
 
 export class SelectElement extends InputElement {

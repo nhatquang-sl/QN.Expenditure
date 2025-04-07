@@ -117,14 +117,17 @@ export default function Form<T extends Record<string, any>>(props: {
     console.log({ value: event.target.value, id: event.target.id });
     for (const block of blocks) {
       for (const el of block.elements) {
+        const elId = camelCase(el.label);
         if (el.computedValue) {
-          const computedId = camelCase(el.label);
-          const computedValue = el.computedValue((elId: string) => {
-            if (elId === event.target.id) return event.target.value;
-            return getValues(elId)?.toString();
+          const computedValue = el.computedValue((id: string) => {
+            if (id === event.target.id) return event.target.value;
+            return getValues(id)?.toString();
           });
-          computedValues.set(computedId, computedValue);
+          computedValues.set(elId, computedValue);
           setComputedValues(new Map(computedValues));
+        }
+        if (el.watch && elId === event.target.id) {
+          el.watch(event.target.value);
         }
       }
     }

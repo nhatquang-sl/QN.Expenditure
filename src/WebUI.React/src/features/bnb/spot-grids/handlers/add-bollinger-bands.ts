@@ -73,6 +73,7 @@ const addBollingerBands = (chart: IChartApi, rsiChart: IChartApi, candles: Kline
             color: 'blue',
             lineWidth: 1,
             crosshairMarkerVisible: false,
+            lastValueVisible: false,
           });
           support.setData(
             klines.map((k) => ({ time: k.openTime / 1000, value: line } as LineData))

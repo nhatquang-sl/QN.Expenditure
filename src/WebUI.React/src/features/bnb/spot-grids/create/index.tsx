@@ -8,20 +8,21 @@ import {
   ComputeElement,
   NumberElement,
 } from 'components/form/types';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState, spotGridClient } from 'store';
 import { CreateSpotGridCommand } from 'store/api-client';
 import Tabs from '../components/tabs';
+import { setTriggerPrice } from '../slice';
 import { GridOrderData, GridOrderSchema } from '../types';
 
 // const GRID_MODES = [
 //   new InputOption(SpotGridMode.ARITHMETIC, 'arithmetic'),
 //   new InputOption(SpotGridMode.GEOMETRIC, 'geometric'),
-// ];
-// const SYMBOLS = [new InputOption('BTC-USDT'), new InputOption('CYBERUSDT')];
+// ]
 
 export default function SpotGridCreate() {
   const { symbol } = useSelector((state: RootState) => state.spotGrid);
+  const dispatch = useDispatch();
 
   const onSubmit = async (data: GridOrderData) => {
     const command = { ...data, symbol: symbol } as CreateSpotGridCommand;
@@ -35,26 +36,6 @@ export default function SpotGridCreate() {
     const numberOfGrids = Number(getValues('numberOfGrids'));
     const investment = Number(getValues('investment')) * 0.75;
 
-    // const differentPrice = (upperPrice - lowerPrice) / numberOfGrids;
-
-    // const fee = 0.1 / 100;
-    // const amountPerGrid = investment / numberOfGrids;
-    // const gridDetails: GridDetails[] = [];
-    // for (let i = 0; i < numberOfGrids; i++) {
-    //   const buyPrice = fixedNumber(lowerPrice + i * differentPrice);
-    //   const sellPrice = fixedNumber(lowerPrice + (i + 1) * differentPrice);
-    //   const profitPercent = fixedPercentNumber(((1 - fee) * differentPrice) / buyPrice - 2 * fee);
-    //   const grid = {
-    //     buyPrice: buyPrice,
-    //     sellPrice: sellPrice,
-    //     profit: amountPerGrid ? fixedNumber((amountPerGrid * profitPercent) / 100) : 0,
-    //     profitPercent: profitPercent,
-    //   };
-    //   console.log(grid);
-    //   gridDetails.push(grid);
-    // }
-
-    // dispatch(setGridDetails(gridDetails));
     return (
       <Tabs
         lowerPrice={lowerPrice}
@@ -63,6 +44,10 @@ export default function SpotGridCreate() {
         investment={investment}
       />
     );
+  };
+  const triggerPriceEl = new NumberElement('Trigger Price', 90000);
+  triggerPriceEl.watch = (value) => {
+    dispatch(setTriggerPrice(Number(value)));
   };
 
   return (
@@ -74,7 +59,7 @@ export default function SpotGridCreate() {
           new Block([
             new NumberElement('Lower Price', 80000),
             new NumberElement('Upper Price', 100000),
-            new NumberElement('Trigger Price', 3000),
+            triggerPriceEl,
           ]),
           new Block([
             new NumberElement('Number of Grids', 10),

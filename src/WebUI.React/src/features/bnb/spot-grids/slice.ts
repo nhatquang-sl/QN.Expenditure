@@ -6,10 +6,11 @@ import { GridDetails } from './types';
 const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'DOGEUSDT', 'APTUSDT', 'ICPUSDT'];
 const INTERVALS = ['5m', '15m', '1h', '4h', '1d'];
 
-type GridDetailsState = { gridDetails: GridDetails[] };
+type GridDetailsState = { gridDetails: GridDetails[]; triggerPrice: number };
 
 const gridDetailsInitialState: GridDetailsState = {
   gridDetails: [],
+  triggerPrice: 0,
 };
 export const spotGridDetailsSlice = createSlice({
   name: 'spotGridDetails',
@@ -17,6 +18,9 @@ export const spotGridDetailsSlice = createSlice({
   reducers: {
     setGridDetails: (state, action: PayloadAction<GridDetails[]>) => {
       state.gridDetails = action.payload;
+    },
+    setTriggerPrice: (state, action: PayloadAction<number>) => {
+      state.triggerPrice = action.payload;
     },
   },
 });
@@ -65,7 +69,7 @@ const spotPriceSlice = createSlice({
 });
 
 export const { setSymbol, setInterval } = spotGridSlice.actions;
-export const { setGridDetails } = spotGridDetailsSlice.actions;
+export const { setGridDetails, setTriggerPrice } = spotGridDetailsSlice.actions;
 export const { setPrice } = spotPriceSlice.actions;
 // Custom selector to retrieve a price by symbol
 export const selectPrice = (symbol: string) => (state: RootState) =>

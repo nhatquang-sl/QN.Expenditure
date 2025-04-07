@@ -2,11 +2,12 @@
 import { Paper } from '@mui/material';
 import { CandlestickData, IChartApi, ISeriesApi, LineData, createChart } from 'lightweight-charts';
 import { memo, useCallback, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from 'store';
 import addBollingerBands from './handlers/add-bollinger-bands';
 import addCandlesticks from './handlers/add-candlesticks';
 import addVolume from './handlers/add-volume';
 import getCandlesticks from './handlers/get-candlesticks';
-import { GridDetails } from './types';
 import { defaultChartLayout } from './utils/constants';
 
 // https://github.com/tradingview/lightweight-charts/issues/50
@@ -22,8 +23,9 @@ const gridSeries: ISeriesApi<'Line'>[] = [];
 let mainChart: IChartApi;
 let rsiChart: IChartApi;
 let markPriceWS: WebSocket | null = null;
-function Chart(props: { pair: string; interval: string; gridDetails: GridDetails[] }) {
-  const { pair, interval, gridDetails } = props;
+function Chart(props: { pair: string; interval: string }) {
+  const { pair, interval } = props;
+  const { gridDetails, triggerPrice } = useSelector((state: RootState) => state.spotGridDetails);
   const resizeObserver = useRef<any>();
 
   const chartContainerRef = useRef<string | any>();
@@ -99,9 +101,14 @@ function Chart(props: { pair: string; interval: string; gridDetails: GridDetails
       for (const s of supportSeries) {
         mainChart.removeSeries(s);
       }
+    console.log({ gridSeries });
     if (gridSeries.length)
       for (const s of gridSeries) {
-        mainChart.removeSeries(s);
+        try {
+          mainChart.removeSeries(s);
+        } catch {
+          // Ignore errors while removing grid series
+        }
       }
 
     candleSeries = addCandlesticks(mainChart, klines);
@@ -132,10 +139,10 @@ function Chart(props: { pair: string; interval: string; gridDetails: GridDetails
     console.log({ gridDetails });
     gridDetails.forEach((item) => {
       const grid = mainChart.addLineSeries({
-        color: 'red',
+        color: item.buyPrice < triggerPrice ? 'green' : 'red',
         lineWidth: 1,
         crosshairMarkerVisible: false,
-        lastValueVisible: false,
+        // lastValueVisible: false,
       });
       grid.setData(
         klines.map((k) => ({ time: k.openTime / 1000, value: item.buyPrice } as LineData))
@@ -143,7 +150,7 @@ function Chart(props: { pair: string; interval: string; gridDetails: GridDetails
 
       gridSeries.push(grid);
     });
-  }, [pair, interval, gridDetails]);
+  }, [pair, interval, gridDetails, triggerPrice]);
 
   useEffect(() => {
     initialChart();
@@ -175,17 +182,16 @@ function Chart(props: { pair: string; interval: string; gridDetails: GridDetails
         const json = JSON.parse(event.data);
         // console.log(json);
         const {
-          k: { T, o, c, h, l },
+          k: { t, o, c, h, l },
         } = json;
 
         candleSeries &&
           candleSeries.update({
-            time: T / 1000,
+            time: t / 1000,
             open: parseFloat(o),
             high: parseFloat(h),
             low: parseFloat(l),
             close: parseFloat(c),
-            color: o < c ? '#005a40' : '#82112b',
           } as CandlestickData);
       } catch (err) {
         console.log(err);

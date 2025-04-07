@@ -1,5 +1,5 @@
 ﻿using Auth.Infrastructure;
-using Cex.Application.BnbSpotOrder.Commands.Arbitrage;
+using Cex.Application.Indicator.Commands;
 using MediatR;
 using Serilog;
 
@@ -24,7 +24,7 @@ namespace WebAPI.HostedServices
                     {
                         using var scope = serviceProvider.CreateScope();
                         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                        await mediator.Send(new ArbitrageCommand(), stoppingToken);
+                        await mediator.Send(new RunIndicatorCommand(), stoppingToken);
                     }
                     catch (Exception ex)
                     {
