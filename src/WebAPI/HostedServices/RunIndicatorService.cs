@@ -1,23 +1,23 @@
-﻿using Auth.Infrastructure;
-using Cex.Application.Indicator.Commands;
+﻿using Cex.Application.Indicator.Commands;
+using Cex.Infrastructure;
 using MediatR;
 using Serilog;
 
 namespace WebAPI.HostedServices
 {
-    public class ArbitrageService(IConfiguration configuration) : BackgroundService
+    public class RunIndicatorService(IConfiguration configuration) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var services = new ServiceCollection();
-            services.AddAuthInfrastructureServices(configuration);
+            services.AddCexInfrastructureServices(configuration);
             services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger());
             var serviceProvider = services.BuildServiceProvider();
 
             await Task.Factory.StartNew(async () =>
             {
                 var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
-                logger.Information("Start ArbitrageService started at {startAt}", DateTime.UtcNow);
+                logger.Information("Start RunIndicatorService started at {startAt}", DateTime.UtcNow);
                 while (true)
                 {
                     try
@@ -31,7 +31,7 @@ namespace WebAPI.HostedServices
                         var exception = ex;
                         do
                         {
-                            logger.Error(exception, "Error ArbitrageService");
+                            logger.Error(exception, "Error RunIndicatorService");
                             exception = exception.InnerException;
                         } while (exception != null);
                     }

@@ -53,6 +53,7 @@ namespace Lib.Notifications.Telegram
         {
             var title = $"❌{DateTime.UtcNow}: {Assembly.GetCallingAssembly()?.GetName().Name}❌";
             var sb = new StringBuilder(ex.Message);
+            sb.AppendLine(ex.StackTrace);
             var exception = ex.InnerException;
             while (exception != null)
             {

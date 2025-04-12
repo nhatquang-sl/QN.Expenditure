@@ -10,8 +10,17 @@
         public decimal Price { get; set; }
         public decimal OrigQty { get; set; }
         public string? TimeInForce { get; set; }
+
+        /// <summary>
+        ///     limit or market
+        /// </summary>
         public string? Type { get; set; }
+
+        /// <summary>
+        ///     buy or sell
+        /// </summary>
         public string? Side { get; set; }
+
         public decimal Fee { get; set; }
         public string? FeeCurrency { get; set; }
 

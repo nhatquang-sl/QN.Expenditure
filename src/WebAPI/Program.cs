@@ -24,6 +24,7 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
 builder.Configuration
     .AddJsonFile("QN.Expenditure.Credentials/appsettings.json")
@@ -45,8 +46,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 builder.Services.AddHostedService<SpotGridService>();
-builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
-//builder.Services.AddHostedService<ArbitrageService>();
+// builder.Services.AddHostedService<RunIndicatorService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 builder.Services.AddOpenApiDocument(options =>

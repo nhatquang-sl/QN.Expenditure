@@ -98,7 +98,7 @@ namespace Lib.ExternalServices.KuCoin
                 LowestPrice = decimal.Parse(x[4]),
                 Volume = decimal.Parse(x[5]),
                 Amount = decimal.Parse(x[6])
-            }).ToList();
+            }).OrderBy(x => x.OpenTime).ToList();
         }
 
         public async Task<List<Account>> GetAccounts(string type, string currency, KuCoinConfig credentials)

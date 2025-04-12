@@ -5,11 +5,11 @@ namespace Cex.Application.Common.Abstractions
 {
     public interface ICexDbContext
     {
-        DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings { get; }
-        DbSet<SpotOrder> SpotOrders { get; }
-        DbSet<Domain.Entities.BnbSetting> BnbSettings { get; }
-        DbSet<SpotGrid> SpotGrids { get; }
-        DbSet<SpotGridStep> SpotGridSteps { get; }
+        DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings { get; init; }
+        DbSet<SpotOrder> SpotOrders { get; init; }
+        DbSet<Domain.Entities.BnbSetting> BnbSettings { get; init; }
+        DbSet<SpotGrid> SpotGrids { get; init; }
+        DbSet<SpotGridStep> SpotGridSteps { get; init; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
