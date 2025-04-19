@@ -17,8 +17,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
         policy =>
         {
-            policy.WithOrigins("http://85.190.240.120", "http://quangnn.somee.com", "https://quangnn.somee.com",
-                    "http://localhost:5174")
+            policy.WithOrigins("http://localhost:5174")
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
@@ -45,8 +44,8 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
-builder.Services.AddHostedService<SpotGridService>();
-// builder.Services.AddHostedService<RunIndicatorService>();
+// builder.Services.AddHostedService<SpotGridService>();
+builder.Services.AddHostedService<RunIndicatorService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 builder.Services.AddOpenApiDocument(options =>

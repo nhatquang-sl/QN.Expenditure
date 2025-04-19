@@ -38,30 +38,45 @@ namespace Lib.Notifications.Telegram
 
         public Task NotifyInfo(string description, object data, CancellationToken cancellationToken = default)
         {
-            return Notify($"{DateTime.UtcNow}: {Assembly.GetCallingAssembly()?.GetName().Name}", description, data,
+            return Notify($"{DateTime.UtcNow}: {Assembly.GetEntryAssembly()?.GetName().Name}", description, data,
                 cancellationToken);
         }
 
         public Task NotifyError(string description, object data, CancellationToken cancellationToken = default)
         {
-            var title = $"❌{DateTime.UtcNow}: {Assembly.GetCallingAssembly()?.GetName().Name}❌";
+            var title = $"❌{DateTime.UtcNow}: {Assembly.GetEntryAssembly()?.GetName().Name}❌";
             return Notify(title, description, data, cancellationToken);
         }
 
         public Task NotifyError(string description, Exception ex,
             CancellationToken cancellationToken = default)
         {
-            var title = $"❌{DateTime.UtcNow}: {Assembly.GetCallingAssembly()?.GetName().Name}❌";
-            var sb = new StringBuilder(ex.Message);
-            sb.AppendLine(ex.StackTrace);
+            var title = $"❌{DateTime.UtcNow}: {Assembly.GetEntryAssembly()?.GetName().Name}❌";
+            var sb = new StringBuilder(ex.Message + "\n");
             var exception = ex.InnerException;
             while (exception != null)
             {
-                sb.Append(exception.Message);
+                sb.AppendLine(exception.Message);
                 exception = exception.InnerException;
             }
 
+            foreach (var stack in ex.StackTrace?.Split("\n") ?? [])
+            {
+                if (stack.Contains("End of stack trace from previous location"))
+                {
+                    break;
+                }
+
+                sb.AppendLine(stack);
+            }
+
             return Notify(title, description, sb.ToString(), cancellationToken);
+        }
+
+        public async Task Notify(string message, CancellationToken cancellationToken = default)
+        {
+            var response = await _httpClient.SendMessage(_botToken,
+                new TelegramTopicMessage(_chatId, _msgThreadId, message));
         }
 
         private async Task Notify(string title, string? description, object? data,

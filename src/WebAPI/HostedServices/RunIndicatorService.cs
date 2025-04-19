@@ -1,5 +1,6 @@
 ﻿using Cex.Application.Indicator.Commands;
 using Cex.Infrastructure;
+using Lib.Notifications;
 using MediatR;
 using Serilog;
 
@@ -11,7 +12,8 @@ namespace WebAPI.HostedServices
         {
             var services = new ServiceCollection();
             services.AddCexInfrastructureServices(configuration);
-            services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger());
+            services.AddTelegramNotifier(configuration);
+
             var serviceProvider = services.BuildServiceProvider();
 
             await Task.Factory.StartNew(async () =>
@@ -24,7 +26,36 @@ namespace WebAPI.HostedServices
                     {
                         using var scope = serviceProvider.CreateScope();
                         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                        await mediator.Send(new RunIndicatorCommand(), stoppingToken);
+                        // await mediator.Send(new StatisticIndicatorCommand(), stoppingToken);
+                        if (DateTime.UtcNow.Minute % 5 == 1)
+                        {
+                            await mediator.Send(new RunIndicatorCommand(IntervalType.FiveMinutes), stoppingToken);
+                        }
+
+                        if (DateTime.UtcNow.Minute % 15 == 1)
+                        {
+                            await mediator.Send(new RunIndicatorCommand(IntervalType.FifteenMinutes), stoppingToken);
+                        }
+
+                        if (DateTime.UtcNow.Minute % 30 == 1)
+                        {
+                            await mediator.Send(new RunIndicatorCommand(IntervalType.ThirtyMinutes), stoppingToken);
+                        }
+
+                        if (DateTime.UtcNow.Minute == 1)
+                        {
+                            await mediator.Send(new RunIndicatorCommand(IntervalType.OneHour), stoppingToken);
+                        }
+
+                        if (DateTime.UtcNow.Hour % 4 == 1)
+                        {
+                            await mediator.Send(new RunIndicatorCommand(IntervalType.FourHours), stoppingToken);
+                        }
+
+                        if (DateTime.UtcNow.Hour == 1 && DateTime.UtcNow.Minute == 1)
+                        {
+                            await mediator.Send(new RunIndicatorCommand(IntervalType.OneDay), stoppingToken);
+                        }
                     }
                     catch (Exception ex)
                     {

@@ -11,5 +11,10 @@
         {
             return (long)dateTime.Subtract(DateTime.UnixEpoch).TotalSeconds;
         }
+
+        public static string ToSimple(this DateTime dateTime)
+        {
+            return dateTime.ToString("MM/dd HH:mm");
+        }
     }
 }

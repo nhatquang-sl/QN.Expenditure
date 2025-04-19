@@ -19,11 +19,16 @@ namespace Lib.Application.Extensions
     {
         public static decimal FixedNumber(this decimal value, int fixedPlaces = 4)
         {
+            if (value == 0)
+            {
+                return value;
+            }
+
             var powFixed = (long)Math.Pow(10, fixedPlaces - 1);
             var pow = (long)Math.Pow(10, fixedPlaces);
             var adjustedValue = value * pow;
 
-            while (adjustedValue < powFixed)
+            while (Math.Abs(adjustedValue) < powFixed)
             {
                 pow *= 10;
                 adjustedValue = value * pow;
