@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
+using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -43,11 +44,13 @@ namespace Cex.Application.Indicator.Commands
         IKuCoinService kuCoinService,
         IOptions<KuCoinConfig> kuCoinConfig,
         ISender sender,
-        INotifier notifier)
+        INotifier notifier,
+        ILogTrace logTrace)
         : IRequestHandler<RunIndicatorCommand>
     {
         public async Task Handle(RunIndicatorCommand command, CancellationToken cancellationToken)
         {
+            logTrace.LogInformation(command.Type.GetDescription());
             var candles = await kuCoinService.GetKlines("BTCUSDT", command.Type.GetDescription(),
                 command.GetStartDate(), DateTime.UtcNow, //.AddHours(-1).AddMinutes(-15),
                 kuCoinConfig.Value);
