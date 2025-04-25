@@ -1,16 +1,13 @@
 ﻿using System.Text;
 using Lib.Application.Abstractions;
-using Lib.Application.Configs;
 using Lib.Application.Logging;
 using MediatR;
-using Microsoft.Extensions.Options;
 
 namespace Lib.Application.Behaviors
 {
     public class UnhandledExceptionBehavior<TRequest, TResponse>(
         ILogTrace logTrace,
-        INotifier notifier,
-        IOptions<ApplicationConfig> applicationConfig)
+        INotifier notifier)
         : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
@@ -40,7 +37,6 @@ namespace Lib.Application.Behaviors
             finally
             {
                 logTrace.AddProperty("RequestName", request.GetType().Name);
-                logTrace.AddProperty("ConfigVersion", applicationConfig.Value.Version);
                 logTrace.Flush();
             }
         }
