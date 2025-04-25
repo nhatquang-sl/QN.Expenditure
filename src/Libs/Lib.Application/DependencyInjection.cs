@@ -1,6 +1,7 @@
 ﻿using Lib.Application.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace Lib.Application
 {
@@ -9,6 +10,7 @@ namespace Lib.Application
         public static IServiceCollection AddLibApplicationServices(this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger());
             services.AddScoped<ILogTrace, LogTrace>();
 
             return services;
