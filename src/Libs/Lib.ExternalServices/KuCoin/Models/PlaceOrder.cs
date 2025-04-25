@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace Lib.ExternalServices.KuCoin.Models
 {
     public class PlaceOrderRequest
@@ -16,5 +18,36 @@ namespace Lib.ExternalServices.KuCoin.Models
     public class PlaceOrderResponse
     {
         public string OrderId { get; set; }
+    }
+
+    public class FPlaceOrderRequest
+    {
+        public string ClientOid { get; set; }
+        public OrderSide Side { get; set; }
+        public string Symbol { get; set; }
+        public string Leverage { get; set; }
+        public OrderType Type { get; set; }
+
+        public string Price { get; set; }
+        public int Size { get; set; }
+    }
+
+
+    public enum OrderStatus
+    {
+        [Description("active")] Active,
+        [Description("done")] Done
+    }
+
+    public enum OrderType
+    {
+        [Description("limit")] Limit,
+        [Description("market")] Market
+    }
+
+    public enum OrderSide
+    {
+        [Description("buy")] Buy,
+        [Description("sell")] Sell
     }
 }

@@ -1,3 +1,4 @@
+using Cex.Application.Indicator.Commands.Rsi;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;

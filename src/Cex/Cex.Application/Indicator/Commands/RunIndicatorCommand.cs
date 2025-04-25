@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text;
+using Cex.Application.Indicator.Commands.Rsi;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
 using Lib.Application.Logging;
@@ -55,7 +56,7 @@ namespace Cex.Application.Indicator.Commands
                 command.GetStartDate(), DateTime.UtcNow, //.AddHours(-1).AddMinutes(-15),
                 kuCoinConfig.Value);
 
-            var lastCandle = candles[^2];
+            var lastCandle = candles[^3];
             var lastCandleOpenTime = lastCandle.OpenTime;
 
             var rsies = await sender.Send(new RsiCommand(candles), cancellationToken);

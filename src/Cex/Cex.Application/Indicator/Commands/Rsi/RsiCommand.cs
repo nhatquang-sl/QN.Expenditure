@@ -2,7 +2,7 @@ using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 
-namespace Cex.Application.Indicator.Commands
+namespace Cex.Application.Indicator.Commands.Rsi
 {
     public record RsiCommand(List<Kline> Candles) : IRequest<Dictionary<DateTime, decimal>>
     {

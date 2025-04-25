@@ -47,7 +47,7 @@ namespace WebAPI.HostedServices
                             await mediator.Send(new RunIndicatorCommand(IntervalType.OneHour), stoppingToken);
                         }
 
-                        if (DateTime.UtcNow.Hour % 4 == 1)
+                        if (DateTime.UtcNow.Hour % 4 == 1 && DateTime.UtcNow.Minute == 1)
                         {
                             await mediator.Send(new RunIndicatorCommand(IntervalType.FourHours), stoppingToken);
                         }

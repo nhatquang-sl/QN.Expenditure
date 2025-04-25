@@ -3,7 +3,7 @@ using Lib.ExternalServices.KuCoin;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Indicator.Commands
+namespace Cex.Application.Indicator.Commands.Rsi
 {
     public record CalculateRsiPeaksAndTroughsCommand(Dictionary<DateTime, decimal> Rsies)
         : IRequest<(Dictionary<DateTime, decimal>, Dictionary<DateTime, decimal>)>

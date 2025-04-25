@@ -23,6 +23,10 @@ namespace Lib.ExternalServices.Tests
                 .AddRefitClient<IKuCoinService>()
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.kucoin.com"))
                 .AddHttpMessageHandler<HttpDelegatingHandler>();
+            serviceCollection
+                .AddRefitClient<IFtKuCoinService>()
+                .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api-futures.kucoin.com"))
+                .AddHttpMessageHandler<HttpDelegatingHandler>();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
             _scope = serviceProvider.CreateScope();

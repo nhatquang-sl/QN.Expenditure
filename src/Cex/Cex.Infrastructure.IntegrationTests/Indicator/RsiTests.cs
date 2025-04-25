@@ -1,4 +1,4 @@
-using Cex.Application.Indicator.Commands;
+using Cex.Application.Indicator.Commands.Rsi;
 using MediatR;
 using Shouldly;
 
