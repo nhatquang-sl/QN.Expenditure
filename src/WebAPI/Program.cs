@@ -12,6 +12,11 @@ using WebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddRedisOutputCache("redis-cache");
+builder.Services.AddStackExchangeRedisCache(options =>
+options.Configuration = builder.Configuration.GetConnectionString("RedisCache"));
+builder.AddServiceDefaults();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
@@ -87,9 +92,14 @@ builder.Services.AddOpenApiDocument(options =>
 
 var app = builder.Build();
 
+app.MapDefaultEndpoints();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    var connectionString = app.Configuration.GetConnectionString("PostgresConnection");
+    app.Logger.LogInformation("Postgres connection string: {ConnectionString}", connectionString);
+
     await app.InitializeDatabaseAsync();
 }
 
@@ -100,6 +110,8 @@ app.UseOpenApi();
 // Add web UIs to interact with the document
 // Available at: http://localhost:<port>/swagger
 app.UseSwaggerUi();
+
+app.UseOutputCache();
 
 app.UseHttpsRedirection();
 

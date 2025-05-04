@@ -1,9 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [OutputCache]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]
@@ -12,22 +16,34 @@ namespace WebAPI.Controllers
     };
 
         private readonly ILogger<WeatherForecastController> _logger;
+        private readonly IDistributedCache _cache;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, IDistributedCache cache)
         {
             _logger = logger;
+            _cache = cache;
         }
 
         [HttpGet]
-        public IEnumerable<WeatherForecast> Get()
+        public async Task<IEnumerable<WeatherForecast>> Get()
         {
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            var cache = await _cache.GetStringAsync("WeatherForecast");
+            if (string.IsNullOrWhiteSpace(cache))
             {
-                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+                var wfc = Enumerable
+                    .Range(1, 5)
+                    .Select(index => new WeatherForecast
+                    {
+                        Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                        TemperatureC = Random.Shared.Next(-20, 55),
+                        Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+                    })
+                    .ToArray();
+                await _cache.SetStringAsync("WeatherForecast", JsonSerializer.Serialize(wfc));
+                return wfc;
+            }
+
+            return JsonSerializer.Deserialize<WeatherForecast[]>(cache) ?? [];
         }
     }
 }
