@@ -6,20 +6,9 @@ services:
     build:
       context: .
       dockerfile: src/WebAPI/Dockerfile
-    
-  database.postgres:
-    image: postgres:latest
-    container_name: database.postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: products
-    volumes:
-      - ./.containers/products-db:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
+
   redis.cache:
     image: redis:latest
     container_name: redis.cache
     ports:
-      - 6379:6379 
+    - 6379:6379 

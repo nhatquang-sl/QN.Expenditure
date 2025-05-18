@@ -7,10 +7,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Mailjet.Api" Version="3.0.0"/>
-        <PackageReference Include="Refit" Version="8.0.0"/>
-        <PackageReference Include="Refit.HttpClientFactory" Version="8.0.0"/>
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2"/>
+        <PackageReference Include="Mailjet.Api"/>
+        <PackageReference Include="Refit"/>
+        <PackageReference Include="Refit.HttpClientFactory"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt"/>
     </ItemGroup>
 
     <ItemGroup>

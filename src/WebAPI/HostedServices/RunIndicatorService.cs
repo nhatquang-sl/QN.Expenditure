@@ -1,60 +1,63 @@
 ﻿using Cex.Application.Indicator.Commands;
-using Cex.Infrastructure;
-using Lib.Notifications;
 using MediatR;
-using Serilog;
 
 namespace WebAPI.HostedServices
 {
-    public class RunIndicatorService(IConfiguration configuration) : BackgroundService
+    public class RunIndicatorService(IServiceScopeFactory serviceScopeFactory, ILogger<RunIndicatorService> logger)
+        : BackgroundService
     {
+        private async Task RunIndicator(IntervalType intervalType, CancellationToken stoppingToken)
+        {
+            using var scope = serviceScopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new RunIndicatorCommand(intervalType), stoppingToken);
+        }
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var services = new ServiceCollection();
-            services.AddCexInfrastructureServices(configuration);
-            services.AddTelegramNotifier(configuration);
-
-            var serviceProvider = services.BuildServiceProvider();
-
             await Task.Factory.StartNew(async () =>
             {
-                var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
-                logger.Information("Start RunIndicatorService started at {startAt}", DateTime.UtcNow);
+                // using var scope = serviceScopeFactory.CreateScope();
+                // var logger = scope.ServiceProvider.GetRequiredService<Logger>();
+                // logger.Information("Start {serviceName}", GetType().Name);
+                // logger.Information("Start RunIndicatorService started at {startAt}", DateTime.UtcNow);
+                logger.LogInformation("Started at {startAt}", DateTime.UtcNow);
                 while (true)
                 {
                     try
                     {
-                        using var scope = serviceProvider.CreateScope();
-                        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                         // await mediator.Send(new StatisticIndicatorCommand(), stoppingToken);
+                        // await RunIndicator(IntervalType.FiveMinutes, stoppingToken);
+                        // await RunIndicator(IntervalType.FifteenMinutes, stoppingToken);
+
                         if (DateTime.UtcNow.Minute % 5 == 1)
                         {
-                            await mediator.Send(new RunIndicatorCommand(IntervalType.FiveMinutes), stoppingToken);
+                            await RunIndicator(IntervalType.FiveMinutes, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Minute % 15 == 1)
                         {
-                            await mediator.Send(new RunIndicatorCommand(IntervalType.FifteenMinutes), stoppingToken);
+                            await RunIndicator(IntervalType.FifteenMinutes, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Minute % 30 == 1)
                         {
-                            await mediator.Send(new RunIndicatorCommand(IntervalType.ThirtyMinutes), stoppingToken);
+                            await RunIndicator(IntervalType.ThirtyMinutes, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Minute == 1)
                         {
-                            await mediator.Send(new RunIndicatorCommand(IntervalType.OneHour), stoppingToken);
+                            await RunIndicator(IntervalType.OneHour, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Hour % 4 == 1 && DateTime.UtcNow.Minute == 1)
                         {
-                            await mediator.Send(new RunIndicatorCommand(IntervalType.FourHours), stoppingToken);
+                            await RunIndicator(IntervalType.FourHours, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Hour == 1 && DateTime.UtcNow.Minute == 1)
                         {
-                            await mediator.Send(new RunIndicatorCommand(IntervalType.OneDay), stoppingToken);
+                            await RunIndicator(IntervalType.OneDay, stoppingToken);
                         }
                     }
                     catch (Exception ex)
@@ -62,7 +65,7 @@ namespace WebAPI.HostedServices
                         var exception = ex;
                         do
                         {
-                            logger.Error(exception, "Error RunIndicatorService");
+                            // logger.Error(exception, "Error RunIndicatorService");
                             exception = exception.InnerException;
                         } while (exception != null);
                     }

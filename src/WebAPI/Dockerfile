@@ -1,12 +1,12 @@
-# docker build . --no-cache --progress plain -t nq.expenditure:v1.1 -f src/WebAPI/Dockerfile
-# docker build . -t nq.expenditure:v1.4 -f src/WebAPI/Dockerfile
-# docker run -it --rm -p 8000:8080 nq.expenditure:v1.4
+# docker build . --no-cache --progress plain -t qex.api:v1.15 -f src/WebAPI/Dockerfile
+# docker build . -t qex.api:1.15 -f src/WebAPI/Dockerfile
+# docker run -it --rm -p 8000:8080 qex.api:1.15
 # http://localhost:8000/api/weatherforecast
 
-# docker tag nq.expenditure:v1.4 nhatquang/nq.expenditure:v1.4
-# docker push nhatquang/nq.expenditure:v1.4
-# docker pull nhatquang/nq.expenditure:v1.4
-# docker run -d -p 5001:5001 -e ASPNETCORE_HTTP_PORTS=5001 nhatquang/nq.expenditure:v1.4
+# docker tag qex.api:1.15 nhatquang/qex.api:1.15
+# docker push nhatquang/qex.api:1.15
+# docker pull nhatquang/qex.api:1.15
+# docker run -d -p 5001:5001 -e ASPNETCORE_HTTP_PORTS=5001 nhatquang/qex.api:1.15
 
 # Base stage: runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
@@ -23,6 +23,8 @@ WORKDIR /src
 
 # Copy project files and restore as distinct layers
 COPY ["src/WebAPI/WebAPI.csproj", "src/WebAPI/"]
+COPY ["Directory.Packages.props", "./"]
+COPY ["QN.Expenditure.ServiceDefaults/QN.Expenditure.ServiceDefaults.csproj", "QN.Expenditure.ServiceDefaults/"]
 COPY ["src/Auth/Auth.Application/Auth.Application.csproj", "src/Auth/Auth.Application/"]
 COPY ["src/Auth/Auth.Domain/Auth.Domain.csproj", "src/Auth/Auth.Domain/"]
 COPY ["src/Auth/Auth.Infrastructure/Auth.Infrastructure.csproj", "src/Auth/Auth.Infrastructure/"]
@@ -34,6 +36,7 @@ COPY ["src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj", "src/Cex/Cex.Infra
 COPY ["src/Libs/Lib.Application/Lib.Application.csproj", "src/Libs/Lib.Application/"]
 COPY ["src/Libs/Lib.ExternalServices/Lib.ExternalServices.csproj", "src/Libs/Lib.ExternalServices/"]
 COPY ["src/Libs/Lib.Notifications/Lib.Notifications.csproj", "src/Libs/Lib.Notifications/"]
+COPY ["src/WebAPI/QN.Expenditure.Credentials/appsettings.json", "src/WebAPI/QN.Expenditure.Credentials/"]
 
 RUN dotnet restore "./src/WebAPI/WebAPI.csproj"
 

@@ -5,6 +5,7 @@ using Lib.Application.Abstractions;
 using Lib.Notifications;
 using NSwag;
 using NSwag.Generation.Processors.Security;
+using QN.Expenditure.ServiceDefaults;
 using Serilog;
 using WebAPI.HostedServices;
 using WebAPI.Middleware;
@@ -12,20 +13,20 @@ using WebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddRedisOutputCache("redis-cache");
-builder.Services.AddStackExchangeRedisCache(options =>
-options.Configuration = builder.Configuration.GetConnectionString("RedisCache"));
+//builder.AddRedisOutputCache("redis-cache");
+//builder.Services.AddStackExchangeRedisCache(options => options.Configuration = builder.Configuration.GetConnectionString("redis-cache"));
 builder.AddServiceDefaults();
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:5174")
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
+    options.AddDefaultPolicy(policy =>
+    {
+        var corsOrigins = (builder.Configuration.GetValue<string>("CorsOrigins") ?? "").Split(",")
+            .Select(x => x.Trim()).ToArray();
+        policy.WithOrigins(corsOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
 });
 
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
@@ -38,8 +39,8 @@ builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ReadFrom.Configuration(context.Configuration)
 );
 // Add services to the container.
-builder.Services.AddTransient(_ =>
-    new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
+// builder.Services.AddTransient(_ =>
+//     new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
 builder.Services.AddControllers();
 builder.Services.AddTelegramNotifier(builder.Configuration);
 builder.Services.AddAuthInfrastructureServices(builder.Configuration);
@@ -92,14 +93,11 @@ builder.Services.AddOpenApiDocument(options =>
 
 var app = builder.Build();
 
-app.MapDefaultEndpoints();
+//app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    var connectionString = app.Configuration.GetConnectionString("PostgresConnection");
-    app.Logger.LogInformation("Postgres connection string: {ConnectionString}", connectionString);
-
     await app.InitializeDatabaseAsync();
 }
 
@@ -111,7 +109,7 @@ app.UseOpenApi();
 // Available at: http://localhost:<port>/swagger
 app.UseSwaggerUi();
 
-app.UseOutputCache();
+//app.UseOutputCache();
 
 app.UseHttpsRedirection();
 
@@ -120,6 +118,8 @@ app.UseCors();
 app.UseAuthorization();
 
 app.UseExceptionMiddleware();
+
+app.UseSerilogRequestLogging();
 
 app.MapControllers();
 

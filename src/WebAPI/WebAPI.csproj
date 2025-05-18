@@ -19,14 +19,13 @@
 
 
     <ItemGroup>
-        <PackageReference Include="Aspire.StackExchange.Redis.OutputCaching" Version="9.2.1" />
-        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.2" />
-        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.4" />
-        <PackageReference Include="NSwag.AspNetCore" Version="14.0.2" />
-        <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
-        <PackageReference Include="Serilog.Sinks.Loggly" Version="5.4.0" />
-        <PackageReference Include="Serilog.Sinks.Seq" Version="5.2.3" />
-        <PackageReference Include="SocketIOClient" Version="3.1.2" />
+        <PackageReference Include="Aspire.StackExchange.Redis.OutputCaching" />
+        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+        <PackageReference Include="NSwag.AspNetCore" />
+        <PackageReference Include="Serilog.AspNetCore" />
+        <PackageReference Include="Serilog.Sinks.OpenTelemetry" />
+        <PackageReference Include="Serilog.Sinks.Seq" />
+        <PackageReference Include="SocketIOClient" />
     </ItemGroup>
 
 

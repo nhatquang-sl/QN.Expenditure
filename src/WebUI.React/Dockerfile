@@ -3,8 +3,7 @@ ARG NODE_VERSION=20.18.2
 FROM node:${NODE_VERSION}-alpine
 
 # Use production node environment by default.
-ENV NODE_ENV production
-
+ENV NODE_ENV=production
 
 WORKDIR /app
 
@@ -26,16 +25,16 @@ RUN rm -rf node_modules
 # COPY . .
 
 # Expose the port that the application listens on.
-EXPOSE 3000
+EXPOSE 5174
 
 # Run the application.
-CMD [ "serve", "-s", "dist" ]
-# docker build . --no-cache --progress plain -t qex.ui:1.2 -f WebUI.Dockerfile
-# docker build . -t qex.ui:1.2 -f WebUI.Dockerfile
-# docker run -it --rm -p 8000:8080 qex.ui:1.2
+CMD [ "serve", "-s", "dist", "-l", "5174" ]
+# docker build . --no-cache --progress plain -t qex.ui:1.15 -f src/WebUI.React/Dockerfile
+# docker build . -t qex.ui:1.15 -f src/WebUI.React/Dockerfile
+# docker run -it --rm -p 8000:8080 qex.ui:1.15
 # http://localhost:8000/api/weatherforecast
 
-# docker tag qex.ui:1.2 nhatquang/qex.ui:1.2
-# docker push nhatquang/qex.ui:1.2
-# docker pull nhatquang/qex.ui:1.2
-# docker run -d -p 3001:3000 nhatquang/qex.ui:1.2
+# docker tag qex.ui:1.15 nhatquang/qex.ui:1.15
+# docker push nhatquang/qex.ui:1.15
+# docker pull nhatquang/qex.ui:1.15
+# docker run -d -p 5174:5174 nhatquang/qex.ui:1.15

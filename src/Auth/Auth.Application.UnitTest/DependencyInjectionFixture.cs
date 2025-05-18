@@ -3,7 +3,6 @@ using Lib.Application.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Serilog.Core;
 
 namespace Auth.Application.UnitTest
 {
@@ -15,7 +14,6 @@ namespace Auth.Application.UnitTest
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddAuthApplicationServices(new Mock<IConfiguration>().Object);
-            serviceCollection.AddTransient(p => new Mock<Logger>().Object);
             serviceCollection.AddScoped(p => new Mock<ILogTrace>().Object);
             serviceCollection.AddTransient(p => new Mock<IIdentityService>().Object);
             var serviceProvider = serviceCollection.BuildServiceProvider();

@@ -2,12 +2,10 @@
 using System.Reflection;
 using System.Text;
 using Microsoft.Extensions.Logging;
-using Serilog.Core;
-using Serilog.Events;
 
 namespace Lib.Application.Logging
 {
-    public class LogTrace(Logger logger) : ILogTrace
+    public class LogTrace(ILogger<LogTrace> logger) : ILogTrace
     {
         private static readonly string[] OurNamespaces = ["Domain", "Application", "Infrastructure"];
         private readonly List<LogEntry> _entries = [];
@@ -16,6 +14,11 @@ namespace Lib.Application.Logging
         public void AddProperty(string key, object value)
         {
             _properties.TryAdd(key, value);
+        }
+
+        public object GetProperty(string key)
+        {
+            return _properties.First(x => x.Key == key).Value;
         }
 
         public void Log(LogEntry entry)
@@ -81,7 +84,7 @@ namespace Lib.Application.Logging
                 var msgSb = new StringBuilder($"[{x.Level}]");
                 if (!string.IsNullOrWhiteSpace(x.Message))
                 {
-                    msgSb.AppendLine($"{x.Message}");
+                    msgSb.Append($"{x.Message}");
                 }
 
                 if (x.Data == null)
@@ -90,15 +93,15 @@ namespace Lib.Application.Logging
                 }
 
                 return new { Message = msgSb.ToString(), x.Data };
-            }).ToList();
+            }).ToArray();
             _properties.TryAdd("Entries", entries);
-            _properties.TryAdd("SourceContext", GetType().FullName);
+            // _properties.TryAdd("SourceContext", GetType().FullName);
 
             var msgTemplate = string.Join(" ", _properties.Select(x => "{@" + x.Key + "}"));
             var args = _properties.Select(x => x.Value).ToArray();
-            //_logger.Log(logLevel, msgTemplate, JsonSerializer.Serialize(args));
+            logger.Log(logLevel, msgTemplate, args);
 
-            logger.Write(Convert(logLevel), msgTemplate, args);
+            // logger.Write(Convert(logLevel), msgTemplate, args);
         }
 
         private static object? HideSensitiveData(object? data)
@@ -126,22 +129,10 @@ namespace Lib.Application.Logging
             }
             catch (Exception)
             {
+                // ignored
             }
 
             return data;
-        }
-
-        private static LogEventLevel Convert(LogLevel level)
-        {
-            return level switch
-            {
-                LogLevel.Debug => LogEventLevel.Debug,
-                LogLevel.Information => LogEventLevel.Information,
-                LogLevel.Error => LogEventLevel.Error,
-                LogLevel.Warning => LogEventLevel.Warning,
-                LogLevel.Critical => LogEventLevel.Fatal,
-                _ => LogEventLevel.Verbose
-            };
         }
     }
 }

@@ -5,11 +5,12 @@ namespace Lib.Application.Logging
     public interface ILogTrace
     {
         void AddProperty(string key, object value);
+        object GetProperty(string key);
 
         void Log(LogEntry entry);
 
         void LogDebug(string message, object? data = null, MethodBase? methodBase = null);
-        
+
         void LogDebug(object data, MethodBase? methodBase = null);
 
         void LogInformation(string message, object? data = null, MethodBase? methodBase = null);

@@ -3,4 +3,7 @@ source $QNEDIR/scripts/qnapistart.zsh
 source $QNEDIR/scripts/qndbinit.zsh
 source $QNEDIR/scripts/qndbremove.zsh
 source $QNEDIR/scripts/qndbupdate.zsh
-source $QNEDIR/scripts/qnuistart.zsh 
+source $QNEDIR/scripts/qndkbuildapi.zsh 
+source $QNEDIR/scripts/qndkbuildui.zsh
+source $QNEDIR/scripts/qndkcp.zsh
+source $QNEDIR/scripts/qnuistart.zsh

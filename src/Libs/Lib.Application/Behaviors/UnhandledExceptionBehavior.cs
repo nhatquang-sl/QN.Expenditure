@@ -1,7 +1,7 @@
-﻿using System.Text;
-using Lib.Application.Abstractions;
+﻿using Lib.Application.Abstractions;
 using Lib.Application.Logging;
 using MediatR;
+using System.Text;
 
 namespace Lib.Application.Behaviors
 {
@@ -16,6 +16,7 @@ namespace Lib.Application.Behaviors
         {
             try
             {
+                logTrace.AddProperty("RequestName", request.GetType().Name);
                 logTrace.LogInformation($"Started {request.GetType().Name} at : {DateTime.UtcNow}");
                 return await next();
             }
@@ -36,8 +37,8 @@ namespace Lib.Application.Behaviors
             }
             finally
             {
-                logTrace.AddProperty("RequestName", request.GetType().Name);
-                logTrace.Flush();
+                if (request.GetType().Name.Equals(logTrace.GetProperty("RequestName").ToString()))
+                    logTrace.Flush();
             }
         }
     }
