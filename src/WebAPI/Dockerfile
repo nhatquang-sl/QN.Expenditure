@@ -49,11 +49,12 @@ RUN dotnet build "./WebAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
 # Publish stage: build release version
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./WebAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+ARG VERSION=0.0.1
+RUN dotnet publish "./WebAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false -p:Version=${VERSION}
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-
+RUN mkdir -p /home/app/.aspnet/DataProtection-Keys && chown -R app:app /home/app/.aspnet/DataProtection-Keys
 # Run the app
 ENTRYPOINT ["dotnet", "WebAPI.dll"]

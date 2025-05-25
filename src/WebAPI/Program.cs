@@ -1,3 +1,4 @@
+using System.Reflection;
 using Auth.Infrastructure;
 using Auth.Infrastructure.Data;
 using Cex.Infrastructure;
@@ -15,6 +16,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 //builder.AddRedisOutputCache("redis-cache");
 //builder.Services.AddStackExchangeRedisCache(options => options.Configuration = builder.Configuration.GetConnectionString("redis-cache"));
+builder.Configuration
+    .AddJsonFile("QN.Expenditure.Credentials/appsettings.json")
+    .AddJsonFile($"QN.Expenditure.Credentials/appsettings.{builder.Environment.EnvironmentName}.json", true, true)
+    .AddEnvironmentVariables();
+
 builder.AddServiceDefaults();
 
 builder.Services.AddCors(options =>
@@ -31,9 +37,6 @@ builder.Services.AddCors(options =>
 
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
-builder.Configuration
-    .AddJsonFile("QN.Expenditure.Credentials/appsettings.json")
-    .AddJsonFile($"QN.Expenditure.Credentials/appsettings.{builder.Environment.EnvironmentName}.json", true, true);
 
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ReadFrom.Configuration(context.Configuration)
@@ -54,6 +57,8 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddHostedService<RunIndicatorService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
+var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
+
 builder.Services.AddOpenApiDocument(options =>
 {
     // Add JWT bearer token security scheme
@@ -73,7 +78,7 @@ builder.Services.AddOpenApiDocument(options =>
     {
         document.Info = new OpenApiInfo
         {
-            Version = "v1",
+            Version = version,
             Title = builder.Environment.EnvironmentName
             // Description = "An ASP.NET Core Web API for managing ToDo items",
             // TermsOfService = "https://example.com/terms",
@@ -92,7 +97,8 @@ builder.Services.AddOpenApiDocument(options =>
 });
 
 var app = builder.Build();
-
+app.Logger.LogInformation("OTEL_EXPORTER_OTLP_ENDPOINT {endpoint}",
+    builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 //app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.

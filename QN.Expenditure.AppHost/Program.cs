@@ -1,3 +1,5 @@
+using Projects;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 builder.AddDockerComposePublisher();
@@ -5,7 +7,7 @@ builder.AddDockerComposePublisher();
 var redisCache = builder.AddRedis("redis-cache")
     .WithRedisInsight();
 
-builder.AddProject<Projects.WebAPI>("webapi")
+builder.AddProject<WebAPI>("webapi")
     .WithReference(redisCache)
     .WithExternalHttpEndpoints();
 

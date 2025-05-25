@@ -1,8 +1,6 @@
-// console.log(import.meta.env);
+console.log(import.meta.env);
 export const sidebarWidth = 240;
-export const API_ENDPOINT = !import.meta.env.DEV
-  ? 'http://localhost:5000'
-  : 'https://quangnn.store'; //'http://localhost:5000'; // 'https://quangnn.store'; // 'https://quangnn.somee.com';
+export const API_ENDPOINT = import.meta.env.DEV ? 'http://localhost:5000' : 'https://quangnn.store'; //'http://localhost:5000'; // 'https://quangnn.store'; // 'https://quangnn.somee.com';
 
 export const PAGE = {
   START: 1,

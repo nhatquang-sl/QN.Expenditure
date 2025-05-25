@@ -29,12 +29,12 @@ EXPOSE 5174
 
 # Run the application.
 CMD [ "serve", "-s", "dist", "-l", "5174" ]
-# docker build . --no-cache --progress plain -t qex.ui:1.15 -f src/WebUI.React/Dockerfile
-# docker build . -t qex.ui:1.15 -f src/WebUI.React/Dockerfile
-# docker run -it --rm -p 8000:8080 qex.ui:1.15
+# docker build . --no-cache --progress plain -t qex.ui:1.0 -f src/WebUI.React/Dockerfile
+# docker build . -t qex.ui:1.0 -f src/WebUI.React/Dockerfile
+# docker run -it --rm -p 8000:8080 qex.ui:1.0
 # http://localhost:8000/api/weatherforecast
 
-# docker tag qex.ui:1.15 nhatquang/qex.ui:1.15
-# docker push nhatquang/qex.ui:1.15
-# docker pull nhatquang/qex.ui:1.15
-# docker run -d -p 5174:5174 nhatquang/qex.ui:1.15
+# docker tag qex.ui:1.0 nhatquang/qex.ui:1.0
+# docker push nhatquang/qex.ui:1.0
+# docker pull nhatquang/qex.ui:1.0
+# docker run -d -p 5174:5174 nhatquang/qex.ui:1.0
