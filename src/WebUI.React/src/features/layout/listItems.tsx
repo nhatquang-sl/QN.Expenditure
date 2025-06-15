@@ -40,43 +40,11 @@ export const mainListItems = (
       </ListItemIcon>
       <ListItemText primary="Reports" />
     </ListItemButton>
-    <ListItemButton>
+    <ListItemButton component={Link} to="/candle-analytics">
       <ListItemIcon>
         <LayersIcon />
       </ListItemIcon>
-      <ListItemText primary="Integrations" />
-    </ListItemButton>
-  </React.Fragment>
-);
-
-export const secondaryListItems = (
-  <React.Fragment>
-    <ListSubheader component="div" inset>
-      Binance
-    </ListSubheader>
-    <ListItemButton component={Link} to="bnb/setting">
-      <ListItemIcon>
-        <ManageAccountsIcon />
-      </ListItemIcon>
-      <ListItemText primary="Setting" />
-    </ListItemButton>
-    <ListItemButton component={Link} to="bnb/sync-settings">
-      <ListItemIcon>
-        <ManageHistoryIcon />
-      </ListItemIcon>
-      <ListItemText primary="Sync Settings" />
-    </ListItemButton>
-    <ListItemButton component={Link} to="bnb/spot-orders">
-      <ListItemIcon>
-        <Icon>history</Icon>
-      </ListItemIcon>
-      <ListItemText primary="Histories" />
-    </ListItemButton>
-    <ListItemButton component={Link} to="bnb/spot-grids">
-      <ListItemIcon>
-        <Icon>assignment</Icon>
-      </ListItemIcon>
-      <ListItemText primary="Spot Grids" />
+      <ListItemText primary="Candle Analytics" />
     </ListItemButton>
   </React.Fragment>
 );

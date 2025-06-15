@@ -8,6 +8,7 @@ import Login from 'features/auth/login';
 import LoginHistory from 'features/auth/login-history';
 import RegisterConfirm from 'features/auth/register-confirm';
 import RequestActivateEmail from 'features/auth/request-activate-email';
+import CandleAnalytics from 'features/bnb/candle-analytics';
 import BnbSetting from 'features/bnb/setting';
 import SpotGrid from 'features/bnb/spot-grids';
 import SpotGridCreate from 'features/bnb/spot-grids/create';
@@ -76,6 +77,10 @@ const router = createBrowserRouter([
             element: <SpotGridUpdate />,
           },
         ],
+      },
+      {
+        path: '/candle-analytics',
+        element: <CandleAnalytics />,
       },
       // {
       //   path: 'bnb/spot-grids/create',

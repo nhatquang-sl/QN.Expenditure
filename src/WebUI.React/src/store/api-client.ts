@@ -1139,6 +1139,136 @@ export class BnbSpotClient {
     }
 }
 
+export class CandlesClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    get(symbol: string, interval: IntervalType, cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/candles/{symbol}/{interval}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        if (interval === undefined || interval === null)
+            throw new Error("The parameter 'interval' must be defined.");
+        url_ = url_.replace("{interval}", encodeURIComponent("" + interval));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGet(_response);
+        });
+    }
+
+    protected processGet(response: AxiosResponse): Promise<Kline[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(Kline.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<Kline[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<Kline[]>(null as any);
+    }
+
+    get2( cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/candles";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGet2(_response);
+        });
+    }
+
+    protected processGet2(response: AxiosResponse): Promise<Kline[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(Kline.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<Kline[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<Kline[]>(null as any);
+    }
+}
+
 export class SpotGridClient {
     protected instance: AxiosInstance;
     protected baseUrl: string;
@@ -2233,6 +2363,56 @@ export class SpotOrderRaw {
         data["selfTradePreventionMode"] = this.selfTradePreventionMode;
         return data;
     }
+}
+
+export class Kline {
+    openTime!: Date;
+    openPrice!: number;
+    closePrice!: number;
+    highestPrice!: number;
+    lowestPrice!: number;
+    volume!: number;
+    amount!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            this.openTime = _data["openTime"] ? new Date(_data["openTime"].toString()) : <any>undefined;
+            this.openPrice = _data["openPrice"];
+            this.closePrice = _data["closePrice"];
+            this.highestPrice = _data["highestPrice"];
+            this.lowestPrice = _data["lowestPrice"];
+            this.volume = _data["volume"];
+            this.amount = _data["amount"];
+        }
+    }
+
+    static fromJS(data: any): Kline {
+        data = typeof data === 'object' ? data : {};
+        let result = new Kline();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["openTime"] = this.openTime ? this.openTime.toISOString() : <any>undefined;
+        data["openPrice"] = this.openPrice;
+        data["closePrice"] = this.closePrice;
+        data["highestPrice"] = this.highestPrice;
+        data["lowestPrice"] = this.lowestPrice;
+        data["volume"] = this.volume;
+        data["amount"] = this.amount;
+        return data;
+    }
+}
+
+export enum IntervalType {
+    FiveMinutes = 0,
+    FifteenMinutes = 1,
+    ThirtyMinutes = 2,
+    OneHour = 3,
+    FourHours = 4,
+    OneDay = 5,
 }
 
 export class UnprocessableEntity {

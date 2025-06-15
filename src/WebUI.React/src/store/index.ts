@@ -10,7 +10,13 @@ import spotGridReducer, {
 
 import counterReducer from 'features/counter/slice';
 import layoutReducer from 'features/layout/slice';
-import { AuthClient, BnbSettingClient, BnbSpotClient, SpotGridClient } from './api-client';
+import {
+  AuthClient,
+  BnbSettingClient,
+  BnbSpotClient,
+  CandlesClient,
+  SpotGridClient,
+} from './api-client';
 import { API_ENDPOINT } from './constants';
 
 export const store = configureStore({
@@ -56,5 +62,6 @@ const authClient = new AuthClient(API_ENDPOINT, instance);
 const bnbSpotClient = new BnbSpotClient(API_ENDPOINT, instance);
 const bnbSettingClient = new BnbSettingClient(API_ENDPOINT, instance);
 const spotGridClient = new SpotGridClient(API_ENDPOINT, instance);
+const candlesClient = new CandlesClient(API_ENDPOINT, instance);
 
-export { authClient, bnbSettingClient, bnbSpotClient, spotGridClient };
+export { authClient, bnbSettingClient, bnbSpotClient, candlesClient, spotGridClient };

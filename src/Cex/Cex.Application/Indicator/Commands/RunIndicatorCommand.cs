@@ -20,25 +20,42 @@ namespace Cex.Application.Indicator.Commands
         [Description("1day")] OneDay
     }
 
+    public static class IntervalTypeExtensions
+    {
+        public static TimeSpan GetTimeSpan(this IntervalType intervalType)
+        {
+            return intervalType switch
+            {
+                IntervalType.FiveMinutes => TimeSpan.FromMinutes(5),
+                IntervalType.FifteenMinutes => TimeSpan.FromMinutes(15),
+                IntervalType.ThirtyMinutes => TimeSpan.FromMinutes(30),
+                IntervalType.OneHour => TimeSpan.FromHours(1),
+                IntervalType.FourHours => TimeSpan.FromHours(4),
+                IntervalType.OneDay => TimeSpan.FromDays(1),
+                _ => throw new ArgumentOutOfRangeException(nameof(intervalType),
+                    $"Unsupported interval type: {intervalType}")
+            };
+        }
+
+        public static DateTime GetStartDate(this IntervalType intervalType)
+        {
+            return intervalType switch
+            {
+                IntervalType.FiveMinutes => DateTime.UtcNow.AddDays(-5),
+                IntervalType.FifteenMinutes => DateTime.UtcNow.AddDays(-15),
+                IntervalType.ThirtyMinutes => DateTime.UtcNow.AddDays(-30),
+                IntervalType.OneHour => DateTime.UtcNow.AddDays(-60),
+                IntervalType.FourHours => DateTime.UtcNow.AddDays(-120),
+                IntervalType.OneDay => DateTime.UtcNow.AddDays(-1440),
+                _ => throw new ArgumentOutOfRangeException(nameof(intervalType),
+                    $"Unsupported interval type: {intervalType}")
+            };
+        }
+    }
+
     public class RunIndicatorCommand(IntervalType interval) : IRequest
     {
         public IntervalType Type { get; set; } = interval;
-
-        public DateTime GetStartDate()
-        {
-            var minutesOffset = Type switch
-            {
-                IntervalType.FiveMinutes => -5,
-                IntervalType.FifteenMinutes => -15,
-                IntervalType.ThirtyMinutes => -30,
-                IntervalType.OneHour => -60,
-                IntervalType.FourHours => -120,
-                IntervalType.OneDay => -1440,
-                _ => throw new ArgumentOutOfRangeException(nameof(Type), $"Unsupported interval type: {Type}")
-            };
-
-            return DateTime.UtcNow.AddDays(minutesOffset);
-        }
     }
 
     public class RunIndicatorCommandHandler(
@@ -53,7 +70,7 @@ namespace Cex.Application.Indicator.Commands
         {
             logTrace.LogInformation(command.Type.GetDescription());
             var candles = await kuCoinService.GetKlines("BTCUSDT", command.Type.GetDescription(),
-                command.GetStartDate(), DateTime.UtcNow, //.AddHours(-1).AddMinutes(-15),
+                command.Type.GetStartDate(), DateTime.UtcNow, //.AddHours(-1).AddMinutes(-15),
                 kuCoinConfig.Value);
 
             var lastCandle = candles[^3];

@@ -1,39 +1,72 @@
+using System.Text.Json;
+using Cex.Application.Indicator.Commands;
+using Lib.Application.Extensions;
+using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Options;
 
 namespace WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[OutputCache]
-    public class WeatherForecastController(ILogger<WeatherForecastController> logger) : ControllerBase
+    public class WeatherForecastController(
+        HybridCache cache,
+        IDistributedCache distributedCache,
+        IKuCoinService kuCoinService,
+        IOptions<KuCoinConfig> kuCoinConfig) : ControllerBase
     {
+        //private HybridCache _cache = cache;
         private static readonly string[] Summaries =
         [
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    ];
+            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+        ];
 
-
-
-        [HttpGet]
-        public async Task<IEnumerable<WeatherForecast>> Get()
+        [HttpGet("output-cache")]
+        [OutputCache]
+        public async Task<IEnumerable<Kline>> Get(CancellationToken token = default)
         {
-            //var cache = await _cache.GetStringAsync("WeatherForecast");
-            //if (string.IsNullOrWhiteSpace(cache))
-            //{
-            var wfc = Enumerable
-                .Range(1, 5)
-                .Select(index => new WeatherForecast
-                {
-                    Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    TemperatureC = Random.Shared.Next(-20, 55),
-                    Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-                })
-                .ToArray();
-            //await _cache.SetStringAsync("WeatherForecast", JsonSerializer.Serialize(wfc));
-            //return wfc;
-            //}
+            const IntervalType interval = IntervalType.OneDay;
+            var startDate = interval.GetStartDate();
+            return await kuCoinService.GetKlines("BTCUSDT", interval.GetDescription(), startDate,
+                DateTime.UtcNow, kuCoinConfig.Value);
+        }
 
-            return wfc;
+        [HttpGet("hybrid-cache")]
+        public async Task<IEnumerable<Kline>> GetWithHybridCache(CancellationToken token = default)
+        {
+            return await cache.GetOrCreateAsync("WeatherForecastHybridCache", async cancel =>
+            {
+                const IntervalType interval = IntervalType.OneDay;
+                var startDate = interval.GetStartDate();
+                return await kuCoinService.GetKlines("BTCUSDT", interval.GetDescription(), startDate,
+                    DateTime.UtcNow, kuCoinConfig.Value);
+            }, cancellationToken: token);
+        }
+
+        [HttpGet("distributed-cache")]
+        public async Task<IEnumerable<Kline>> GetWithDistributedCache(CancellationToken token = default)
+        {
+            var cacheValue = await distributedCache.GetAsync("WeatherForecastDistributedCache", token);
+            List<Kline> candles;
+            if (cacheValue != null)
+            {
+                // Deserialize the cached value
+                candles = JsonSerializer.Deserialize<List<Kline>>(cacheValue) ?? [];
+                return candles;
+            }
+
+            const IntervalType interval = IntervalType.OneDay;
+            var startDate = interval.GetStartDate();
+            candles = await kuCoinService.GetKlines("BTCUSDT", interval.GetDescription(), startDate,
+                DateTime.UtcNow, kuCoinConfig.Value);
+            await distributedCache.SetStringAsync("WeatherForecastDistributedCache", JsonSerializer.Serialize(candles),
+                token);
+
+            return candles;
         }
     }
 }

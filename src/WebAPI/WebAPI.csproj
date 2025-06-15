@@ -10,22 +10,23 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\QN.Expenditure.ServiceDefaults\QN.Expenditure.ServiceDefaults.csproj"/>
+        <ProjectReference Include="..\Aspire\ServiceDefaults\ServiceDefaults.csproj"/>
         <ProjectReference Include="..\Auth\Auth.Infrastructure\Auth.Infrastructure.csproj"/>
         <ProjectReference Include="..\Cex\Cex.Infrastructure\Cex.Infrastructure.csproj"/>
         <ProjectReference Include="..\Libs\Lib.Notifications\Lib.Notifications.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Aspire.StackExchange.Redis.DistributedCaching"/>
         <PackageReference Include="Aspire.StackExchange.Redis.OutputCaching"/>
-        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis"/>
+        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid"/>
         <PackageReference Include="NSwag.AspNetCore"/>
         <PackageReference Include="Serilog.AspNetCore"/>
         <PackageReference Include="Serilog.Sinks.OpenTelemetry"/>
         <PackageReference Include="Serilog.Sinks.Seq"/>
         <PackageReference Include="SocketIOClient"/>
     </ItemGroup>
-    
+
     <ItemGroup>
         <Content Update="QN.Expenditure.Credentials\appsettings.Development.json">
             <DependentUpon>appsettings.json</DependentUpon>
