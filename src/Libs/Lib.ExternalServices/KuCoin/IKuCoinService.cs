@@ -111,6 +111,7 @@ namespace Lib.ExternalServices.KuCoin
             return res.Data.ToList();
         }
 
+        // https://www.kucoin.com/docs/rest/spot-trading/market-data/get-klines
         [Get("/api/v1/market/candles?symbol={symbol}&type={type}&startAt={startAt}&endAt={endAt}")]
         Task<KuCoinResponse<string[][]>> GetKlines(
             string symbol, string type, long startAt, long endAt,

@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using Cex.Application.Indicator.Commands;
+using Cex.Application.Indicator.Shared;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
