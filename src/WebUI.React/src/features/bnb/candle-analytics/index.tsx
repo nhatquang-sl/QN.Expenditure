@@ -21,8 +21,8 @@ type CellData = {
 };
 const today = new Date();
 export default function CandleAnalytics() {
-  const [month, setMonth] = useState(today.getMonth() - 1);
-  const [year, setYear] = useState(today.getFullYear());
+  const [month] = useState(today.getMonth() - 1);
+  const [year] = useState(today.getFullYear());
   console.log({ month, year });
   const { data, isPending } = useQuery({
     queryKey: ['2fa'],
