@@ -6,20 +6,20 @@ namespace Cex.Application.Indicator.Commands.Rsi
     public record DivergenceRsiPeakCommand(
         DateTime RsiTime,
         Dictionary<DateTime, decimal> Peaks,
-        List<Kline> Candles) : IRequest<bool>
+        List<Kline> Candles) : IRequest<DateTime>
     {
     }
 
-    public class DivergenceRsiPeakCommandHandler : IRequestHandler<DivergenceRsiPeakCommand, bool>
+    public class DivergenceRsiPeakCommandHandler : IRequestHandler<DivergenceRsiPeakCommand, DateTime>
     {
-        public Task<bool> Handle(DivergenceRsiPeakCommand command, CancellationToken cancellationToken)
+        public Task<DateTime> Handle(DivergenceRsiPeakCommand command, CancellationToken cancellationToken)
         {
             var peaks = command.Peaks;
             var rsiCandle = command.Candles.First(c => c.OpenTime == command.RsiTime);
             var rsiIndex = command.Candles.IndexOf(rsiCandle);
             if (!peaks.TryGetValue(command.RsiTime, out var peak))
             {
-                return Task.FromResult(false);
+                return Task.FromResult(default(DateTime));
             }
 
             var fromCandle = command.Candles[rsiIndex - 20];
@@ -29,8 +29,8 @@ namespace Cex.Application.Indicator.Commands.Rsi
 
             return Task.FromResult((from previousPeak in previousPeaks
                 let previousPeakCandle = command.Candles.First(c => c.OpenTime == previousPeak.Key)
-                where previousPeak.Value > peak && previousPeakCandle.HighestPrice < rsiCandle.HighestPrice
-                select previousPeak).Any());
+                where previousPeak.Value > peak && previousPeakCandle.HighestPrice  < rsiCandle.HighestPrice
+                select previousPeak.Key).FirstOrDefault());
         }
     }
 }

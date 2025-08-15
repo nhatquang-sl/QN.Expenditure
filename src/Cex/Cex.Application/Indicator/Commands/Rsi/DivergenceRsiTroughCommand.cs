@@ -7,21 +7,21 @@ namespace Cex.Application.Indicator.Commands.Rsi
         DateTime RsiTime,
         Dictionary<DateTime, decimal> Troughs,
         List<Kline> Candles)
-        : IRequest<bool>
+        : IRequest<DateTime>
     {
     }
 
 
-    public class DivergenceRsiTroughCommandHandler : IRequestHandler<DivergenceRsiTroughCommand, bool>
+    public class DivergenceRsiTroughCommandHandler : IRequestHandler<DivergenceRsiTroughCommand, DateTime>
     {
-        public Task<bool> Handle(DivergenceRsiTroughCommand command, CancellationToken cancellationToken)
+        public Task<DateTime> Handle(DivergenceRsiTroughCommand command, CancellationToken cancellationToken)
         {
             var troughs = command.Troughs;
             var rsiCandle = command.Candles.First(c => c.OpenTime == command.RsiTime);
             var rsiIndex = command.Candles.IndexOf(rsiCandle);
             if (!troughs.TryGetValue(command.RsiTime, out var trough))
             {
-                return Task.FromResult(false);
+                return Task.FromResult(default(DateTime));
             }
 
             var fromCandle = command.Candles[rsiIndex - 20];
@@ -32,7 +32,7 @@ namespace Cex.Application.Indicator.Commands.Rsi
             return Task.FromResult((from previousTrough in previousTroughs
                 let previousTroughCandle = command.Candles.First(c => c.OpenTime == previousTrough.Key)
                 where previousTrough.Value < trough && previousTroughCandle.LowestPrice > rsiCandle.LowestPrice
-                select previousTrough).Any());
+                select previousTrough.Key).FirstOrDefault());
         }
     }
 }

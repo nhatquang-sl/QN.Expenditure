@@ -29,22 +29,33 @@ namespace Cex.Application.Indicator.Commands
             var candles = await kuCoinService.GetKlines("BTCUSDT", command.Type.GetDescription(),
                 command.Type.GetStartDate(), DateTime.UtcNow, //.AddHours(-1).AddMinutes(-15),
                 kuCoinConfig.Value);
-
-            var divergence = await sender.Send(new DivergenceCommand(candles), cancellationToken);
+            var rsiValues = await sender.Send(new RsiCommand(candles), cancellationToken);
+            var divergence = await sender.Send(new DivergenceCommand(candles, rsiValues), cancellationToken);
             switch (divergence.Type)
             {
                 case DivergenceType.Peak:
                 {
+                    var dCandle = candles.First(x => x.OpenTime == divergence.Time);
+                    var preCandle = candles.First(x => x.OpenTime == divergence.PreviousTime);
+
                     var msg = new StringBuilder($"[{command.Type.GetDescription()}] RSI <b>Short</b> detected:\n");
-                    msg.AppendLine($" [{divergence.Time.ToSimple()}]: <b>{divergence.Rsi}</b>");
+                    msg.AppendLine(
+                        $" [{divergence.Time.ToSimple()}]: <b>{divergence.Rsi} - {dCandle.HighestPrice}</b>");
+                    msg.AppendLine(
+                        $" [{divergence.PreviousTime.ToSimple()}]: <b>{rsiValues[divergence.PreviousTime]} - {preCandle.HighestPrice}</b>");
                     msg.AppendLine($" Entry price: <b>{candles[^1].ClosePrice}</b>");
                     await notifier.Notify(msg.ToString(), cancellationToken);
                     break;
                 }
                 case DivergenceType.Trough:
                 {
+                    var dCandle = candles.First(x => x.OpenTime == divergence.Time);
+                    var preCandle = candles.First(x => x.OpenTime == divergence.PreviousTime);
+
                     var msg = new StringBuilder($"[{command.Type.GetDescription()}] RSI <b>Long</b> detected:\n");
-                    msg.AppendLine($" [{divergence.Time.ToSimple()}]: <b>{divergence.Rsi}</b>");
+                    msg.AppendLine($" [{divergence.Time.ToSimple()}]: <b>{divergence.Rsi} - {dCandle.LowestPrice}</b>");
+                    msg.AppendLine(
+                        $" [{divergence.PreviousTime.ToSimple()}]: <b>{rsiValues[divergence.PreviousTime]} - {preCandle.LowestPrice}</b>");
                     msg.AppendLine($" Entry price: <b>{candles[^1].OpenPrice}</b>");
                     await notifier.Notify(msg.ToString(), cancellationToken);
                     break;

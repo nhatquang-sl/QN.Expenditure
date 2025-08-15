@@ -62,6 +62,7 @@ namespace Cex.Infrastructure.IntegrationTests
             ServiceCollection.AddSingleton(currentUserMock.Object);
             ServiceCollection.AddSingleton(new Mock<INotifier>().Object);
             ServiceCollection.AddSingleton(KuCoinServiceMock.Object);
+            ServiceCollection.AddLogging();
 
             var serviceProvider = ServiceCollection.BuildServiceProvider();
             var scope = serviceProvider.CreateScope();
