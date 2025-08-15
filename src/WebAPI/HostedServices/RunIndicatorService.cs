@@ -1,4 +1,5 @@
 ﻿using Cex.Application.Indicator.Commands;
+using Cex.Application.Indicator.Shared;
 using MediatR;
 
 namespace WebAPI.HostedServices
