@@ -1,7 +1,10 @@
+using System.Text.Json;
 using Cex.Application.Indicator.Commands.Rsi;
+using Cex.Application.Indicator.Shared;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.Extensions.Options;
 
@@ -11,6 +14,23 @@ namespace Cex.Application.Indicator.Commands
     {
     }
 
+    public class StatisticDivergence(DivergenceResult divergence) : DivergenceResult(divergence.Type,
+        divergence.EntryPrice, divergence.Time, divergence.Rsi, divergence.PreviousTime)
+    {
+        public DateTime? LiquidatedAt { get; set; }
+        public decimal LiquidationPrice { get; set; }
+        public decimal Profit { get; set; }
+        public Kline ProfitCandle { get; set; }
+        public DivergenceStatus Status { get; set; } = DivergenceStatus.Awaiting;
+    }
+
+    public enum DivergenceStatus
+    {
+        Awaiting,
+        Ordered,
+        StopLoss
+    }
+
     public class StatisticIndicatorCommandHandler(
         IKuCoinService kuCoinService,
         IOptions<KuCoinConfig> kuCoinConfig,
@@ -18,81 +38,165 @@ namespace Cex.Application.Indicator.Commands
         INotifier notifier)
         : IRequestHandler<StatisticIndicatorCommand>
     {
+        private const int Leverage = 10;
+
         public async Task Handle(StatisticIndicatorCommand command, CancellationToken cancellationToken)
         {
-            var candles = await kuCoinService.GetKlines("BTCUSDT", "15min",
-                DateTime.UtcNow.AddDays(-15), DateTime.UtcNow, //.AddHours(-1).AddMinutes(-15),
-                kuCoinConfig.Value);
-
-            var rsies = await sender.Send(new RsiCommand(candles), cancellationToken);
-            var bollingerBands = await sender.Send(new BollingerBandsCommand(candles), cancellationToken);
-
-            var (peaks, troughs) = await sender.Send(new CalculateRsiPeaksAndTroughsCommand(rsies), cancellationToken);
-
-            var peakKeys = peaks.Keys.ToList();
-
-            for (var i = 10; i < peakKeys.Count; i++)
+            var divergences = new List<StatisticDivergence>();
+            const IntervalType intervalType = IntervalType.OneHour;
+            // var fromAt = new DateTime(2024, 4, 20, 0, 1, 30, DateTimeKind.Utc); // 5 minutes
+            var startAt = new DateTime(2025, 1, 1, 0, 1, 30, DateTimeKind.Utc); // 5 minutes
+            startAt = new DateTime(2024, 6, 1, 0, 1, 30, DateTimeKind.Utc); // 5 minutes
+            // var endAt = new DateTime(2025, 6, 20, 0, 1, 30, DateTimeKind.Utc);
+            var from = startAt;
+            var maxProfit = 0m;
+            var allCandles = new List<Kline>();
+            var batchSize = 1400;
+            while (from <= DateTime.UtcNow)
             {
-                var lastCandleOpenTime = peakKeys[i];
-                var lastCandle = candles.First(c => c.OpenTime == lastCandleOpenTime);
-                var lastCandleIndex = candles.IndexOf(lastCandle);
-                var fromCandle = candles[lastCandleIndex - 20];
-                var lastRsi = rsies[lastCandleOpenTime];
+                var result = await kuCoinService.GetKlines("BTCUSDT", intervalType.GetDescription(),
+                    from, from.AddHours(batchSize), kuCoinConfig.Value);
+                allCandles.AddRange(result);
+                from = from.AddHours(batchSize);
+            }
 
-                var previousPeaks = peaks
-                    .Where(p => p.Key < lastCandleOpenTime && p.Key >= fromCandle.OpenTime)
-                    .ToDictionary(p => p.Key, p => p.Value);
-                var leverage = 10;
-                foreach (var previousPeak in previousPeaks)
+            for (var i = 0; i < allCandles.Count - 1; i++)
+            {
+                var firstCandle = allCandles[i].OpenTime;
+                if (firstCandle.AddHours(1) == allCandles[i + 1].OpenTime)
                 {
-                    var peakCandle = candles.First(c => c.OpenTime == previousPeak.Key);
-                    if (previousPeak.Value <= lastRsi || peakCandle.HighestPrice >= lastCandle.HighestPrice)
+                    continue;
+                }
+
+                throw new InvalidDataException();
+            }
+
+            var allRsiValues = await sender.Send(new RsiCommand(allCandles), cancellationToken);
+            var pointer = 0;
+            while (pointer < allCandles.Count - batchSize)
+            {
+                try
+                {
+                    var candles = allCandles.Skip(pointer).Take(batchSize).ToList();
+                    var rsiValues = allRsiValues.Skip(pointer).Take(batchSize).ToDictionary();
+                    var result = await sender.Send(new DivergenceCommand(candles, rsiValues), cancellationToken);
+                    var divergence = new StatisticDivergence(result)
                     {
-                        continue;
+                        LiquidationPrice = (result.EntryPrice + 0.7m * result.EntryPrice / Leverage).FixedNumber(),
+                        Profit = 0m
+                    };
+
+                    if (divergence.Type == DivergenceType.Peak)
+                    {
+                        var nextCandles = allCandles.Where(x => x.OpenTime > divergence.Time)
+                            .OrderBy(x => x.OpenTime)
+                            .Take(1000)
+                            .ToList();
+                        foreach (var candle in nextCandles)
+                        {
+                            switch (divergence.Status)
+                            {
+                                case DivergenceStatus.Awaiting:
+                                    if (candle.HighestPrice > divergence.EntryPrice)
+                                    {
+                                        divergence.Status = DivergenceStatus.Ordered;
+                                    }
+
+                                    break;
+                                case DivergenceStatus.Ordered:
+                                    if (candle.HighestPrice > divergence.LiquidationPrice)
+                                    {
+                                        divergence.Status = DivergenceStatus.StopLoss;
+                                        divergence.LiquidatedAt = candle.OpenTime;
+                                    }
+                                    else if (candle.LowestPrice < divergence.EntryPrice)
+                                    {
+                                        var profit =
+                                            (100 * (divergence.EntryPrice - candle.LowestPrice) / divergence.EntryPrice)
+                                            .FixedNumber(2) *
+                                            Leverage;
+                                        if (profit > divergence.Profit)
+                                        {
+                                            divergence.ProfitCandle = candle;
+                                            divergence.Profit = profit;
+                                        }
+                                    }
+
+                                    break;
+                            }
+
+                            if (divergence.Status == DivergenceStatus.StopLoss)
+                            {
+                                break;
+                            }
+                        }
+
+                        divergences.Add(divergence);
                     }
 
-                    var entryCandle = candles[lastCandleIndex + 1];
-                    var entryPrice = entryCandle.ClosePrice;
-                    var liquidationPrice = (entryPrice + 0.7m * entryPrice / leverage).FixedNumber();
-                    var stoploss = 0m;
-                    var profit = 0m;
-
-                    for (var j = lastCandleIndex + 2; j < candles.Count; j++)
-                    {
-                        var currentCandle = candles[j];
-                        var bb = bollingerBands[currentCandle.OpenTime];
-                        if (currentCandle.HighestPrice > liquidationPrice)
-                        {
-                            break;
-                        }
-
-                        if (stoploss != 0 && currentCandle.HighestPrice > stoploss)
-                        {
-                            profit = (leverage * 100 * (entryPrice - stoploss) / entryPrice).FixedNumber();
-                            break;
-                        }
-
-
-                        if (stoploss == 0 && currentCandle.LowestPrice < bb.Sma20)
-                        {
-                            stoploss = bb.Sma20;
-                        }
-
-                        if (stoploss > bb.Bold && currentCandle.LowestPrice < bb.Bold)
-                        {
-                            stoploss = bb.Bold;
-                        }
-                    }
-                    // var msg = new StringBuilder();
-                    // msg.AppendLine($"<pre>Divergence peak RSI detected at <i>[{lastCandleOpenTime.ToSimple()}]</i>");
-                    // msg.AppendLine($" <i>[{lastRsi}]</i>: <b>{lastCandle.HighestPrice}</b>");
-                    // msg.AppendLine($"Compare with peak at <i>[{previousPeak.Key.ToSimple()}]</i>:");
-                    // msg.AppendLine($" <i>[{previousPeak.Value}]</i>: <b>{peakCandle.HighestPrice}</b></pre>");
-                    // await notifier.Notify(msg.ToString(), cancellationToken);
-
-                    break;
+                    pointer++;
+                }
+                catch (Exception ex)
+                {
                 }
             }
+
+            // while (now <= DateTime.UtcNow)
+            // {
+            //     var candles = await kuCoinService.GetKlines("BTCUSDT", intervalType.GetDescription(),
+            //         intervalType.GetStartDate(now), now, kuCoinConfig.Value);
+            //
+            //     var result = await sender.Send(new DivergenceCommand(candles), cancellationToken);
+            //     var divergence = new StatisticDivergence(result)
+            //     {
+            //         LiquidationPrice = (result.EntryPrice + 0.7m * result.EntryPrice / Leverage).FixedNumber(),
+            //         MaxProfit = 0m
+            //     };
+            //
+            //     candles = await kuCoinService.GetKlines("BTCUSDT", intervalType.GetDescription(),
+            //         now, now.AddHours(1000), kuCoinConfig.Value);
+            //     if (divergence.Type == DivergenceType.Peak)
+            //     {
+            //         foreach (var candle in candles)
+            //         {
+            //             if (candle.HighestPrice >= divergence.LiquidationPrice)
+            //             {
+            //                 divergence.LiquidatedAt = candle.OpenTime;
+            //                 break;
+            //             }
+            //
+            //             if (candle.LowestPrice > divergence.EntryPrice)
+            //             {
+            //                 continue;
+            //             }
+            //
+            //             var profit =
+            //                 (100 * (divergence.EntryPrice - candle.LowestPrice) / divergence.EntryPrice)
+            //                 .FixedNumber(2) *
+            //                 Leverage;
+            //
+            //             if (profit <= divergence.MaxProfit)
+            //             {
+            //                 continue;
+            //             }
+            //
+            //             divergence.MaxProfit = profit;
+            //             divergence.MaxProfitCandle = candle;
+            //
+            //             maxProfit = Math.Max(maxProfit, profit);
+            //         }
+            //
+            //         divergences.Add(divergence);
+            //     }
+            //
+            //     now = now.AddHours(1);
+            // }
+            //
+            var msg = JsonSerializer.Serialize(divergences);
+            var stopLoss = divergences.Where(x => x.Status == DivergenceStatus.StopLoss).ToList();
+            var minProfit = divergences.Min(x => x.Profit);
+            // var now = new DateTime(2025, 6, 16, 16, 1, 30, DateTimeKind.Utc); // 1 hour
+            // now = new DateTime(2025, 6, 16, 7, 51, 30, DateTimeKind.Utc); // 5 minutes
         }
     }
 }

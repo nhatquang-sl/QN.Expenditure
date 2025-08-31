@@ -31,6 +31,7 @@ namespace Cex.Application.Indicator.Commands.Rsi
         public DivergenceType Type { get; set; }
         public decimal EntryPrice { get; set; }
         public DateTime Time { get; set; }
+        
         public decimal Rsi { get; set; }
         public DateTime PreviousTime { get; set; }
     }

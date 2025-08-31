@@ -43,7 +43,7 @@ namespace Cex.Application.Indicator.Commands
 
                     var msg = new StringBuilder($"[{command.Type.GetDescription()}] RSI <b>Short</b> detected:\n");
                     msg.AppendLine($"[{divTime}]: <b>{div.Rsi} - {dCandle.HighestPrice}</b>");
-                    msg.AppendLine($" [{divPreTime}]: <b>{rsiValues[div.PreviousTime]} - {preCandle.HighestPrice}</b>");
+                    msg.AppendLine($"[{divPreTime}]: <b>{rsiValues[div.PreviousTime]} - {preCandle.HighestPrice}</b>");
                     msg.AppendLine($"Entry price: <b>{entryPrice}</b>");
                     msg.AppendLine($"Liquidation 8x10: <b>{(entryPrice * 1.08m).FixedNumber(2)}</b>");
                     await notifier.Notify(msg.ToString(), cancellationToken);
