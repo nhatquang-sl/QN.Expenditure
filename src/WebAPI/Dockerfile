@@ -49,7 +49,7 @@ RUN dotnet build "./WebAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
 # Publish stage: build release version
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-ARG VERSION=0.0.1
+ARG VERSION=1.1
 RUN dotnet publish "./WebAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false -p:Version=${VERSION}
 
 FROM base AS final
