@@ -99,4 +99,5 @@ jobs:
 
         UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}
         EOF
+        docker compose up -d --remove-orphans && docker image prune -a -f
         ENDSSH
