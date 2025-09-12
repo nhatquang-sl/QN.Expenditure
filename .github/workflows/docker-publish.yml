@@ -90,13 +90,13 @@ jobs:
         mkdir -p $HOME/.ssh
         echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
         chmod 600 $HOME/.ssh/ssh.key
-        ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "
+        ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
           cd workspace/qex
           ls
-          cat > .env <<'EOF'
+          cat > .env <<EOF
         # Container image name for webapi
         WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}
 
-        UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}"
+        UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}
         EOF
-          "
+        ENDSSH
