@@ -94,8 +94,9 @@ jobs:
           cd workspace/qex
           ls
           cat > .env <<'EOF'
-          # Container image name for webapi
-          WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}
+        # Container image name for webapi
+        WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}
 
-          UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}"
-          EOF"
+        UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}"
+        EOF
+          "
