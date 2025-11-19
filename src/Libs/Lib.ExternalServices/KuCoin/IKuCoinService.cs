@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin.Models;
 using Refit;
 
@@ -79,6 +80,22 @@ namespace Lib.ExternalServices.KuCoin
             return res;
         }
 
+        public async Task<TradeHistoryResponse> GetTradeHistory(string symbol,
+            DateTime fromDate,
+            KuCoinConfig credentials)
+        {
+            // var startAt = (new DateTime(2025,9,20)).ToUnixTimestampMilliseconds();
+            var startAt = fromDate.ToUnixTimestampMilliseconds();
+            var (signature, timestamp) =
+                GenerateSignature(credentials.ApiSecret, "GET",
+                    $"/api/v1/fills?symbol={symbol}&startAt={startAt}");
+
+            var res = await GetTradeHistory(symbol, startAt, credentials.ApiKey, signature, timestamp,
+                credentials.ApiPassphrase);
+
+            return res.Data;
+        }
+
         public async Task<List<Kline>> GetKlines(string symbol, string type, DateTime startAt, DateTime endAt,
             KuCoinConfig credentials)
         {
@@ -146,6 +163,19 @@ namespace Lib.ExternalServices.KuCoin
         [Get("/api/v1/orders")]
         Task<string> GetOrders(
             [Query("status")] string status,
+            [Header("KC-API-KEY")] string apiKey,
+            [Header("KC-API-SIGN")] string apiSign,
+            [Header("KC-API-TIMESTAMP")] string apiTimestamp,
+            [Header("KC-API-PASSPHRASE")] string apiPassphrase,
+            [Header("KC-API-VERSION")] string apiVersion = "2"
+        );
+
+        // https://www.kucoin.com/docs-new/rest/spot-trading/orders/get-trade-history
+        [Get("/api/v1/fills")]
+        Task<KuCoinResponse<TradeHistoryResponse>> GetTradeHistory
+        (
+            [Query("symbol")] string symbol,
+            [Query("startAt")] long startAt,
             [Header("KC-API-KEY")] string apiKey,
             [Header("KC-API-SIGN")] string apiSign,
             [Header("KC-API-TIMESTAMP")] string apiTimestamp,

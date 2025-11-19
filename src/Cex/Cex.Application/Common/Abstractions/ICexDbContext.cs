@@ -10,6 +10,7 @@ namespace Cex.Application.Common.Abstractions
         DbSet<Domain.Entities.BnbSetting> BnbSettings { get; init; }
         DbSet<SpotGrid> SpotGrids { get; init; }
         DbSet<SpotGridStep> SpotGridSteps { get; init; }
+        DbSet<TradeHistory> TradeHistories { get; init; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

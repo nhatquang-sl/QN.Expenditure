@@ -1,9 +1,11 @@
-﻿using System.Reflection;
+﻿using System.Globalization;
+using System.Reflection;
 using AutoMapper;
 using Cex.Application.Grid.Commands.CreateSpotGrid;
 using Cex.Domain.Entities;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.Bnb.Models;
+using TradeHistory = Cex.Domain.Entities.TradeHistory;
 
 namespace Cex.Application.Common.Mappings
 {
@@ -25,6 +27,14 @@ namespace Cex.Application.Common.Mappings
                 .ForMember(x => x.WorkingTime, opt => opt.MapFrom(x => x.WorkingTime.ToUnixTimestampMilliseconds()));
 
             CreateMap<CreateSpotGridCommand, SpotGrid>();
+            CreateMap<Lib.ExternalServices.KuCoin.Models.TradeHistory, TradeHistory>()
+                .ForMember(x => x.Price, opt => opt.MapFrom(x => decimal.Parse(x.Price, CultureInfo.InvariantCulture)))
+                .ForMember(x => x.Size, opt => opt.MapFrom(x => decimal.Parse(x.Size, CultureInfo.InvariantCulture)))
+                .ForMember(x => x.Funds, opt => opt.MapFrom(x => decimal.Parse(x.Funds, CultureInfo.InvariantCulture)))
+                .ForMember(x => x.Fee, opt => opt.MapFrom(x => decimal.Parse(x.Fee, CultureInfo.InvariantCulture)))
+                .ForMember(x => x.FeeRate,
+                    opt => opt.MapFrom(x => decimal.Parse(x.FeeRate, CultureInfo.InvariantCulture)))
+                .ForMember(x => x.TradedAt, opt => opt.MapFrom(x => x.CreatedAt.ToDateTimeFromMilliseconds()));
         }
 
         private void ApplyMappingsFromAssembly(Assembly assembly)

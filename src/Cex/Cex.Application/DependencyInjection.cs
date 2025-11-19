@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Cex.Application.Common.Mappings;
 using FluentValidation;
 using Lib.Application;
 using Lib.Application.Behaviors;

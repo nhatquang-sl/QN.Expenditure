@@ -14,6 +14,7 @@ namespace Cex.Infrastructure.Data
         public DbSet<BnbSetting> BnbSettings { get; init; }
         public DbSet<SpotGrid> SpotGrids { get; init; }
         public DbSet<SpotGridStep> SpotGridSteps { get; init; }
+        public DbSet<TradeHistory> TradeHistories { get; init; }
 
         public new Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         {

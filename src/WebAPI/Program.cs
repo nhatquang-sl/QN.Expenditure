@@ -59,6 +59,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 // builder.Services.AddHostedService<SpotGridService>();
 builder.Services.AddHostedService<RunIndicatorService>();
+builder.Services.AddHostedService<SyncSpotTradeHistoryService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
@@ -104,7 +105,7 @@ var app = builder.Build();
 app.Logger.LogInformation("OTEL_EXPORTER_OTLP_ENDPOINT {endpoint}",
     builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
-app.Logger.LogInformation("API VERSION: {version}",version);
+app.Logger.LogInformation("API VERSION: {version}", version);
 //app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.

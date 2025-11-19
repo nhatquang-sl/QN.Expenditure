@@ -12,9 +12,10 @@ namespace Lib.ExternalServices.Tests
         public DependencyInjectionFixture()
         {
             var configuration = new ConfigurationBuilder()
-                .AddJsonFile("D:\\QN.Expenditure\\src\\WebAPI\\QN.Expenditure.Credentials\\appsettings.json")
+                .AddJsonFile(
+                    "/Users/quang/Workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials/appsettings.json")
                 .Build();
-
+            Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "true");
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient<HttpDelegatingHandler>();
 

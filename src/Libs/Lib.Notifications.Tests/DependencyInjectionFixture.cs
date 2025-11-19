@@ -12,7 +12,7 @@ namespace Lib.Notifications.Tests
         protected DependencyInjectionFixture()
         {
             var configuration = new ConfigurationBuilder()
-                .AddJsonFile(@"D:\QN.Expenditure\src\WebAPI\QN.Expenditure.Credentials\appsettings.json")
+                .AddJsonFile(@"/Users/quang/workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials/appsettings.json")
                 .Build();
             var pathUrl = configuration.GetValue<string>("Notifier:PathUrl");
             var pathUrls = pathUrl?.Split(";");
