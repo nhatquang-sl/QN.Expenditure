@@ -1,5 +1,3 @@
-using Auth.Infrastructure;
-using Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders;
 using Cex.Application.KuCoin.Commands.SyncTradeHistory;
 using Cex.Infrastructure;
 using Lib.Notifications;
@@ -34,7 +32,8 @@ namespace WebAPI.HostedServices
                     }
                     catch (Exception ex)
                     {
-                        logger.Information("Exception {serviceName} - {message}", GetType().Name, ex.Message);
+                        logger.Error("Exception {serviceName} - {message}", GetType().Name, ex.Message);
+                        logger.Error(ex, "Exception {serviceName}", GetType().Name);
                     }
 
                     await Task.Delay(5 * 60 * 1000, stoppingToken);
