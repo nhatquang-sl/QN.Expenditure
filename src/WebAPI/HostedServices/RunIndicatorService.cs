@@ -18,19 +18,11 @@ namespace WebAPI.HostedServices
         {
             await Task.Factory.StartNew(async () =>
             {
-                // using var scope = serviceScopeFactory.CreateScope();
-                // var logger = scope.ServiceProvider.GetRequiredService<Logger>();
-                // logger.Information("Start {serviceName}", GetType().Name);
-                // logger.Information("Start RunIndicatorService started at {startAt}", DateTime.UtcNow);
                 logger.LogInformation("Started at {startAt}", DateTime.UtcNow);
                 while (true)
                 {
                     try
                     {
-                        // await mediator.Send(new StatisticIndicatorCommand(), stoppingToken);
-                        // await RunIndicator(IntervalType.FiveMinutes, stoppingToken);
-                        // await RunIndicator(IntervalType.FifteenMinutes, stoppingToken);
-
                         if (DateTime.UtcNow.Minute % 5 == 1)
                         {
                             await RunIndicator(IntervalType.FiveMinutes, stoppingToken);
@@ -63,12 +55,7 @@ namespace WebAPI.HostedServices
                     }
                     catch (Exception ex)
                     {
-                        var exception = ex;
-                        do
-                        {
-                            // logger.Error(exception, "Error RunIndicatorService");
-                            exception = exception.InnerException;
-                        } while (exception != null);
+                        logger.LogError(ex, "Exception {serviceName}", GetType().Name);
                     }
 
                     await Task.Delay(60 * 1000, stoppingToken);
