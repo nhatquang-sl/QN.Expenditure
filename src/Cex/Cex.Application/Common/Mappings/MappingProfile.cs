@@ -34,7 +34,9 @@ namespace Cex.Application.Common.Mappings
                 .ForMember(x => x.Fee, opt => opt.MapFrom(x => decimal.Parse(x.Fee, CultureInfo.InvariantCulture)))
                 .ForMember(x => x.FeeRate,
                     opt => opt.MapFrom(x => decimal.Parse(x.FeeRate, CultureInfo.InvariantCulture)))
-                .ForMember(x => x.TradedAt, opt => opt.MapFrom(x => x.CreatedAt.ToDateTimeFromMilliseconds()));
+                .ForMember(x => x.TradedAt, opt => opt.MapFrom(x => x.CreatedAt.ToDateTimeFromMilliseconds()))
+                .ForMember(x => x.CreatedAt, opt => opt.MapFrom(x => DateTime.UtcNow))
+                ;
         }
 
         private void ApplyMappingsFromAssembly(Assembly assembly)
