@@ -1,6 +1,7 @@
 using AutoMapper;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Entities;
+using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -11,6 +12,7 @@ namespace Cex.Application.KuCoin.Commands.SyncTradeHistory
 
     public class SyncTradeHistoryCommandHandler(
         IMapper mapper,
+        ILogTrace logTrace,
         ICexDbContext cexDbContext,
         IKuCoinService kuCoinService,
         IOptions<KuCoinConfig> kuCoinConfig) : IRequestHandler<SyncTradeHistoryCommand>
@@ -24,6 +26,7 @@ namespace Cex.Application.KuCoin.Commands.SyncTradeHistory
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => x.CreatedAt)
                 .FirstOrDefault();
+            logTrace.LogInformation("Last sync trade history", new { lastSyncDate, startAt = _startAt });
             var fromDate = _startAt > lastSyncDate ? _startAt : lastSyncDate;
             while (fromDate <= DateTime.UtcNow)
             {

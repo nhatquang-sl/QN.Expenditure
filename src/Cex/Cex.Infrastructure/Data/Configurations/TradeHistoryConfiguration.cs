@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Cex.Infrastructure.Data.Configurations
 {
-    public class SpotTradeHistoryConfiguration : IEntityTypeConfiguration<TradeHistory>
+    public class TradeHistoryConfiguration : IEntityTypeConfiguration<TradeHistory>
     {
         public void Configure(EntityTypeBuilder<TradeHistory> builder)
         {
