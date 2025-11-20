@@ -59,7 +59,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 // builder.Services.AddHostedService<SpotGridService>();
 builder.Services.AddHostedService<RunIndicatorService>();
-builder.Services.AddHostedService<SyncSpotTradeHistoryService>();
+builder.Services.AddHostedService<SyncTradeHistoryService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
