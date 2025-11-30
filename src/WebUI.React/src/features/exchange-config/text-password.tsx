@@ -2,14 +2,14 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { IconButton, InputAdornment, TextField } from '@mui/material';
 import { useState } from 'react';
 import { Control, Controller, FieldErrors } from 'react-hook-form';
-import { UpdateSettingData } from './types';
+import { ExchangeConfigData } from './types';
 
 export default function TextPassword(props: {
   name: 'apiKey' | 'secret';
   label: string;
   loading?: boolean;
-  control: Control<UpdateSettingData>;
-  errors: FieldErrors<UpdateSettingData>;
+  control: Control<ExchangeConfigData>;
+  errors: FieldErrors<ExchangeConfigData>;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const { name, label, loading, control, errors } = props;
