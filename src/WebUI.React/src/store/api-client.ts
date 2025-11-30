@@ -1212,9 +1212,23 @@ export class CandlesClient {
         }
         return Promise.resolve<Kline[]>(null as any);
     }
+}
 
-    get2( cancelToken?: CancelToken): Promise<Kline[]> {
-        let url_ = this.baseUrl + "/api/candles";
+export class ExchangeConfigsClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    getConfigs( cancelToken?: CancelToken): Promise<ExchangeConfigDto[]> {
+        let url_ = this.baseUrl + "/api/exchange-configs";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1233,11 +1247,11 @@ export class CandlesClient {
                 throw _error;
             }
         }).then((_response: AxiosResponse) => {
-            return this.processGet2(_response);
+            return this.processGetConfigs(_response);
         });
     }
 
-    protected processGet2(response: AxiosResponse): Promise<Kline[]> {
+    protected processGetConfigs(response: AxiosResponse): Promise<ExchangeConfigDto[]> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1254,18 +1268,193 @@ export class CandlesClient {
             if (Array.isArray(resultData200)) {
                 result200 = [] as any;
                 for (let item of resultData200)
-                    result200!.push(Kline.fromJS(item));
+                    result200!.push(ExchangeConfigDto.fromJS(item));
             }
             else {
                 result200 = <any>null;
             }
-            return Promise.resolve<Kline[]>(result200);
+            return Promise.resolve<ExchangeConfigDto[]>(result200);
 
         } else if (status !== 200 && status !== 204) {
             const _responseText = response.data;
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
-        return Promise.resolve<Kline[]>(null as any);
+        return Promise.resolve<ExchangeConfigDto[]>(null as any);
+    }
+
+    upsertConfig(request: UpsertExchangeConfigCommand, cancelToken?: CancelToken): Promise<ExchangeConfigDto> {
+        let url_ = this.baseUrl + "/api/exchange-configs";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "POST",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processUpsertConfig(_response);
+        });
+    }
+
+    protected processUpsertConfig(response: AxiosResponse): Promise<ExchangeConfigDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = ExchangeConfigDto.fromJS(resultData200);
+            return Promise.resolve<ExchangeConfigDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<ExchangeConfigDto>(null as any);
+    }
+
+    deleteConfig(exchangeName: ExchangeName, cancelToken?: CancelToken): Promise<FileResponse> {
+        let url_ = this.baseUrl + "/api/exchange-configs/{exchangeName}";
+        if (exchangeName === undefined || exchangeName === null)
+            throw new Error("The parameter 'exchangeName' must be defined.");
+        url_ = url_.replace("{exchangeName}", encodeURIComponent("" + exchangeName));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            responseType: "blob",
+            method: "DELETE",
+            url: url_,
+            headers: {
+                "Accept": "application/octet-stream"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processDeleteConfig(_response);
+        });
+    }
+
+    protected processDeleteConfig(response: AxiosResponse): Promise<FileResponse> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers["content-disposition"] : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return Promise.resolve({ fileName: fileName, status: status, data: new Blob([response.data], { type: response.headers["content-type"] }), headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<FileResponse>(null as any);
+    }
+}
+
+export class MeetClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    index( cancelToken?: CancelToken): Promise<FileResponse> {
+        let url_ = this.baseUrl + "/api/meet";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            responseType: "blob",
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/octet-stream"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processIndex(_response);
+        });
+    }
+
+    protected processIndex(response: AxiosResponse): Promise<FileResponse> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers["content-disposition"] : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return Promise.resolve({ fileName: fileName, status: status, data: new Blob([response.data], { type: response.headers["content-type"] }), headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<FileResponse>(null as any);
     }
 }
 
@@ -1732,8 +1921,8 @@ export class WeatherForecastClient {
 
     }
 
-    get( cancelToken?: CancelToken): Promise<WeatherForecast[]> {
-        let url_ = this.baseUrl + "/api/weatherforecast";
+    get( cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/weatherforecast/output-cache";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1756,7 +1945,7 @@ export class WeatherForecastClient {
         });
     }
 
-    protected processGet(response: AxiosResponse): Promise<WeatherForecast[]> {
+    protected processGet(response: AxiosResponse): Promise<Kline[]> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1773,18 +1962,128 @@ export class WeatherForecastClient {
             if (Array.isArray(resultData200)) {
                 result200 = [] as any;
                 for (let item of resultData200)
-                    result200!.push(WeatherForecast.fromJS(item));
+                    result200!.push(Kline.fromJS(item));
             }
             else {
                 result200 = <any>null;
             }
-            return Promise.resolve<WeatherForecast[]>(result200);
+            return Promise.resolve<Kline[]>(result200);
 
         } else if (status !== 200 && status !== 204) {
             const _responseText = response.data;
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
-        return Promise.resolve<WeatherForecast[]>(null as any);
+        return Promise.resolve<Kline[]>(null as any);
+    }
+
+    getWithHybridCache( cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/weatherforecast/hybrid-cache";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetWithHybridCache(_response);
+        });
+    }
+
+    protected processGetWithHybridCache(response: AxiosResponse): Promise<Kline[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(Kline.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<Kline[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<Kline[]>(null as any);
+    }
+
+    getWithDistributedCache( cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/weatherforecast/distributed-cache";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetWithDistributedCache(_response);
+        });
+    }
+
+    protected processGetWithDistributedCache(response: AxiosResponse): Promise<Kline[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(Kline.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<Kline[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<Kline[]>(null as any);
     }
 }
 
@@ -2415,6 +2714,78 @@ export enum IntervalType {
     OneDay = 5,
 }
 
+export class ExchangeConfigDto {
+    exchangeName!: ExchangeName;
+    apiKey!: string;
+    secret!: string;
+    passphrase!: string | undefined;
+
+    init(_data?: any) {
+        if (_data) {
+            this.exchangeName = _data["exchangeName"];
+            this.apiKey = _data["apiKey"];
+            this.secret = _data["secret"];
+            this.passphrase = _data["passphrase"];
+        }
+    }
+
+    static fromJS(data: any): ExchangeConfigDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ExchangeConfigDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["exchangeName"] = this.exchangeName;
+        data["apiKey"] = this.apiKey;
+        data["secret"] = this.secret;
+        data["passphrase"] = this.passphrase;
+        return data;
+    }
+}
+
+export enum ExchangeName {
+    Binance = 0,
+    KuCoin = 1,
+    Coinbase = 2,
+    Kraken = 3,
+    Bybit = 4,
+}
+
+export class UpsertExchangeConfigCommand {
+    exchangeName!: ExchangeName;
+    apiKey!: string;
+    secret!: string;
+    passphrase!: string | undefined;
+
+    init(_data?: any) {
+        if (_data) {
+            this.exchangeName = _data["exchangeName"];
+            this.apiKey = _data["apiKey"];
+            this.secret = _data["secret"];
+            this.passphrase = _data["passphrase"];
+        }
+    }
+
+    static fromJS(data: any): UpsertExchangeConfigCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpsertExchangeConfigCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["exchangeName"] = this.exchangeName;
+        data["apiKey"] = this.apiKey;
+        data["secret"] = this.secret;
+        data["passphrase"] = this.passphrase;
+        return data;
+    }
+}
+
 export class UnprocessableEntity {
     name!: string;
     errors!: string[];
@@ -2674,44 +3045,6 @@ export class UpdateSpotGridCommand {
         data["stopLoss"] = this.stopLoss;
         return data;
     }
-}
-
-export class WeatherForecast {
-    date!: Date;
-    temperatureC!: number;
-    temperatureF!: number;
-    summary!: string | undefined;
-
-    init(_data?: any) {
-        if (_data) {
-            this.date = _data["date"] ? new Date(_data["date"].toString()) : <any>undefined;
-            this.temperatureC = _data["temperatureC"];
-            this.temperatureF = _data["temperatureF"];
-            this.summary = _data["summary"];
-        }
-    }
-
-    static fromJS(data: any): WeatherForecast {
-        data = typeof data === 'object' ? data : {};
-        let result = new WeatherForecast();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["date"] = this.date ? formatDate(this.date) : <any>undefined;
-        data["temperatureC"] = this.temperatureC;
-        data["temperatureF"] = this.temperatureF;
-        data["summary"] = this.summary;
-        return data;
-    }
-}
-
-function formatDate(d: Date) {
-    return d.getFullYear() + '-' + 
-        (d.getMonth() < 9 ? ('0' + (d.getMonth()+1)) : (d.getMonth()+1)) + '-' +
-        (d.getDate() < 10 ? ('0' + d.getDate()) : d.getDate());
 }
 
 export interface FileResponse {

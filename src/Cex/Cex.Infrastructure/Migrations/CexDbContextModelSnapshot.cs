@@ -40,6 +40,37 @@ namespace Cex.Infrastructure.Migrations
                     b.ToTable("BnbSettings");
                 });
 
+            modelBuilder.Entity("Cex.Domain.Entities.ExchangeConfig", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("ExchangeName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Passphrase")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Secret")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("UserId", "ExchangeName");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ExchangeConfigs");
+                });
+
             modelBuilder.Entity("Cex.Domain.Entities.SpotGrid", b =>
                 {
                     b.Property<long>("Id")
@@ -254,7 +285,7 @@ namespace Cex.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasDefaultValue(new DateTime(2025, 11, 19, 18, 53, 10, 803, DateTimeKind.Utc).AddTicks(5040));
+                        .HasDefaultValue(new DateTime(2025, 11, 30, 7, 23, 10, 676, DateTimeKind.Utc).AddTicks(4430));
 
                     b.Property<decimal>("Fee")
                         .HasPrecision(13, 6)

@@ -28,6 +28,12 @@ export const mainListItems = (
       </ListItemIcon>
       <ListItemText primary="Orders" />
     </ListItemButton>
+    <ListItemButton component={Link} to="exchange-config">
+      <ListItemIcon>
+        <ManageAccountsIcon />
+      </ListItemIcon>
+      <ListItemText primary="Setting" />
+    </ListItemButton>
     <ListItemButton>
       <ListItemIcon>
         <PeopleIcon />
@@ -59,12 +65,7 @@ export function BnbMenuItems() {
       <ListSubheader component="div" inset>
         Binance
       </ListSubheader>
-      <ListItemButton component={Link} to="bnb/setting">
-        <ListItemIcon>
-          <ManageAccountsIcon />
-        </ListItemIcon>
-        <ListItemText primary="Setting" />
-      </ListItemButton>
+
       <ListItemButton component={Link} to="bnb/sync-settings">
         <ListItemIcon>
           <ManageHistoryIcon />

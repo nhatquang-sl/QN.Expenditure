@@ -9,13 +9,15 @@ import LoginHistory from 'features/auth/login-history';
 import RegisterConfirm from 'features/auth/register-confirm';
 import RequestActivateEmail from 'features/auth/request-activate-email';
 import CandleAnalytics from 'features/bnb/candle-analytics';
-import BnbSetting from 'features/bnb/setting';
 import SpotGrid from 'features/bnb/spot-grids';
 import SpotGridCreate from 'features/bnb/spot-grids/create';
 import SpotGridList from 'features/bnb/spot-grids/list';
 import SpotGridUpdate from 'features/bnb/spot-grids/update';
 import BnbSpotOrders from 'features/bnb/spot-orders';
 import BnbSpotOrdersSyncSettings from 'features/bnb/sync-settings';
+import ExchangeConfig from 'features/exchange-config';
+import ExchangeConfigCreate from 'features/exchange-config/create';
+import ExchangeConfigUpdate from 'features/exchange-config/update';
 import Landing from 'features/landing';
 import Header from 'features/layout/header';
 import Main from 'features/layout/main';
@@ -55,8 +57,12 @@ const router = createBrowserRouter([
         element: <LoginHistory />,
       },
       {
-        path: 'bnb/setting',
-        element: <BnbSetting />,
+        path: 'exchange-config',
+        element: <ExchangeConfig />,
+        children: [
+          { index: true, element: <ExchangeConfigCreate /> },
+          { path: ':exchangeName', element: <ExchangeConfigUpdate /> },
+        ],
       },
       {
         path: 'bnb/sync-settings',

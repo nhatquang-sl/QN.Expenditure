@@ -55,7 +55,7 @@ const SyncSettingItem = (props: {
   const handleSync = async () => {
     setLoading(true);
     try {
-      var res = await bnbSpotClient.triggerSync(syncSetting.symbol);
+      const res = await bnbSpotClient.triggerSync(syncSetting.symbol);
       setLastSyncAt(dayjs(res.lastSyncAt));
     } catch (err) {}
     setLoading(false);
@@ -86,7 +86,7 @@ const SyncSettingItem = (props: {
             <IconButton aria-label="delete" onClick={handleDelete} disabled={loading}>
               <Icon>delete</Icon>
             </IconButton>
-            <IconButton aria-label="delete" onClick={handleSync} disabled={loading}>
+            <IconButton aria-label="sync" onClick={handleSync} disabled={loading}>
               <Icon>sync</Icon>
             </IconButton>
           </>

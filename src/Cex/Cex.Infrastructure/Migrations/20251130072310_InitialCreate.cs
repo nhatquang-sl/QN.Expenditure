@@ -25,6 +25,21 @@ namespace Cex.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ExchangeConfigs",
+                columns: table => new
+                {
+                    UserId = table.Column<string>(type: "nvarchar(36)", maxLength: 36, nullable: false),
+                    ExchangeName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ApiKey = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Secret = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Passphrase = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ExchangeConfigs", x => new { x.UserId, x.ExchangeName });
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SpotGrids",
                 columns: table => new
                 {
@@ -64,6 +79,35 @@ namespace Cex.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SpotOrderSyncSettings", x => new { x.UserId, x.Symbol });
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TradeHistories",
+                columns: table => new
+                {
+                    UserId = table.Column<long>(type: "bigint", nullable: false),
+                    TradeId = table.Column<long>(type: "bigint", nullable: false),
+                    Symbol = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OrderId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CounterOrderId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Side = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Liquidity = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ForceTaker = table.Column<bool>(type: "bit", nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
+                    Size = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
+                    Funds = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
+                    Fee = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
+                    FeeRate = table.Column<decimal>(type: "decimal(13,6)", precision: 13, scale: 6, nullable: false),
+                    FeeCurrency = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Stop = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TradeType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TradedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValue: new DateTime(2025, 11, 30, 7, 23, 10, 676, DateTimeKind.Utc).AddTicks(4430))
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TradeHistories", x => new { x.UserId, x.TradeId });
                 });
 
             migrationBuilder.CreateTable(
@@ -124,6 +168,11 @@ namespace Cex.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ExchangeConfigs_UserId",
+                table: "ExchangeConfigs",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SpotGridSteps_SpotGridId",
                 table: "SpotGridSteps",
                 column: "SpotGridId");
@@ -141,10 +190,16 @@ namespace Cex.Infrastructure.Migrations
                 name: "BnbSettings");
 
             migrationBuilder.DropTable(
+                name: "ExchangeConfigs");
+
+            migrationBuilder.DropTable(
                 name: "SpotOrders");
 
             migrationBuilder.DropTable(
                 name: "SpotOrderSyncSettings");
+
+            migrationBuilder.DropTable(
+                name: "TradeHistories");
 
             migrationBuilder.DropTable(
                 name: "SpotGridSteps");

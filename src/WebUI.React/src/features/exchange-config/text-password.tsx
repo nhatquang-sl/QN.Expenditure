@@ -5,9 +5,9 @@ import { Control, Controller, FieldErrors } from 'react-hook-form';
 import { UpdateSettingData } from './types';
 
 export default function TextPassword(props: {
-  name: 'apiKey' | 'secretKey';
+  name: 'apiKey' | 'secret';
   label: string;
-  loading: boolean;
+  loading?: boolean;
   control: Control<UpdateSettingData>;
   errors: FieldErrors<UpdateSettingData>;
 }) {
