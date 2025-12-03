@@ -10,7 +10,7 @@ namespace Auth.Infrastructure.Data
         {
             var config = new ConfigurationBuilder()
                 .AddJsonFile(
-                    "/Users/quang/workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials/appsettings.Production.json")
+                    "/Users/quang/workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials/appsettings.json")
                 .Build();
 
             var connString = config.GetValue<string>("ConnectionStrings:AuthConnection");
