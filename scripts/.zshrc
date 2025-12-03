@@ -1,3 +1,4 @@
+source $QNEDIR/scripts/qdbauthupdate.zsh
 source $QNEDIR/scripts/qnapiclientgenerate.zsh
 source $QNEDIR/scripts/qnapistart.zsh
 source $QNEDIR/scripts/qnaspirepublish.zsh

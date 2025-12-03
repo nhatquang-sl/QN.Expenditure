@@ -103,7 +103,7 @@ namespace Cex.Infrastructure.Migrations
                     TradeType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Type = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     TradedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValue: new DateTime(2025, 11, 30, 7, 23, 10, 676, DateTimeKind.Utc).AddTicks(4430))
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValue: new DateTime(2025, 12, 2, 11, 34, 44, 602, DateTimeKind.Utc).AddTicks(4460))
                 },
                 constraints: table =>
                 {

@@ -9,7 +9,7 @@ namespace Cex.Infrastructure.Data
         public CexDbContext CreateDbContext(string[] args)
         {
             var config = new ConfigurationBuilder()
-                .AddJsonFile("/Users/quang/workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials/appsettings.json")
+                .AddJsonFile("/Users/quang/workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials/appsettings.Production.json")
                 .Build();
 
             var connString = config.GetValue<string>("ConnectionStrings:CexConnection");

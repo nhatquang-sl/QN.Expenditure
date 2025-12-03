@@ -285,7 +285,7 @@ namespace Cex.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasDefaultValue(new DateTime(2025, 11, 30, 7, 23, 10, 676, DateTimeKind.Utc).AddTicks(4430));
+                        .HasDefaultValue(new DateTime(2025, 12, 2, 11, 34, 44, 602, DateTimeKind.Utc).AddTicks(4460));
 
                     b.Property<decimal>("Fee")
                         .HasPrecision(13, 6)
