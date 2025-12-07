@@ -12,7 +12,7 @@ namespace Cex.Infrastructure.Data
         public DbSet<SpotOrderSyncSetting> SpotOrderSyncSettings { get; init; }
         public DbSet<SpotOrder> SpotOrders { get; init; }
         public DbSet<BnbSetting> BnbSettings { get; init; }
-        public DbSet<ExchangeConfig> ExchangeConfigs { get; init; }
+        public DbSet<ExchangeSetting> ExchangeSettings { get; init; }
         public DbSet<SpotGrid> SpotGrids { get; init; }
         public DbSet<SpotGridStep> SpotGridSteps { get; init; }
         public DbSet<TradeHistory> TradeHistories { get; init; }

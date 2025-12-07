@@ -1214,7 +1214,7 @@ export class CandlesClient {
     }
 }
 
-export class ExchangeConfigsClient {
+export class ExchangeSettingsClient {
     protected instance: AxiosInstance;
     protected baseUrl: string;
     protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
@@ -1227,8 +1227,8 @@ export class ExchangeConfigsClient {
 
     }
 
-    getConfigs( cancelToken?: CancelToken): Promise<ExchangeConfigDto[]> {
-        let url_ = this.baseUrl + "/api/exchange-configs";
+    getSettings( cancelToken?: CancelToken): Promise<ExchangeSettingDto[]> {
+        let url_ = this.baseUrl + "/api/exchange-settings";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1247,11 +1247,11 @@ export class ExchangeConfigsClient {
                 throw _error;
             }
         }).then((_response: AxiosResponse) => {
-            return this.processGetConfigs(_response);
+            return this.processGetSettings(_response);
         });
     }
 
-    protected processGetConfigs(response: AxiosResponse): Promise<ExchangeConfigDto[]> {
+    protected processGetSettings(response: AxiosResponse): Promise<ExchangeSettingDto[]> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1268,22 +1268,22 @@ export class ExchangeConfigsClient {
             if (Array.isArray(resultData200)) {
                 result200 = [] as any;
                 for (let item of resultData200)
-                    result200!.push(ExchangeConfigDto.fromJS(item));
+                    result200!.push(ExchangeSettingDto.fromJS(item));
             }
             else {
                 result200 = <any>null;
             }
-            return Promise.resolve<ExchangeConfigDto[]>(result200);
+            return Promise.resolve<ExchangeSettingDto[]>(result200);
 
         } else if (status !== 200 && status !== 204) {
             const _responseText = response.data;
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
-        return Promise.resolve<ExchangeConfigDto[]>(null as any);
+        return Promise.resolve<ExchangeSettingDto[]>(null as any);
     }
 
-    upsertConfig(request: UpsertExchangeConfigCommand, cancelToken?: CancelToken): Promise<ExchangeConfigDto> {
-        let url_ = this.baseUrl + "/api/exchange-configs";
+    upsertSetting(request: UpsertExchangeSettingCommand, cancelToken?: CancelToken): Promise<ExchangeSettingDto> {
+        let url_ = this.baseUrl + "/api/exchange-settings";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(request);
@@ -1306,11 +1306,11 @@ export class ExchangeConfigsClient {
                 throw _error;
             }
         }).then((_response: AxiosResponse) => {
-            return this.processUpsertConfig(_response);
+            return this.processUpsertSetting(_response);
         });
     }
 
-    protected processUpsertConfig(response: AxiosResponse): Promise<ExchangeConfigDto> {
+    protected processUpsertSetting(response: AxiosResponse): Promise<ExchangeSettingDto> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1324,18 +1324,18 @@ export class ExchangeConfigsClient {
             const _responseText = response.data;
             let result200: any = null;
             let resultData200  = _responseText;
-            result200 = ExchangeConfigDto.fromJS(resultData200);
-            return Promise.resolve<ExchangeConfigDto>(result200);
+            result200 = ExchangeSettingDto.fromJS(resultData200);
+            return Promise.resolve<ExchangeSettingDto>(result200);
 
         } else if (status !== 200 && status !== 204) {
             const _responseText = response.data;
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
-        return Promise.resolve<ExchangeConfigDto>(null as any);
+        return Promise.resolve<ExchangeSettingDto>(null as any);
     }
 
-    deleteConfig(exchangeName: ExchangeName, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/exchange-configs/{exchangeName}";
+    deleteSetting(exchangeName: ExchangeName, cancelToken?: CancelToken): Promise<FileResponse> {
+        let url_ = this.baseUrl + "/api/exchange-settings/{exchangeName}";
         if (exchangeName === undefined || exchangeName === null)
             throw new Error("The parameter 'exchangeName' must be defined.");
         url_ = url_.replace("{exchangeName}", encodeURIComponent("" + exchangeName));
@@ -1358,11 +1358,11 @@ export class ExchangeConfigsClient {
                 throw _error;
             }
         }).then((_response: AxiosResponse) => {
-            return this.processDeleteConfig(_response);
+            return this.processDeleteSetting(_response);
         });
     }
 
-    protected processDeleteConfig(response: AxiosResponse): Promise<FileResponse> {
+    protected processDeleteSetting(response: AxiosResponse): Promise<FileResponse> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -2714,7 +2714,7 @@ export enum IntervalType {
     OneDay = 5,
 }
 
-export class ExchangeConfigDto {
+export class ExchangeSettingDto {
     exchangeName!: ExchangeName;
     apiKey!: string;
     secret!: string;
@@ -2729,9 +2729,9 @@ export class ExchangeConfigDto {
         }
     }
 
-    static fromJS(data: any): ExchangeConfigDto {
+    static fromJS(data: any): ExchangeSettingDto {
         data = typeof data === 'object' ? data : {};
-        let result = new ExchangeConfigDto();
+        let result = new ExchangeSettingDto();
         result.init(data);
         return result;
     }
@@ -2754,7 +2754,7 @@ export enum ExchangeName {
     Bybit = 4,
 }
 
-export class UpsertExchangeConfigCommand {
+export class UpsertExchangeSettingCommand {
     exchangeName!: ExchangeName;
     apiKey!: string;
     secret!: string;
@@ -2769,9 +2769,9 @@ export class UpsertExchangeConfigCommand {
         }
     }
 
-    static fromJS(data: any): UpsertExchangeConfigCommand {
+    static fromJS(data: any): UpsertExchangeSettingCommand {
         data = typeof data === 'object' ? data : {};
-        let result = new UpsertExchangeConfigCommand();
+        let result = new UpsertExchangeSettingCommand();
         result.init(data);
         return result;
     }

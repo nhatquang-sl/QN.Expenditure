@@ -15,13 +15,13 @@ import SpotGridList from 'features/bnb/spot-grids/list';
 import SpotGridUpdate from 'features/bnb/spot-grids/update';
 import BnbSpotOrders from 'features/bnb/spot-orders';
 import BnbSpotOrdersSyncSettings from 'features/bnb/sync-settings';
-import ExchangeConfig from 'features/exchange-config';
-import ExchangeConfigCreate from 'features/exchange-config/create';
-import ExchangeConfigUpdate from 'features/exchange-config/update';
 import Landing from 'features/landing';
 import Header from 'features/layout/header';
 import Main from 'features/layout/main';
 import Sidebar from 'features/layout/sidebar';
+import ExchangeSetting from 'features/settings/exchange-setting';
+import ExchangeSettingCreate from 'features/settings/exchange-setting/create';
+import ExchangeSettingUpdate from 'features/settings/exchange-setting/update';
 import './App.css';
 const defaultTheme = createTheme();
 const router = createBrowserRouter([
@@ -57,11 +57,11 @@ const router = createBrowserRouter([
         element: <LoginHistory />,
       },
       {
-        path: 'exchange-config',
-        element: <ExchangeConfig />,
+        path: 'settings/exchange-setting',
+        element: <ExchangeSetting />,
         children: [
-          { index: true, element: <ExchangeConfigCreate /> },
-          { path: ':exchangeName', element: <ExchangeConfigUpdate /> },
+          { index: true, element: <ExchangeSettingCreate /> },
+          { path: ':exchangeName', element: <ExchangeSettingUpdate /> },
         ],
       },
       {

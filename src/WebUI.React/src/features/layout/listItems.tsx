@@ -28,7 +28,7 @@ export const mainListItems = (
       </ListItemIcon>
       <ListItemText primary="Orders" />
     </ListItemButton>
-    <ListItemButton component={Link} to="exchange-config">
+    <ListItemButton component={Link} to="settings/exchange-setting">
       <ListItemIcon>
         <ManageAccountsIcon />
       </ListItemIcon>
