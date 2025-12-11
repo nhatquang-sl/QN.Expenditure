@@ -1,12 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Form from 'components/form';
+import { SelectElement } from 'components/form/elements';
 import {
   ActionBlock,
   ActionElement,
   Block,
   InputElement,
   InputOption,
-  SelectElement,
 } from 'components/form/types';
 import { useMemo } from 'react';
 import { ExchangeName, ExchangeSettingDto, UpsertExchangeSettingCommand } from 'store/api-client';

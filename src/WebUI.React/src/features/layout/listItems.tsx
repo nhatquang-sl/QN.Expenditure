@@ -34,6 +34,12 @@ export const mainListItems = (
       </ListItemIcon>
       <ListItemText primary="Setting" />
     </ListItemButton>
+    <ListItemButton component={Link} to="sync/sync-setting">
+      <ListItemIcon>
+        <ManageHistoryIcon />
+      </ListItemIcon>
+      <ListItemText primary="Sync Setting" />
+    </ListItemButton>
     <ListItemButton>
       <ListItemIcon>
         <PeopleIcon />

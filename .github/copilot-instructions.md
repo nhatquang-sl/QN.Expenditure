@@ -21,7 +21,8 @@ QN.Expenditure/
 │   ├── Cex/                       # Cryptocurrency exchange module
 │   │   ├── Cex.Domain/
 │   │   ├── Cex.Application/
-│   │   │   └── Settings/          # Settings features (e.g., ExchangeSetting)
+│   │   │   ├── Settings/          # Settings features (e.g., ExchangeSetting)
+│   │   │   └── Sync/              # Sync features (e.g., SyncSetting, SyncTradeHistory)
 │   │   └── Cex.Infrastructure/
 │   ├── Libs/                      # Shared libraries
 │   │   ├── Lib.Application/
@@ -31,7 +32,8 @@ QN.Expenditure/
 │   └── WebUI.React/               # React frontend
 │       └── src/
 │           └── features/
-│               └── settings/      # Settings features (e.g., exchange-setting)
+│               ├── settings/      # Settings features (e.g., exchange-setting)
+│               └── sync/          # Sync features (e.g., sync-setting, sync-trade-history)
 ├── scripts/                        # Shell scripts for development
 └── .github/                       # GitHub configuration
 ```
@@ -41,6 +43,8 @@ QN.Expenditure/
 When creating new features, organize them consistently between backend and frontend:
 
 ### Backend Feature Structure (Application Layer)
+
+**Settings Module Example:**
 ```
 Cex.Application/
 └── Settings/                      # Feature category
@@ -58,7 +62,23 @@ Cex.Application/
             └── ExchangeSettingDto.cs
 ```
 
+**Sync Module Example:**
+```
+Cex.Application/
+└── Sync/                          # Feature category
+    ├── SyncSetting/               # Configuration for sync operations
+    │   ├── Commands/
+    │   ├── Queries/
+    │   └── DTOs/
+    └── SyncTradeHistory/          # Sync feature (uses SyncSetting)
+        ├── Commands/
+        ├── Queries/
+        └── DTOs/
+```
+
 ### Frontend Feature Structure
+
+**Settings Module Example:**
 ```
 features/
 └── settings/                      # Feature category (matches backend)
@@ -78,6 +98,22 @@ features/
         ├── index.tsx
         ├── form.tsx
         └── types.ts
+```
+
+**Sync Module Example:**
+```
+features/
+└── sync/                          # Feature category (matches backend)
+    ├── sync-setting/              # Feature name (kebab-case)
+    │   ├── hooks/
+    │   ├── list/
+    │   ├── create/
+    │   ├── update/
+    │   ├── index.tsx
+    │   ├── form.tsx
+    │   └── types.ts
+    └── sync-trade-history/        # Related sync feature
+        └── ...
 ```
 
 ## Coding Standards

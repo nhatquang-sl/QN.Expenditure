@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { LoadingButton } from '@mui/lab';
 import { Alert, Grid, MenuItem, TextField } from '@mui/material';
+import { MobileDateTimePicker } from '@mui/x-date-pickers';
 import React, { ReactElement, useState } from 'react';
-import { Resolver, useForm } from 'react-hook-form';
+import { Controller, Resolver, useForm } from 'react-hook-form';
 import { UnprocessableEntity } from 'store/api-client';
 import { Block } from './types';
 
@@ -54,7 +55,7 @@ export default function Form<T extends Record<string, any>>(props: {
 }) {
   const { blocks } = props;
   const summary = (blocks: Block[]): Map<string, ReactElement> => {
-    console.log({ blocks });
+    // console.log({ blocks });
     const summaryels = new Map<string, ReactElement>();
     for (const block of blocks) {
       for (const el of block.elements) {
@@ -84,6 +85,7 @@ export default function Form<T extends Record<string, any>>(props: {
     register,
     reset,
     getValues,
+    control,
     formState: { errors: formError },
   } = useForm({ resolver: props.resolver });
   const [submitErrors, setSubmitErrors] = useState<UnprocessableEntity[]>([]);
@@ -92,6 +94,7 @@ export default function Form<T extends Record<string, any>>(props: {
   const [computedValues, setComputedValues] = useState(summary(blocks));
 
   const onSubmit = async (data: any) => {
+    console.log('onSubmit data:', data);
     setLoading(true);
     try {
       setSubmitErrors([]);
@@ -159,6 +162,7 @@ export default function Form<T extends Record<string, any>>(props: {
             const elId = camelCase(el.label);
             let elErrors: string[] = [];
             if (formError[elId]?.message) elErrors.push(formError[elId]?.message?.toString() ?? '');
+
             const apiError = submitErrors.filter((x) => x.name == elId)[0]?.errors;
             if (apiError?.length) elErrors = elErrors.concat(apiError);
 
@@ -185,8 +189,40 @@ export default function Form<T extends Record<string, any>>(props: {
               );
             else if (el.type === 'compute')
               return <React.Fragment key={elId}>{computedValues.get(elId)}</React.Fragment>;
+            else if (el.type === 'datetime') {
+              try {
+                return (
+                  <Controller
+                    key={elId}
+                    name={elId}
+                    control={control}
+                    defaultValue={el.defaultValue}
+                    render={({ field }) => (
+                      <MobileDateTimePicker
+                        label={el.label}
+                        value={field.value}
+                        onChange={(newValue) => {
+                          // Store Dayjs object directly
+                          field.onChange(newValue);
+                        }}
+                        slotProps={{
+                          textField: {
+                            error: elErrors.length > 0,
+                            helperText: <ErrorHelperText errors={elErrors} />,
+                            size: 'small',
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                );
+              } catch (ex) {
+                console.error('Error rendering datetime picker for', elId, ex);
+                return <></>;
+              }
+            }
 
-            // console.log(el);
+            console.log(el);
             return (
               <TextField
                 key={elId}

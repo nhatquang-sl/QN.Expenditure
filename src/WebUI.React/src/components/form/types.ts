@@ -32,36 +32,26 @@ function makeId(length: number = 5) {
 
 export class InputElement {
   constructor(
-    type: 'text' | 'select' | 'number' | 'compute',
+    type: 'text' | 'select' | 'number' | 'datetime' | 'compute',
     label: string,
     defaultValue: unknown = null,
-    disabled: boolean = false
+    disabled: boolean = false,
+    flex: number | 'none' = 1
   ) {
     this.type = type;
     this.label = label;
     this.defaultValue = defaultValue;
     this.disabled = disabled;
+    this.flex = flex;
   }
-  type: 'text' | 'select' | 'number' | 'compute' = 'text';
+  type: 'text' | 'select' | 'number' | 'datetime' | 'compute' = 'text';
   label: string = '';
-  flex: number | 'none' = 1;
+  flex: number | 'none';
   defaultValue?: unknown = null;
   options: InputOption[] = [];
   disabled: boolean = false;
   computedValue?: (getValues: (fieldId: string) => string) => ReactElement;
   watch?: (value: string) => void;
-}
-
-export class SelectElement extends InputElement {
-  constructor(
-    label: string,
-    defaultValue?: unknown,
-    options: InputOption[] = [],
-    disabled: boolean = false
-  ) {
-    super('select', label, defaultValue, disabled);
-    this.options = options;
-  }
 }
 
 export class NumberElement extends InputElement {

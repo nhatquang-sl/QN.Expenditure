@@ -1,12 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Form from 'components/form';
+import { SelectElement } from 'components/form/elements';
 import {
   ActionBlock,
   ActionElement,
   Block,
   InputElement,
   InputOption,
-  SelectElement,
 } from 'components/form/types';
 import { ExchangeName, UpsertExchangeSettingCommand } from 'store/api-client';
 import { useUpsertExchangeSetting } from '../hooks/use-upsert-exchange-setting';

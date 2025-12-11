@@ -10,6 +10,7 @@ namespace Cex.Application.Common.Abstractions
         DbSet<SpotOrder> SpotOrders { get; init; }
         DbSet<BnbSettingEntity> BnbSettings { get; init; }
         DbSet<ExchangeSetting> ExchangeSettings { get; init; }
+        DbSet<SyncSetting> SyncSettings { get; init; }
         DbSet<SpotGrid> SpotGrids { get; init; }
         DbSet<SpotGridStep> SpotGridSteps { get; init; }
         DbSet<TradeHistory> TradeHistories { get; init; }

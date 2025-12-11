@@ -17,6 +17,7 @@ import {
   CandlesClient,
   ExchangeSettingsClient,
   SpotGridClient,
+  SyncSettingsClient,
 } from './api-client';
 import { API_ENDPOINT } from './constants';
 
@@ -65,6 +66,7 @@ const bnbSettingClient = new BnbSettingClient(API_ENDPOINT, instance);
 const spotGridClient = new SpotGridClient(API_ENDPOINT, instance);
 const candlesClient = new CandlesClient(API_ENDPOINT, instance);
 const exchangeSettingsClient = new ExchangeSettingsClient(API_ENDPOINT, instance);
+const syncSettingsClient = new SyncSettingsClient(API_ENDPOINT, instance);
 
 export {
   authClient,
@@ -73,4 +75,5 @@ export {
   candlesClient,
   exchangeSettingsClient,
   spotGridClient,
+  syncSettingsClient,
 };
