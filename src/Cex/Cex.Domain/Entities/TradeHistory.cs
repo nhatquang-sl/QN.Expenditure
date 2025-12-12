@@ -2,7 +2,7 @@ namespace Cex.Domain.Entities
 {
     public class TradeHistory
     {
-        public long UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
         public string Symbol { get; set; }
         public long TradeId { get; set; }
         public string OrderId { get; set; }

@@ -158,19 +158,12 @@ namespace Cex.Application.Trade.Commands.SyncTradeHistory
                 return;
             }
 
-            // Parse userId to long
-            if (!long.TryParse(userId, out var userIdLong))
-            {
-                logTrace.LogWarning($"Invalid userId format: {userId}");
-                return;
-            }
-
             // Step 1: Extract all TradeIds from fetched trades
             var tradeIds = trades.Select(t => long.Parse(t.TradeId)).ToList();
 
             // Step 2: Delete existing trades with matching UserId and TradeIds
             var existingTrades = await cexDbContext.TradeHistories
-                .Where(x => x.UserId == userIdLong && tradeIds.Contains(x.TradeId))
+                .Where(x => x.UserId == userId && tradeIds.Contains(x.TradeId))
                 .ToListAsync(cancellationToken);
 
             if (existingTrades.Count > 0)
@@ -183,7 +176,7 @@ namespace Cex.Application.Trade.Commands.SyncTradeHistory
             // Step 3: Insert all fetched trades
             var newRecords = trades.Select(trade => new TradeHistoryEntity
             {
-                UserId = userIdLong,
+                UserId = userId,
                 Symbol = symbol,
                 TradeId = long.Parse(trade.TradeId),
                 OrderId = trade.OrderId,

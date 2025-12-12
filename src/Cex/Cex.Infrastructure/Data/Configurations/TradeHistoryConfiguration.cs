@@ -10,6 +10,9 @@ namespace Cex.Infrastructure.Data.Configurations
         {
             builder.HasKey(k => new { k.UserId, k.TradeId });
 
+            builder.Property(t => t.UserId)
+                .IsRequired();
+
             builder.Property(t => t.Price)
                 .HasPrecision(13, 6)
                 .IsRequired();
