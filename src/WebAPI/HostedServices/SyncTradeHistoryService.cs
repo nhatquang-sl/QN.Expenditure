@@ -1,4 +1,4 @@
-using Cex.Application.KuCoin.Commands.SyncTradeHistory;
+using Cex.Application.Trade.Commands.SyncTradeHistory;
 using MediatR;
 
 namespace WebAPI.HostedServices
@@ -19,7 +19,7 @@ namespace WebAPI.HostedServices
                         using var scope = serviceScopeFactory.CreateScope();
                         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                        await mediator.Send(new SyncTradeHistoryCommand(new DateTime(2025, 9, 20)), stoppingToken);
+                        await mediator.Send(new SyncTradeHistoryCommand(), stoppingToken);
                     }
                     catch (Exception ex)
                     {

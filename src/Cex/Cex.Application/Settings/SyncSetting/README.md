@@ -3,11 +3,10 @@
 ## Overview
 Manages synchronization configurations for cryptocurrency trading symbols. Tracks start and last sync timestamps per symbol per user.
 
-**Module Location**: `Cex.Application/Sync/`
-- `SyncSetting/` - Configuration for sync operations
+**Module Location**: `Cex.Application/Settings/SyncSetting/`
 
 **Related Modules**: 
-- `Cex.Application/TradeHistory/SyncTradeHistory/` - Trade history synchronization (uses SyncSetting)
+- `Cex.Application/Trade/Commands/SyncTradeHistory/` - Trade history synchronization (uses SyncSetting)
 
 ## Data Model
 

@@ -3,7 +3,7 @@
 ## Overview
 Synchronizes cryptocurrency trade history from exchanges to the local database. Processes all configured exchange settings and sync settings in batches, fetches trade history from exchange APIs, and stores records in the database.
 
-**Module Location**: `Cex.Application/TradeHistory/SyncTradeHistory/`
+**Module Location**: `Cex.Application/Trade/Commands/SyncTradeHistory/`
 
 **Version 1 Scope**: KuCoin exchange only
 
@@ -61,7 +61,7 @@ public class TradeHistory
   - Default value: CreatedAt = DateTime.UtcNow
 
 ### Application Layer
-Location: `Cex.Application/TradeHistory/SyncTradeHistory/`
+Location: `Cex.Application/Trade/Commands/SyncTradeHistory/`
 
 **Commands**:
 - `Commands/SyncTradeHistory/SyncTradeHistoryCommand.cs`

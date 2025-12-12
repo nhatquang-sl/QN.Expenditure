@@ -22,7 +22,7 @@ QN.Expenditure/
 │   │   ├── Cex.Domain/
 │   │   ├── Cex.Application/
 │   │   │   ├── Settings/          # Settings features (e.g., ExchangeSetting, SyncSetting)
-│   │   │   └── TradeHistory/      # Trade history features (e.g., SyncTradeHistory, GetTradeHistory)
+│   │   │   └── Trade/             # Trade features (e.g., SyncTradeHistory)
 │   │   └── Cex.Infrastructure/
 │   ├── Libs/                      # Shared libraries
 │   │   ├── Lib.Application/
@@ -58,17 +58,18 @@ Cex.Application/
         └── DTOs/
 ```
 
-**TradeHistory Module Example:**
+**Trade Module Example:**
 ```
 Cex.Application/
-└── TradeHistory/                  # Feature category
-    ├── SyncTradeHistory/          # Sync trade history from exchanges
-    │   ├── Commands/
-    │   ├── Queries/
-    │   └── DTOs/
-    └── GetTradeHistory/           # Query/display trade history (future)
-        ├── Queries/
-        └── DTOs/
+└── Trade/                         # Feature category
+    ├── Commands/
+    │   └── SyncTradeHistory/      # Sync trade history from exchanges
+    │       ├── SyncTradeHistoryCommand.cs
+    │       ├── SyncTradeHistoryCommandHandler.cs
+    │       └── README.md
+    └── Queries/
+        └── GetTradeHistory/       # Query/display trade history (future)
+            └── GetTradeHistoryQuery.cs
 ```
 
 ### Frontend Feature Structure
@@ -388,6 +389,8 @@ docker-compose up --build
 - **Handle null appropriately** (use nullable types)
 - **Log errors appropriately** (structured logging)
 - **Document public APIs** (XML comments for public methods)
+- **Prefer `List<T>` over `IEnumerable<T>`**: Use concrete `List<T>` for parameters when you need to access `.Count` property
+- **Use `.Count` instead of `.Any()`**: For materialized collections (like `List<T>`), use `.Count == 0` or `.Count > 0` instead of `.Any()` for better performance and clarity
 
 ## When in Doubt
 
