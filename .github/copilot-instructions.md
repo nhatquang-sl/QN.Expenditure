@@ -21,8 +21,8 @@ QN.Expenditure/
 │   ├── Cex/                       # Cryptocurrency exchange module
 │   │   ├── Cex.Domain/
 │   │   ├── Cex.Application/
-│   │   │   ├── Settings/          # Settings features (e.g., ExchangeSetting)
-│   │   │   └── Sync/              # Sync features (e.g., SyncSetting, SyncTradeHistory)
+│   │   │   ├── Settings/          # Settings features (e.g., ExchangeSetting, SyncSetting)
+│   │   │   └── TradeHistory/      # Trade history features (e.g., SyncTradeHistory, GetTradeHistory)
 │   │   └── Cex.Infrastructure/
 │   ├── Libs/                      # Shared libraries
 │   │   ├── Lib.Application/
@@ -32,8 +32,8 @@ QN.Expenditure/
 │   └── WebUI.React/               # React frontend
 │       └── src/
 │           └── features/
-│               ├── settings/      # Settings features (e.g., exchange-setting)
-│               └── sync/          # Sync features (e.g., sync-setting, sync-trade-history)
+│               ├── settings/      # Settings features (e.g., exchange-setting, sync-setting)
+│               └── trade-history/ # Trade history features (e.g., sync, display)
 ├── scripts/                        # Shell scripts for development
 └── .github/                       # GitHub configuration
 ```
@@ -48,30 +48,25 @@ When creating new features, organize them consistently between backend and front
 ```
 Cex.Application/
 └── Settings/                      # Feature category
-    └── ExchangeSetting/           # Feature name
-        ├── Commands/
-        │   ├── UpsertExchangeSetting/
-        │   │   ├── UpsertExchangeSettingCommand.cs
-        │   │   └── UpsertExchangeSettingCommandValidator.cs
-        │   └── DeleteExchangeSetting/
-        │       └── DeleteExchangeSettingCommand.cs
-        ├── Queries/
-        │   └── GetExchangeSettings/
-        │       └── GetExchangeSettingsQuery.cs
-        └── DTOs/
-            └── ExchangeSettingDto.cs
-```
-
-**Sync Module Example:**
-```
-Cex.Application/
-└── Sync/                          # Feature category
-    ├── SyncSetting/               # Configuration for sync operations
+    ├── ExchangeSetting/           # Exchange credentials
     │   ├── Commands/
     │   ├── Queries/
     │   └── DTOs/
-    └── SyncTradeHistory/          # Sync feature (uses SyncSetting)
+    └── SyncSetting/               # Sync configuration
         ├── Commands/
+        ├── Queries/
+        └── DTOs/
+```
+
+**TradeHistory Module Example:**
+```
+Cex.Application/
+└── TradeHistory/                  # Feature category
+    ├── SyncTradeHistory/          # Sync trade history from exchanges
+    │   ├── Commands/
+    │   ├── Queries/
+    │   └── DTOs/
+    └── GetTradeHistory/           # Query/display trade history (future)
         ├── Queries/
         └── DTOs/
 ```
@@ -82,29 +77,7 @@ Cex.Application/
 ```
 features/
 └── settings/                      # Feature category (matches backend)
-    └── exchange-setting/          # Feature name (kebab-case)
-        ├── hooks/
-        │   ├── use-get-exchange-settings.ts
-        │   ├── use-upsert-exchange-setting.ts
-        │   └── use-delete-exchange-setting.ts
-        ├── list/
-        │   ├── index.tsx
-        │   ├── item.tsx
-        │   └── types.ts
-        ├── create/
-        │   └── index.tsx
-        ├── update/
-        │   └── index.tsx
-        ├── index.tsx
-        ├── form.tsx
-        └── types.ts
-```
-
-**Sync Module Example:**
-```
-features/
-└── sync/                          # Feature category (matches backend)
-    ├── sync-setting/              # Feature name (kebab-case)
+    ├── exchange-setting/          # Feature name (kebab-case)
     │   ├── hooks/
     │   ├── list/
     │   ├── create/
@@ -112,8 +85,28 @@ features/
     │   ├── index.tsx
     │   ├── form.tsx
     │   └── types.ts
-    └── sync-trade-history/        # Related sync feature
-        └── ...
+    └── sync-setting/              # Sync configuration (kebab-case)
+        ├── hooks/
+        ├── list/
+        ├── create/
+        ├── update/
+        ├── index.tsx
+        ├── form.tsx
+        └── types.ts
+```
+
+**TradeHistory Module Example:**
+```
+features/
+└── trade-history/                 # Feature category (matches backend)
+    ├── sync/                      # Sync trade history feature
+    │   ├── hooks/
+    │   └── index.tsx
+    └── display/                   # Display trade history feature (future)
+        ├── hooks/
+        ├── list/
+        ├── index.tsx
+        └── types.ts
 ```
 
 ## Coding Standards

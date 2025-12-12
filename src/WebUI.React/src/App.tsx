@@ -24,9 +24,9 @@ import Sidebar from 'features/layout/sidebar';
 import ExchangeSetting from 'features/settings/exchange-setting';
 import ExchangeSettingCreate from 'features/settings/exchange-setting/create';
 import ExchangeSettingUpdate from 'features/settings/exchange-setting/update';
-import SyncSetting from 'features/sync/sync-setting';
-import SyncSettingCreate from 'features/sync/sync-setting/create';
-import SyncSettingUpdate from 'features/sync/sync-setting/update';
+import SyncSetting from 'features/settings/sync-setting';
+import SyncSettingCreate from 'features/settings/sync-setting/create';
+import SyncSettingUpdate from 'features/settings/sync-setting/update';
 import './App.css';
 const defaultTheme = createTheme();
 const router = createBrowserRouter([

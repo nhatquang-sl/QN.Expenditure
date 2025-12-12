@@ -5,7 +5,9 @@ Manages synchronization configurations for cryptocurrency trading symbols. Track
 
 **Module Location**: `Cex.Application/Sync/`
 - `SyncSetting/` - Configuration for sync operations
-- `SyncTradeHistory/` - Trade history synchronization (uses SyncSetting)
+
+**Related Modules**: 
+- `Cex.Application/TradeHistory/SyncTradeHistory/` - Trade history synchronization (uses SyncSetting)
 
 ## Data Model
 
@@ -184,12 +186,12 @@ useDeleteSyncSetting()         // Invalidates: ['syncSettings'], navigates to /s
 - [ ] Regenerate API client: `npm run generate-api-client`
 
 ## Technical Notes
-- Part of Sync module alongside SyncTradeHistory
+- Part of Sync module, used by TradeHistory module
 - Composite key ensures one sync setting per symbol per user
 - Upsert pattern: updates if exists, creates if not
 - Delete is idempotent (no error if not found)
 - All operations scoped to current user via ICurrentUser.Id
-- SyncTradeHistory feature will load these settings to perform trade history synchronization
+- SyncTradeHistory feature (in TradeHistory module) loads these settings to perform trade history synchronization
 
 ### LastSync Management
 - **Create**: Backend automatically sets `LastSync = StartSync`
