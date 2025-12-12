@@ -20,12 +20,12 @@ export class AuthClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
     register(registerCommand: RegisterCommand, cancelToken?: CancelToken): Promise<RegisterResult> {
-        let url_ = this.baseUrl + "/api/Auth/register";
+        let url_ = this.baseUrl + "/api/auth/register";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(registerCommand);
@@ -84,7 +84,7 @@ export class AuthClient {
     }
 
     confirmEmail(userId: string | undefined, code: string | undefined, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/confirm-email?";
+        let url_ = this.baseUrl + "/api/auth/confirm-email?";
         if (userId === null)
             throw new Error("The parameter 'userId' cannot be null.");
         else if (userId !== undefined)
@@ -145,7 +145,7 @@ export class AuthClient {
     }
 
     confirmEmailChange(userId: string | undefined, code: string | undefined, email: string | undefined, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/confirm-email-change?";
+        let url_ = this.baseUrl + "/api/auth/confirm-email-change?";
         if (userId === null)
             throw new Error("The parameter 'userId' cannot be null.");
         else if (userId !== undefined)
@@ -210,7 +210,7 @@ export class AuthClient {
     }
 
     login(loginCommand: LoginCommand, cancelToken?: CancelToken): Promise<UserAuthDto> {
-        let url_ = this.baseUrl + "/api/Auth/login";
+        let url_ = this.baseUrl + "/api/auth/login";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(loginCommand);
@@ -269,7 +269,7 @@ export class AuthClient {
     }
 
     resendEmailConfirmation( cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/resend-email-confirmation";
+        let url_ = this.baseUrl + "/api/auth/resend-email-confirmation";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -322,7 +322,7 @@ export class AuthClient {
     }
 
     changePassword(command: ChangePasswordCommand, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/change-password";
+        let url_ = this.baseUrl + "/api/auth/change-password";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -379,7 +379,7 @@ export class AuthClient {
     }
 
     changeEmail(command: ChangeEmailCommand, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/change-email";
+        let url_ = this.baseUrl + "/api/auth/change-email";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -436,7 +436,7 @@ export class AuthClient {
     }
 
     forgotPassword(command: ForgotPasswordCommand, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/forgot-password";
+        let url_ = this.baseUrl + "/api/auth/forgot-password";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -493,7 +493,7 @@ export class AuthClient {
     }
 
     resetPassword(command: ResetPasswordCommand, cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Auth/reset-password";
+        let url_ = this.baseUrl + "/api/auth/reset-password";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -550,7 +550,7 @@ export class AuthClient {
     }
 
     getLoginHistories(page: number | undefined, size: number | undefined, cancelToken?: CancelToken): Promise<UserLoginHistory[]> {
-        let url_ = this.baseUrl + "/api/Auth/login-histories?";
+        let url_ = this.baseUrl + "/api/auth/login-histories?";
         if (page === null)
             throw new Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -622,12 +622,12 @@ export class BnbSettingClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
     getSetting( cancelToken?: CancelToken): Promise<BnbSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSetting";
+        let url_ = this.baseUrl + "/api/bnbsetting";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -675,7 +675,7 @@ export class BnbSettingClient {
     }
 
     updateSetting(request: UpdateBnbSettingCommand, cancelToken?: CancelToken): Promise<BnbSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSetting";
+        let url_ = this.baseUrl + "/api/bnbsetting";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(request);
@@ -736,12 +736,12 @@ export class BnbSpotClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
     getSyncSettings( cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto[]> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -796,7 +796,7 @@ export class BnbSpotClient {
     }
 
     createSyncSetting(request: CreateSyncSettingCommand, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(request);
@@ -855,7 +855,7 @@ export class BnbSpotClient {
     }
 
     updateSyncSetting(symbol: string, request: SpotOrderSyncSettingUpdateDto, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings/{symbol}";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings/{symbol}";
         if (symbol === undefined || symbol === null)
             throw new Error("The parameter 'symbol' must be defined.");
         url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
@@ -895,7 +895,21 @@ export class BnbSpotClient {
                 }
             }
         }
-        if (status === 200) {
+        if (status === 404) {
+            const _responseText = response.data;
+            let result404: any = null;
+            let resultData404  = _responseText;
+            result404 = NotFound.fromJS(resultData404);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+
+        } else if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 200) {
             const _responseText = response.data;
             let result200: any = null;
             let resultData200  = _responseText;
@@ -910,7 +924,7 @@ export class BnbSpotClient {
     }
 
     deleteSyncSetting(symbol: string, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
-        let url_ = this.baseUrl + "/api/BnbSpot/sync-settings/{symbol}";
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings/{symbol}";
         if (symbol === undefined || symbol === null)
             throw new Error("The parameter 'symbol' must be defined.");
         url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
@@ -960,8 +974,59 @@ export class BnbSpotClient {
         return Promise.resolve<SpotOrderSyncSettingDto>(null as any);
     }
 
+    triggerSync(symbol: string, cancelToken?: CancelToken): Promise<SpotOrderSyncSettingDto> {
+        let url_ = this.baseUrl + "/api/bnbspot/sync-settings/{symbol}/sync";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "POST",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processTriggerSync(_response);
+        });
+    }
+
+    protected processTriggerSync(response: AxiosResponse): Promise<SpotOrderSyncSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotOrderSyncSettingDto.fromJS(resultData200);
+            return Promise.resolve<SpotOrderSyncSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderSyncSettingDto>(null as any);
+    }
+
     getSpotOrders( cancelToken?: CancelToken): Promise<SpotOrderRaw[]> {
-        let url_ = this.baseUrl + "/api/BnbSpot";
+        let url_ = this.baseUrl + "/api/bnbspot";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1014,6 +1079,943 @@ export class BnbSpotClient {
         }
         return Promise.resolve<SpotOrderRaw[]>(null as any);
     }
+
+    getSpotOrdersBySymbol(symbol: string, cancelToken?: CancelToken): Promise<SpotOrderRaw[]> {
+        let url_ = this.baseUrl + "/{symbol}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetSpotOrdersBySymbol(_response);
+        });
+    }
+
+    protected processGetSpotOrdersBySymbol(response: AxiosResponse): Promise<SpotOrderRaw[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(SpotOrderRaw.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<SpotOrderRaw[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotOrderRaw[]>(null as any);
+    }
+}
+
+export class CandlesClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    get(symbol: string, interval: IntervalType, cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/candles/{symbol}/{interval}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        if (interval === undefined || interval === null)
+            throw new Error("The parameter 'interval' must be defined.");
+        url_ = url_.replace("{interval}", encodeURIComponent("" + interval));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGet(_response);
+        });
+    }
+
+    protected processGet(response: AxiosResponse): Promise<Kline[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(Kline.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<Kline[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<Kline[]>(null as any);
+    }
+}
+
+export class ExchangeSettingsClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    getSettings( cancelToken?: CancelToken): Promise<ExchangeSettingDto[]> {
+        let url_ = this.baseUrl + "/api/exchange-settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetSettings(_response);
+        });
+    }
+
+    protected processGetSettings(response: AxiosResponse): Promise<ExchangeSettingDto[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(ExchangeSettingDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<ExchangeSettingDto[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<ExchangeSettingDto[]>(null as any);
+    }
+
+    upsertSetting(request: UpsertExchangeSettingCommand, cancelToken?: CancelToken): Promise<ExchangeSettingDto> {
+        let url_ = this.baseUrl + "/api/exchange-settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "POST",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processUpsertSetting(_response);
+        });
+    }
+
+    protected processUpsertSetting(response: AxiosResponse): Promise<ExchangeSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = ExchangeSettingDto.fromJS(resultData200);
+            return Promise.resolve<ExchangeSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<ExchangeSettingDto>(null as any);
+    }
+
+    deleteSetting(exchangeName: ExchangeName, cancelToken?: CancelToken): Promise<FileResponse> {
+        let url_ = this.baseUrl + "/api/exchange-settings/{exchangeName}";
+        if (exchangeName === undefined || exchangeName === null)
+            throw new Error("The parameter 'exchangeName' must be defined.");
+        url_ = url_.replace("{exchangeName}", encodeURIComponent("" + exchangeName));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            responseType: "blob",
+            method: "DELETE",
+            url: url_,
+            headers: {
+                "Accept": "application/octet-stream"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processDeleteSetting(_response);
+        });
+    }
+
+    protected processDeleteSetting(response: AxiosResponse): Promise<FileResponse> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers["content-disposition"] : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return Promise.resolve({ fileName: fileName, status: status, data: new Blob([response.data], { type: response.headers["content-type"] }), headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<FileResponse>(null as any);
+    }
+}
+
+export class MeetClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    index( cancelToken?: CancelToken): Promise<FileResponse> {
+        let url_ = this.baseUrl + "/api/meet";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            responseType: "blob",
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/octet-stream"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processIndex(_response);
+        });
+    }
+
+    protected processIndex(response: AxiosResponse): Promise<FileResponse> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers["content-disposition"] : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return Promise.resolve({ fileName: fileName, status: status, data: new Blob([response.data], { type: response.headers["content-type"] }), headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<FileResponse>(null as any);
+    }
+}
+
+export class SpotGridClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    create(command: CreateSpotGridCommand, cancelToken?: CancelToken): Promise<SpotGridDto> {
+        let url_ = this.baseUrl + "/api/spotgrid";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "POST",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processCreate(_response);
+        });
+    }
+
+    protected processCreate(response: AxiosResponse): Promise<SpotGridDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotGridDto.fromJS(resultData200);
+            return Promise.resolve<SpotGridDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto>(null as any);
+    }
+
+    getAll( cancelToken?: CancelToken): Promise<SpotGridDto[]> {
+        let url_ = this.baseUrl + "/api/spotgrid";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetAll(_response);
+        });
+    }
+
+    protected processGetAll(response: AxiosResponse): Promise<SpotGridDto[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(SpotGridDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<SpotGridDto[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto[]>(null as any);
+    }
+
+    get(spotGridId: number, cancelToken?: CancelToken): Promise<SpotGridDto> {
+        let url_ = this.baseUrl + "/api/spotgrid/{spotGridId}";
+        if (spotGridId === undefined || spotGridId === null)
+            throw new Error("The parameter 'spotGridId' must be defined.");
+        url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGet(_response);
+        });
+    }
+
+    protected processGet(response: AxiosResponse): Promise<SpotGridDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotGridDto.fromJS(resultData200);
+            return Promise.resolve<SpotGridDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto>(null as any);
+    }
+
+    update(spotGridId: number, command: UpdateSpotGridCommand, cancelToken?: CancelToken): Promise<SpotGridDto> {
+        let url_ = this.baseUrl + "/api/spotgrid/{spotGridId}";
+        if (spotGridId === undefined || spotGridId === null)
+            throw new Error("The parameter 'spotGridId' must be defined.");
+        url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "PUT",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processUpdate(_response);
+        });
+    }
+
+    protected processUpdate(response: AxiosResponse): Promise<SpotGridDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotGridDto.fromJS(resultData200);
+            return Promise.resolve<SpotGridDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto>(null as any);
+    }
+
+    delete(spotGridId: number, cancelToken?: CancelToken): Promise<SpotGridDto> {
+        let url_ = this.baseUrl + "/api/spotgrid/{spotGridId}";
+        if (spotGridId === undefined || spotGridId === null)
+            throw new Error("The parameter 'spotGridId' must be defined.");
+        url_ = url_.replace("{spotGridId}", encodeURIComponent("" + spotGridId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "DELETE",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processDelete(_response);
+        });
+    }
+
+    protected processDelete(response: AxiosResponse): Promise<SpotGridDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 400) {
+            const _responseText = response.data;
+            let result400: any = null;
+            let resultData400  = _responseText;
+            result400 = BadRequest.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+
+        } else if (status === 422) {
+            const _responseText = response.data;
+            let result422: any = null;
+            let resultData422  = _responseText;
+            if (Array.isArray(resultData422)) {
+                result422 = [] as any;
+                for (let item of resultData422)
+                    result422!.push(UnprocessableEntity.fromJS(item));
+            }
+            else {
+                result422 = <any>null;
+            }
+            return throwException("A server side error occurred.", status, _responseText, _headers, result422);
+
+        } else if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SpotGridDto.fromJS(resultData200);
+            return Promise.resolve<SpotGridDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SpotGridDto>(null as any);
+    }
+}
+
+export class SyncSettingsClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    getSettings( cancelToken?: CancelToken): Promise<SyncSettingDto[]> {
+        let url_ = this.baseUrl + "/api/sync-settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetSettings(_response);
+        });
+    }
+
+    protected processGetSettings(response: AxiosResponse): Promise<SyncSettingDto[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(SyncSettingDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<SyncSettingDto[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SyncSettingDto[]>(null as any);
+    }
+
+    upsertSetting(request: UpsertSyncSettingCommand, cancelToken?: CancelToken): Promise<SyncSettingDto> {
+        let url_ = this.baseUrl + "/api/sync-settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: AxiosRequestConfig = {
+            data: content_,
+            method: "POST",
+            url: url_,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processUpsertSetting(_response);
+        });
+    }
+
+    protected processUpsertSetting(response: AxiosResponse): Promise<SyncSettingDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SyncSettingDto.fromJS(resultData200);
+            return Promise.resolve<SyncSettingDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SyncSettingDto>(null as any);
+    }
+
+    deleteSetting(symbol: string, cancelToken?: CancelToken): Promise<FileResponse> {
+        let url_ = this.baseUrl + "/api/sync-settings/{symbol}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            responseType: "blob",
+            method: "DELETE",
+            url: url_,
+            headers: {
+                "Accept": "application/octet-stream"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processDeleteSetting(_response);
+        });
+    }
+
+    protected processDeleteSetting(response: AxiosResponse): Promise<FileResponse> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers["content-disposition"] : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return Promise.resolve({ fileName: fileName, status: status, data: new Blob([response.data], { type: response.headers["content-type"] }), headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<FileResponse>(null as any);
+    }
 }
 
 export class ValuesClient {
@@ -1025,12 +2027,12 @@ export class ValuesClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
     get( cancelToken?: CancelToken): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/Values";
+        let url_ = this.baseUrl + "/api/values";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1092,12 +2094,12 @@ export class WeatherForecastClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5228";
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
 
     }
 
-    get( cancelToken?: CancelToken): Promise<WeatherForecast[]> {
-        let url_ = this.baseUrl + "/api/WeatherForecast";
+    get( cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/weatherforecast/output-cache";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: AxiosRequestConfig = {
@@ -1120,7 +2122,7 @@ export class WeatherForecastClient {
         });
     }
 
-    protected processGet(response: AxiosResponse): Promise<WeatherForecast[]> {
+    protected processGet(response: AxiosResponse): Promise<Kline[]> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1137,32 +2139,133 @@ export class WeatherForecastClient {
             if (Array.isArray(resultData200)) {
                 result200 = [] as any;
                 for (let item of resultData200)
-                    result200!.push(WeatherForecast.fromJS(item));
+                    result200!.push(Kline.fromJS(item));
             }
             else {
                 result200 = <any>null;
             }
-            return Promise.resolve<WeatherForecast[]>(result200);
+            return Promise.resolve<Kline[]>(result200);
 
         } else if (status !== 200 && status !== 204) {
             const _responseText = response.data;
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
-        return Promise.resolve<WeatherForecast[]>(null as any);
+        return Promise.resolve<Kline[]>(null as any);
+    }
+
+    getWithHybridCache( cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/weatherforecast/hybrid-cache";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetWithHybridCache(_response);
+        });
+    }
+
+    protected processGetWithHybridCache(response: AxiosResponse): Promise<Kline[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(Kline.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<Kline[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<Kline[]>(null as any);
+    }
+
+    getWithDistributedCache( cancelToken?: CancelToken): Promise<Kline[]> {
+        let url_ = this.baseUrl + "/api/weatherforecast/distributed-cache";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetWithDistributedCache(_response);
+        });
+    }
+
+    protected processGetWithDistributedCache(response: AxiosResponse): Promise<Kline[]> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(Kline.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return Promise.resolve<Kline[]>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<Kline[]>(null as any);
     }
 }
 
-export class Conflict implements IConflict {
+export class Conflict {
     message!: string;
-
-    constructor(data?: IConflict) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1184,21 +2287,8 @@ export class Conflict implements IConflict {
     }
 }
 
-export interface IConflict {
-    message: string;
-}
-
-export class RegisterResult implements IRegisterResult {
+export class RegisterResult {
     userId!: string;
-
-    constructor(data?: IRegisterResult) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1220,24 +2310,11 @@ export class RegisterResult implements IRegisterResult {
     }
 }
 
-export interface IRegisterResult {
-    userId: string;
-}
-
-export class RegisterCommand implements IRegisterCommand {
+export class RegisterCommand {
     email!: string;
     password!: string;
     firstName!: string;
     lastName!: string;
-
-    constructor(data?: IRegisterCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1265,24 +2342,8 @@ export class RegisterCommand implements IRegisterCommand {
     }
 }
 
-export interface IRegisterCommand {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-}
-
-export class BadRequest implements IBadRequest {
+export class BadRequest {
     message!: string;
-
-    constructor(data?: IBadRequest) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1304,25 +2365,12 @@ export class BadRequest implements IBadRequest {
     }
 }
 
-export interface IBadRequest {
-    message: string;
-}
-
-export class UserProfileDto implements IUserProfileDto {
+export class UserProfileDto {
     id!: string;
     email!: string;
     firstName!: string;
     lastName!: string;
     emailConfirmed!: boolean;
-
-    constructor(data?: IUserProfileDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1352,21 +2400,9 @@ export class UserProfileDto implements IUserProfileDto {
     }
 }
 
-export interface IUserProfileDto {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    emailConfirmed: boolean;
-}
-
-export class UserAuthDto extends UserProfileDto implements IUserAuthDto {
+export class UserAuthDto extends UserProfileDto {
     accessToken!: string;
     refreshToken!: string;
-
-    constructor(data?: IUserAuthDto) {
-        super(data);
-    }
 
     override init(_data?: any) {
         super.init(_data);
@@ -1392,26 +2428,12 @@ export class UserAuthDto extends UserProfileDto implements IUserAuthDto {
     }
 }
 
-export interface IUserAuthDto extends IUserProfileDto {
-    accessToken: string;
-    refreshToken: string;
-}
-
-export class LoginCommand implements ILoginCommand {
+export class LoginCommand {
     email!: string;
     password!: string;
     rememberMe!: boolean;
     ipAddress!: string | undefined;
     userAgent!: string | undefined;
-
-    constructor(data?: ILoginCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1441,27 +2463,10 @@ export class LoginCommand implements ILoginCommand {
     }
 }
 
-export interface ILoginCommand {
-    email: string;
-    password: string;
-    rememberMe: boolean;
-    ipAddress: string | undefined;
-    userAgent: string | undefined;
-}
-
-export class ChangePasswordCommand implements IChangePasswordCommand {
+export class ChangePasswordCommand {
     oldPassword!: string;
     newPassword!: string;
     confirmPassword!: string;
-
-    constructor(data?: IChangePasswordCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1487,23 +2492,8 @@ export class ChangePasswordCommand implements IChangePasswordCommand {
     }
 }
 
-export interface IChangePasswordCommand {
-    oldPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-}
-
-export class ChangeEmailCommand implements IChangeEmailCommand {
+export class ChangeEmailCommand {
     newEmail!: string;
-
-    constructor(data?: IChangeEmailCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1525,21 +2515,8 @@ export class ChangeEmailCommand implements IChangeEmailCommand {
     }
 }
 
-export interface IChangeEmailCommand {
-    newEmail: string;
-}
-
-export class ForgotPasswordCommand implements IForgotPasswordCommand {
+export class ForgotPasswordCommand {
     email!: string;
-
-    constructor(data?: IForgotPasswordCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1561,24 +2538,11 @@ export class ForgotPasswordCommand implements IForgotPasswordCommand {
     }
 }
 
-export interface IForgotPasswordCommand {
-    email: string;
-}
-
-export class ResetPasswordCommand implements IResetPasswordCommand {
+export class ResetPasswordCommand {
     email!: string;
     password!: string;
     confirmPassword!: string;
     code!: string;
-
-    constructor(data?: IResetPasswordCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1606,14 +2570,7 @@ export class ResetPasswordCommand implements IResetPasswordCommand {
     }
 }
 
-export interface IResetPasswordCommand {
-    email: string;
-    password: string;
-    confirmPassword: string;
-    code: string;
-}
-
-export class UserLoginHistory implements IUserLoginHistory {
+export class UserLoginHistory {
     id!: number;
     userId!: string;
     ipAddress!: string | undefined;
@@ -1621,15 +2578,6 @@ export class UserLoginHistory implements IUserLoginHistory {
     accessToken!: string;
     refreshToken!: string;
     createdAt!: Date;
-
-    constructor(data?: IUserLoginHistory) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1663,28 +2611,9 @@ export class UserLoginHistory implements IUserLoginHistory {
     }
 }
 
-export interface IUserLoginHistory {
-    id: number;
-    userId: string;
-    ipAddress: string | undefined;
-    userAgent: string | undefined;
-    accessToken: string;
-    refreshToken: string;
-    createdAt: Date;
-}
-
-export class BnbSettingDto implements IBnbSettingDto {
+export class BnbSettingDto {
     apiKey!: string;
     secretKey!: string;
-
-    constructor(data?: IBnbSettingDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1708,23 +2637,9 @@ export class BnbSettingDto implements IBnbSettingDto {
     }
 }
 
-export interface IBnbSettingDto {
-    apiKey: string;
-    secretKey: string;
-}
-
-export class UpdateBnbSettingCommand implements IUpdateBnbSettingCommand {
+export class UpdateBnbSettingCommand {
     apiKey!: string;
     secretKey!: string;
-
-    constructor(data?: IUpdateBnbSettingCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1748,23 +2663,9 @@ export class UpdateBnbSettingCommand implements IUpdateBnbSettingCommand {
     }
 }
 
-export interface IUpdateBnbSettingCommand {
-    apiKey: string;
-    secretKey: string;
-}
-
-export class SpotOrderSyncSettingDto implements ISpotOrderSyncSettingDto {
+export class SpotOrderSyncSettingDto {
     symbol!: string;
     lastSyncAt!: number;
-
-    constructor(data?: ISpotOrderSyncSettingDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1788,23 +2689,9 @@ export class SpotOrderSyncSettingDto implements ISpotOrderSyncSettingDto {
     }
 }
 
-export interface ISpotOrderSyncSettingDto {
-    symbol: string;
-    lastSyncAt: number;
-}
-
-export class CreateSyncSettingCommand implements ICreateSyncSettingCommand {
+export class CreateSyncSettingCommand {
     symbol!: string;
     lastSyncAt!: number;
-
-    constructor(data?: ICreateSyncSettingCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1828,22 +2715,31 @@ export class CreateSyncSettingCommand implements ICreateSyncSettingCommand {
     }
 }
 
-export interface ICreateSyncSettingCommand {
-    symbol: string;
-    lastSyncAt: number;
-}
+export class NotFound {
+    message!: string;
 
-export class SpotOrderSyncSettingUpdateDto implements ISpotOrderSyncSettingUpdateDto {
-    lastSyncAt!: number;
-
-    constructor(data?: ISpotOrderSyncSettingUpdateDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
+    init(_data?: any) {
+        if (_data) {
+            this.message = _data["message"];
         }
     }
+
+    static fromJS(data: any): NotFound {
+        data = typeof data === 'object' ? data : {};
+        let result = new NotFound();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["message"] = this.message;
+        return data;
+    }
+}
+
+export class SpotOrderSyncSettingUpdateDto {
+    lastSyncAt!: number;
 
     init(_data?: any) {
         if (_data) {
@@ -1865,11 +2761,7 @@ export class SpotOrderSyncSettingUpdateDto implements ISpotOrderSyncSettingUpdat
     }
 }
 
-export interface ISpotOrderSyncSettingUpdateDto {
-    lastSyncAt: number;
-}
-
-export class SpotOrderRaw implements ISpotOrderRaw {
+export class SpotOrderRaw {
     symbol!: string;
     orderId!: number;
     orderListId!: number;
@@ -1890,15 +2782,6 @@ export class SpotOrderRaw implements ISpotOrderRaw {
     workingTime!: number;
     origQuoteOrderQty!: string;
     selfTradePreventionMode!: string;
-
-    constructor(data?: ISpotOrderRaw) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
 
     init(_data?: any) {
         if (_data) {
@@ -1958,81 +2841,442 @@ export class SpotOrderRaw implements ISpotOrderRaw {
     }
 }
 
-export interface ISpotOrderRaw {
-    symbol: string;
-    orderId: number;
-    orderListId: number;
-    clientOrderId: string;
-    price: string;
-    origQty: string;
-    executedQty: string;
-    cummulativeQuoteQty: string;
-    status: string;
-    timeInForce: string;
-    type: string;
-    side: string;
-    stopPrice: string;
-    icebergQty: string;
-    time: number;
-    updateTime: number;
-    isWorking: boolean;
-    workingTime: number;
-    origQuoteOrderQty: string;
-    selfTradePreventionMode: string;
-}
-
-export class WeatherForecast implements IWeatherForecast {
-    date!: Date;
-    temperatureC!: number;
-    temperatureF!: number;
-    summary!: string | undefined;
-
-    constructor(data?: IWeatherForecast) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
+export class Kline {
+    openTime!: Date;
+    openPrice!: number;
+    closePrice!: number;
+    highestPrice!: number;
+    lowestPrice!: number;
+    volume!: number;
+    amount!: number;
 
     init(_data?: any) {
         if (_data) {
-            this.date = _data["date"] ? new Date(_data["date"].toString()) : <any>undefined;
-            this.temperatureC = _data["temperatureC"];
-            this.temperatureF = _data["temperatureF"];
-            this.summary = _data["summary"];
+            this.openTime = _data["openTime"] ? new Date(_data["openTime"].toString()) : <any>undefined;
+            this.openPrice = _data["openPrice"];
+            this.closePrice = _data["closePrice"];
+            this.highestPrice = _data["highestPrice"];
+            this.lowestPrice = _data["lowestPrice"];
+            this.volume = _data["volume"];
+            this.amount = _data["amount"];
         }
     }
 
-    static fromJS(data: any): WeatherForecast {
+    static fromJS(data: any): Kline {
         data = typeof data === 'object' ? data : {};
-        let result = new WeatherForecast();
+        let result = new Kline();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["date"] = this.date ? formatDate(this.date) : <any>undefined;
-        data["temperatureC"] = this.temperatureC;
-        data["temperatureF"] = this.temperatureF;
-        data["summary"] = this.summary;
+        data["openTime"] = this.openTime ? this.openTime.toISOString() : <any>undefined;
+        data["openPrice"] = this.openPrice;
+        data["closePrice"] = this.closePrice;
+        data["highestPrice"] = this.highestPrice;
+        data["lowestPrice"] = this.lowestPrice;
+        data["volume"] = this.volume;
+        data["amount"] = this.amount;
         return data;
     }
 }
 
-export interface IWeatherForecast {
-    date: Date;
-    temperatureC: number;
-    temperatureF: number;
-    summary: string | undefined;
+export enum IntervalType {
+    FiveMinutes = 0,
+    FifteenMinutes = 1,
+    ThirtyMinutes = 2,
+    OneHour = 3,
+    FourHours = 4,
+    OneDay = 5,
 }
 
-function formatDate(d: Date) {
-    return d.getFullYear() + '-' + 
-        (d.getMonth() < 9 ? ('0' + (d.getMonth()+1)) : (d.getMonth()+1)) + '-' +
-        (d.getDate() < 10 ? ('0' + d.getDate()) : d.getDate());
+export class ExchangeSettingDto {
+    exchangeName!: ExchangeName;
+    apiKey!: string;
+    secret!: string;
+    passphrase!: string | undefined;
+
+    init(_data?: any) {
+        if (_data) {
+            this.exchangeName = _data["exchangeName"];
+            this.apiKey = _data["apiKey"];
+            this.secret = _data["secret"];
+            this.passphrase = _data["passphrase"];
+        }
+    }
+
+    static fromJS(data: any): ExchangeSettingDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ExchangeSettingDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["exchangeName"] = this.exchangeName;
+        data["apiKey"] = this.apiKey;
+        data["secret"] = this.secret;
+        data["passphrase"] = this.passphrase;
+        return data;
+    }
+}
+
+export enum ExchangeName {
+    Binance = 0,
+    KuCoin = 1,
+    Coinbase = 2,
+    Kraken = 3,
+    Bybit = 4,
+}
+
+export class UpsertExchangeSettingCommand {
+    exchangeName!: ExchangeName;
+    apiKey!: string;
+    secret!: string;
+    passphrase!: string | undefined;
+
+    init(_data?: any) {
+        if (_data) {
+            this.exchangeName = _data["exchangeName"];
+            this.apiKey = _data["apiKey"];
+            this.secret = _data["secret"];
+            this.passphrase = _data["passphrase"];
+        }
+    }
+
+    static fromJS(data: any): UpsertExchangeSettingCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpsertExchangeSettingCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["exchangeName"] = this.exchangeName;
+        data["apiKey"] = this.apiKey;
+        data["secret"] = this.secret;
+        data["passphrase"] = this.passphrase;
+        return data;
+    }
+}
+
+export class UnprocessableEntity {
+    name!: string;
+    errors!: string[];
+
+    init(_data?: any) {
+        if (_data) {
+            this.name = _data["name"];
+            if (Array.isArray(_data["errors"])) {
+                this.errors = [] as any;
+                for (let item of _data["errors"])
+                    this.errors!.push(item);
+            }
+        }
+    }
+
+    static fromJS(data: any): UnprocessableEntity {
+        data = typeof data === 'object' ? data : {};
+        let result = new UnprocessableEntity();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["name"] = this.name;
+        if (Array.isArray(this.errors)) {
+            data["errors"] = [];
+            for (let item of this.errors)
+                data["errors"].push(item);
+        }
+        return data;
+    }
+}
+
+export class SpotGridDto {
+    id!: number;
+    userId!: string;
+    symbol!: string;
+    lowerPrice!: number;
+    upperPrice!: number;
+    triggerPrice!: number;
+    numberOfGrids!: number;
+    gridMode!: SpotGridMode;
+    investment!: number;
+    baseBalance!: number;
+    quoteBalance!: number;
+    profit!: number;
+    takeProfit!: number | undefined;
+    stopLoss!: number | undefined;
+    status!: SpotGridStatus;
+    createdAt!: Date;
+    updatedAt!: Date;
+    gridSteps!: SpotGridStepDto[];
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.userId = _data["userId"];
+            this.symbol = _data["symbol"];
+            this.lowerPrice = _data["lowerPrice"];
+            this.upperPrice = _data["upperPrice"];
+            this.triggerPrice = _data["triggerPrice"];
+            this.numberOfGrids = _data["numberOfGrids"];
+            this.gridMode = _data["gridMode"];
+            this.investment = _data["investment"];
+            this.baseBalance = _data["baseBalance"];
+            this.quoteBalance = _data["quoteBalance"];
+            this.profit = _data["profit"];
+            this.takeProfit = _data["takeProfit"];
+            this.stopLoss = _data["stopLoss"];
+            this.status = _data["status"];
+            this.createdAt = _data["createdAt"] ? new Date(_data["createdAt"].toString()) : <any>undefined;
+            this.updatedAt = _data["updatedAt"] ? new Date(_data["updatedAt"].toString()) : <any>undefined;
+            if (Array.isArray(_data["gridSteps"])) {
+                this.gridSteps = [] as any;
+                for (let item of _data["gridSteps"])
+                    this.gridSteps!.push(SpotGridStepDto.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): SpotGridDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SpotGridDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["userId"] = this.userId;
+        data["symbol"] = this.symbol;
+        data["lowerPrice"] = this.lowerPrice;
+        data["upperPrice"] = this.upperPrice;
+        data["triggerPrice"] = this.triggerPrice;
+        data["numberOfGrids"] = this.numberOfGrids;
+        data["gridMode"] = this.gridMode;
+        data["investment"] = this.investment;
+        data["baseBalance"] = this.baseBalance;
+        data["quoteBalance"] = this.quoteBalance;
+        data["profit"] = this.profit;
+        data["takeProfit"] = this.takeProfit;
+        data["stopLoss"] = this.stopLoss;
+        data["status"] = this.status;
+        data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : <any>undefined;
+        data["updatedAt"] = this.updatedAt ? this.updatedAt.toISOString() : <any>undefined;
+        if (Array.isArray(this.gridSteps)) {
+            data["gridSteps"] = [];
+            for (let item of this.gridSteps)
+                data["gridSteps"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export enum SpotGridMode {
+    ARITHMETIC = 0,
+    GEOMETRIC = 1,
+}
+
+export enum SpotGridStatus {
+    NEW = 0,
+    RUNNING = 1,
+    TAKE_PROFIT = 2,
+    STOP_LOSS = 3,
+    PAUSED = 4,
+}
+
+export class SpotGridStepDto {
+    id!: number;
+    buyPrice!: number;
+    sellPrice!: number;
+    qty!: number;
+    orderId!: string | undefined;
+    status!: string;
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.buyPrice = _data["buyPrice"];
+            this.sellPrice = _data["sellPrice"];
+            this.qty = _data["qty"];
+            this.orderId = _data["orderId"];
+            this.status = _data["status"];
+        }
+    }
+
+    static fromJS(data: any): SpotGridStepDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SpotGridStepDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["buyPrice"] = this.buyPrice;
+        data["sellPrice"] = this.sellPrice;
+        data["qty"] = this.qty;
+        data["orderId"] = this.orderId;
+        data["status"] = this.status;
+        return data;
+    }
+}
+
+export class CreateSpotGridCommand {
+    symbol!: string;
+    lowerPrice!: number;
+    upperPrice!: number;
+    triggerPrice!: number;
+    numberOfGrids!: number;
+    gridMode!: SpotGridMode;
+    investment!: number;
+    takeProfit!: number | undefined;
+    stopLoss!: number | undefined;
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.lowerPrice = _data["lowerPrice"];
+            this.upperPrice = _data["upperPrice"];
+            this.triggerPrice = _data["triggerPrice"];
+            this.numberOfGrids = _data["numberOfGrids"];
+            this.gridMode = _data["gridMode"];
+            this.investment = _data["investment"];
+            this.takeProfit = _data["takeProfit"];
+            this.stopLoss = _data["stopLoss"];
+        }
+    }
+
+    static fromJS(data: any): CreateSpotGridCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateSpotGridCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["lowerPrice"] = this.lowerPrice;
+        data["upperPrice"] = this.upperPrice;
+        data["triggerPrice"] = this.triggerPrice;
+        data["numberOfGrids"] = this.numberOfGrids;
+        data["gridMode"] = this.gridMode;
+        data["investment"] = this.investment;
+        data["takeProfit"] = this.takeProfit;
+        data["stopLoss"] = this.stopLoss;
+        return data;
+    }
+}
+
+export class UpdateSpotGridCommand {
+    id!: number;
+    lowerPrice!: number;
+    upperPrice!: number;
+    triggerPrice!: number;
+    numberOfGrids!: number;
+    gridMode!: SpotGridMode;
+    investment!: number;
+    takeProfit!: number | undefined;
+    stopLoss!: number | undefined;
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.lowerPrice = _data["lowerPrice"];
+            this.upperPrice = _data["upperPrice"];
+            this.triggerPrice = _data["triggerPrice"];
+            this.numberOfGrids = _data["numberOfGrids"];
+            this.gridMode = _data["gridMode"];
+            this.investment = _data["investment"];
+            this.takeProfit = _data["takeProfit"];
+            this.stopLoss = _data["stopLoss"];
+        }
+    }
+
+    static fromJS(data: any): UpdateSpotGridCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateSpotGridCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["lowerPrice"] = this.lowerPrice;
+        data["upperPrice"] = this.upperPrice;
+        data["triggerPrice"] = this.triggerPrice;
+        data["numberOfGrids"] = this.numberOfGrids;
+        data["gridMode"] = this.gridMode;
+        data["investment"] = this.investment;
+        data["takeProfit"] = this.takeProfit;
+        data["stopLoss"] = this.stopLoss;
+        return data;
+    }
+}
+
+export class SyncSettingDto {
+    symbol!: string;
+    startSync!: number;
+    lastSync!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.startSync = _data["startSync"];
+            this.lastSync = _data["lastSync"];
+        }
+    }
+
+    static fromJS(data: any): SyncSettingDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SyncSettingDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["startSync"] = this.startSync;
+        data["lastSync"] = this.lastSync;
+        return data;
+    }
+}
+
+export class UpsertSyncSettingCommand {
+    symbol!: string;
+    startSync!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.startSync = _data["startSync"];
+        }
+    }
+
+    static fromJS(data: any): UpsertSyncSettingCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpsertSyncSettingCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["startSync"] = this.startSync;
+        return data;
+    }
 }
 
 export interface FileResponse {

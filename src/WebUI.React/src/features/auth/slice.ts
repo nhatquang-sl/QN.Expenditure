@@ -64,10 +64,15 @@ export const authSlice = createSlice({
       localStorage.setItem('AUTH', JSON.stringify(state));
       console.log(tokenData);
     },
+    logout: (state) => {
+      localStorage.clear();
+      state.accessToken = '';
+      state.type = null;
+    },
   },
 });
 
-export const { setAuth } = authSlice.actions;
+export const { setAuth, logout } = authSlice.actions;
 export const selectAuthType = (state: RootState) => state.auth.type;
 export const selectAuth = (state: RootState) => state.auth;
 

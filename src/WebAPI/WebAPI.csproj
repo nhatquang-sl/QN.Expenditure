@@ -1,29 +1,35 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<UserSecretsId>8cdbc616-cc73-4796-8668-4ed3fc59efb2</UserSecretsId>
-		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-		<DockerfileContext>..\..</DockerfileContext>
-		<DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
-	</PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>8cdbc616-cc73-4796-8668-4ed3fc59efb2</UserSecretsId>
+        <!-- You can override these via /p:Version=... when building -->
+        <Version>0.0.1</Version>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Aspire\ServiceDefaults\ServiceDefaults.csproj"/>
+        <ProjectReference Include="..\Auth\Auth.Infrastructure\Auth.Infrastructure.csproj"/>
+        <ProjectReference Include="..\Cex\Cex.Infrastructure\Cex.Infrastructure.csproj"/>
+        <ProjectReference Include="..\Libs\Lib.Notifications\Lib.Notifications.csproj"/>
+    </ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="QN.Expenditure.Credentials\" />
-	</ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Aspire.StackExchange.Redis.DistributedCaching"/>
+        <PackageReference Include="Aspire.StackExchange.Redis.OutputCaching"/>
+        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid"/>
+        <PackageReference Include="NSwag.AspNetCore"/>
+        <PackageReference Include="Serilog.AspNetCore"/>
+        <PackageReference Include="Serilog.Sinks.OpenTelemetry"/>
+        <PackageReference Include="Serilog.Sinks.Seq"/>
+        <PackageReference Include="SocketIOClient"/>
+    </ItemGroup>
 
-
-	<ItemGroup>
-		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.4" />
-		<PackageReference Include="NSwag.AspNetCore" Version="14.0.2" />
-		<PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
-		<PackageReference Include="Serilog.Sinks.Loggly" Version="5.4.0" />
-		<PackageReference Include="Serilog.Sinks.Seq" Version="5.2.3" />
-	</ItemGroup>
+    <ItemGroup>
+        <Content Update="QN.Expenditure.Credentials\appsettings.Development.json">
+            <DependentUpon>appsettings.json</DependentUpon>
+        </Content>
+    </ItemGroup>
 </Project>

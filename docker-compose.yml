@@ -3,15 +3,12 @@ version: '3.4'
 services:
   webapi:
     image: ${DOCKER_REGISTRY-}webapi
-    container_name: qnex.webapi
     build:
       context: .
       dockerfile: src/WebAPI/Dockerfile
-  logseq:
-    image: datalust/seq:latest
-    container_name: qnex.logseq
-    environment:
-      - ACCEPT_EULA=Y
+
+  redis.cache:
+    image: redis:latest
+    container_name: redis.cache
     ports:
-      - 5341:5341
-      - 8081:80
+    - 6379:6379 

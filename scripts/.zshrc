@@ -1,0 +1,14 @@
+source $QNEDIR/scripts/qdbauthupdate.zsh
+source $QNEDIR/scripts/qnapiclientgenerate.zsh
+source $QNEDIR/scripts/qnapistart.zsh
+source $QNEDIR/scripts/qnaspirepublish.zsh
+source $QNEDIR/scripts/qndbadd.zsh
+source $QNEDIR/scripts/qndbinit.zsh
+source $QNEDIR/scripts/qndbremove.zsh
+source $QNEDIR/scripts/qndbupdate.zsh
+source $QNEDIR/scripts/qndkbuildapi.zsh 
+source $QNEDIR/scripts/qndkbuildui.zsh
+source $QNEDIR/scripts/qndkcp.zsh
+source $QNEDIR/scripts/qndkpushapi.zsh
+source $QNEDIR/scripts/qnsshconnect.zsh
+source $QNEDIR/scripts/qnuistart.zsh

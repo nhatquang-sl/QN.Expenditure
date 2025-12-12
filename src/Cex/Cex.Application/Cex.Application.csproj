@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Libs\Lib.Application\Lib.Application.csproj"/>
+        <ProjectReference Include="..\..\Libs\Lib.ExternalServices\Lib.ExternalServices.csproj"/>
+        <ProjectReference Include="..\Cex.Domain\Cex.Domain.csproj"/>
+    </ItemGroup>
+
+</Project>

@@ -11,6 +11,7 @@ import { bnbSpotClient } from 'store';
 import { Conflict, CreateSyncSettingCommand } from 'store/api-client';
 import { CreateSpotOrderData, CreateSpotOrderSchema, OnChangeCallback } from './types';
 
+const today = new Date();
 const AddSyncSetting = (props: { onAddNew: OnChangeCallback }) => {
   const { onAddNew } = props;
   const dispatch = useDispatch();
@@ -29,12 +30,11 @@ const AddSyncSetting = (props: { onAddNew: OnChangeCallback }) => {
     console.log({ data });
     console.log(data.lastSyncAt.unix() * 1000);
     try {
-      var syncSetting = await bnbSpotClient.createSyncSetting(
-        new CreateSyncSettingCommand({
-          symbol: data.symbol,
-          lastSyncAt: data.lastSyncAt.unix() * 1000,
-        })
-      );
+      var syncSetting = await bnbSpotClient.createSyncSetting({
+        symbol: data.symbol,
+        lastSyncAt: data.lastSyncAt.unix() * 1000,
+      } as CreateSyncSettingCommand);
+
       onAddNew(syncSetting);
     } catch (err: any) {
       if (err instanceof Conflict) {
@@ -69,7 +69,7 @@ const AddSyncSetting = (props: { onAddNew: OnChangeCallback }) => {
       <Controller
         control={control}
         name="lastSyncAt"
-        defaultValue={dayjs(new Date())}
+        defaultValue={dayjs(new Date().setMonth(today.getMonth() - 6))}
         render={({ field }) => (
           <MobileDateTimePicker
             {...field}

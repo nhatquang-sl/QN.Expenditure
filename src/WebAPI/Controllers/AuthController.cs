@@ -1,15 +1,15 @@
-﻿using Application.Auth.Commands.ChangeEmail;
-using Application.Auth.Commands.ChangePassword;
-using Application.Auth.Commands.ConfirmEmail;
-using Application.Auth.Commands.ConfirmEmailChange;
-using Application.Auth.Commands.ForgotPassword;
-using Application.Auth.Commands.Login;
-using Application.Auth.Commands.Register;
-using Application.Auth.Commands.ResendEmailConfirmation;
-using Application.Auth.Commands.ResetPassword;
-using Application.Auth.DTOs;
-using Application.Auth.Queries.GetUserLoginHistories;
-using Domain.Entities;
+﻿using Auth.Application.Account.Commands.ChangeEmail;
+using Auth.Application.Account.Commands.ChangePassword;
+using Auth.Application.Account.Commands.ConfirmEmail;
+using Auth.Application.Account.Commands.ConfirmEmailChange;
+using Auth.Application.Account.Commands.ForgotPassword;
+using Auth.Application.Account.Commands.Login;
+using Auth.Application.Account.Commands.Register;
+using Auth.Application.Account.Commands.ResendEmailConfirmation;
+using Auth.Application.Account.Commands.ResetPassword;
+using Auth.Application.Account.DTOs;
+using Auth.Application.Account.Queries.GetUserLoginHistories;
+using Auth.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,7 +45,7 @@ namespace WebAPI.Controllers
         [HttpGet("confirm-email-change")]
         public async Task<IActionResult> ConfirmEmailChange(string userId, string code, string email)
         {
-            var message = await _sender.Send(new ConfirmEmailChangeCommand()
+            var message = await _sender.Send(new ConfirmEmailChangeCommand
             {
                 UserId = userId,
                 Code = code,
@@ -111,7 +111,8 @@ namespace WebAPI.Controllers
 
         [HttpGet("login-histories")]
         public Task<List<UserLoginHistory>> GetLoginHistories(int page = 1, int size = 10)
-            => _sender.Send(new GetUserLoginHistoriesQuery(page, size));
-
+        {
+            return _sender.Send(new GetUserLoginHistoriesQuery(page, size));
+        }
     }
 }

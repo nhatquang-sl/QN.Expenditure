@@ -3,9 +3,22 @@ import axios from 'axios';
 import snackbarReducer from 'components/snackbar/slice';
 import authReducer from 'features/auth/slice';
 
+import spotGridReducer, {
+  spotGridDetailsReducer,
+  spotPriceReducer,
+} from 'features/bnb/spot-grids/slice';
+
 import counterReducer from 'features/counter/slice';
 import layoutReducer from 'features/layout/slice';
-import { AuthClient, BnbSettingClient, BnbSpotClient } from './api-client';
+import {
+  AuthClient,
+  BnbSettingClient,
+  BnbSpotClient,
+  CandlesClient,
+  ExchangeSettingsClient,
+  SpotGridClient,
+  SyncSettingsClient,
+} from './api-client';
 import { API_ENDPOINT } from './constants';
 
 export const store = configureStore({
@@ -14,6 +27,9 @@ export const store = configureStore({
     auth: authReducer,
     snackbar: snackbarReducer,
     layout: layoutReducer,
+    spotGrid: spotGridReducer,
+    spotPrice: spotPriceReducer,
+    spotGridDetails: spotGridDetailsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -29,7 +45,7 @@ export const store = configureStore({
 export type RootState = ReturnType<typeof store.getState>;
 
 // Create instance
-let instance = axios.create();
+const instance = axios.create();
 
 // Set the AUTH token for any request
 instance.interceptors.request.use(
@@ -47,5 +63,17 @@ instance.interceptors.request.use(
 const authClient = new AuthClient(API_ENDPOINT, instance);
 const bnbSpotClient = new BnbSpotClient(API_ENDPOINT, instance);
 const bnbSettingClient = new BnbSettingClient(API_ENDPOINT, instance);
+const spotGridClient = new SpotGridClient(API_ENDPOINT, instance);
+const candlesClient = new CandlesClient(API_ENDPOINT, instance);
+const exchangeSettingsClient = new ExchangeSettingsClient(API_ENDPOINT, instance);
+const syncSettingsClient = new SyncSettingsClient(API_ENDPOINT, instance);
 
-export { authClient, bnbSettingClient, bnbSpotClient };
+export {
+  authClient,
+  bnbSettingClient,
+  bnbSpotClient,
+  candlesClient,
+  exchangeSettingsClient,
+  spotGridClient,
+  syncSettingsClient,
+};

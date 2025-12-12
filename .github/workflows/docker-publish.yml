@@ -11,13 +11,6 @@ on:
     tags:
       - '*'
 
-env:
-  # Use docker.io for Docker Hub if empty
-  REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
-
-
 jobs:
   build-push-image:
 
@@ -32,12 +25,26 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.SUB_CREDENTIALS }}
+          submodules: true
+
+      # - name: Run Unit Tests with Coverage
+      #   run: |
+      #     cd src/Cex
+      #     dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      #     reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:TextSummary
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}
+      - name: Docker meta
+        id: metaUI
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}
 
       # Set up BuildKit Docker container builder to be able to build
       - name: ⚙️Set up Docker Buildx
@@ -50,11 +57,22 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           
       # Build and push Docker image with Buildx
-      - name: 🙏Build and push Docker image
+      - name: 🙏[api]Build and push Docker image
         uses: docker/build-push-action@v6
         with:
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          file: 'src/WebAPI/Dockerfile'
+          build-args: |
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+      - name: 🙏[ui]Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.metaUI.outputs.tags }}
+          file: 'src/WebUI.React/Dockerfile'
       - name: 🚀Deploy Docker to VPS
         run: |
           echo "${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}"
@@ -74,6 +92,14 @@ jobs:
         mkdir -p $HOME/.ssh
         echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
         chmod 600 $HOME/.ssh/ssh.key
-        ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "
-          docker ps -aq | xargs --no-run-if-empty docker stop | xargs --no-run-if-empty docker rm &&
-          docker run --name ${{ secrets.DOCKERHUB_REPOSITORY }} -d -p 3000:3000 ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}"
+        ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
+          cd workspace/qex
+          ls
+          cat > .env <<EOF
+        # Container image name for webapi
+        WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}
+
+        UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${{needs.build-push-image.outputs.IMAGE_TAGS}}
+        EOF
+        docker compose up -d --remove-orphans && docker image prune -a -f
+        ENDSSH

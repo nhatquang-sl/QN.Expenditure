@@ -1,0 +1,264 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { LoadingButton } from '@mui/lab';
+import { Alert, Grid, MenuItem, TextField } from '@mui/material';
+import { MobileDateTimePicker } from '@mui/x-date-pickers';
+import React, { ReactElement, useState } from 'react';
+import { Controller, Resolver, useForm } from 'react-hook-form';
+import { UnprocessableEntity } from 'store/api-client';
+import { Block } from './types';
+
+function camelCase(str: string) {
+  // Using replace method with regEx
+  return str
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, function (word, index) {
+      return index == 0 ? word.toLowerCase() : word.toUpperCase();
+    })
+    .replace(/\s+/g, '');
+}
+
+function ErrorHelperText(props: { errors: string[] }) {
+  return (
+    <>
+      {props.errors.map((e) => (
+        <span key={e}>
+          {e}
+          <br />
+        </span>
+      ))}
+    </>
+  );
+}
+
+import { useCallback, useRef } from 'react';
+
+export function useDebounce<T extends (...args: any[]) => void>(callback: T, delay = 300) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  return useCallback(
+    (...args: Parameters<T>) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  );
+}
+
+// https://www.youtube.com/watch?v=aCRaGQmUiQE
+export default function Form<T extends Record<string, any>>(props: {
+  blocks: Block[];
+  resolver: Resolver;
+  onSubmit: (data: T) => Promise<void>;
+}) {
+  const { blocks } = props;
+  const summary = (blocks: Block[]): Map<string, ReactElement> => {
+    // console.log({ blocks });
+    const summaryels = new Map<string, ReactElement>();
+    for (const block of blocks) {
+      for (const el of block.elements) {
+        if (el.computedValue) {
+          const computedId = camelCase(el.label);
+          const computedValue = el.computedValue(getDefaultValues);
+          summaryels.set(computedId, computedValue);
+        }
+      }
+    }
+    return summaryels;
+  };
+
+  const getDefaultValues = (elId: string) => {
+    for (const block of blocks) {
+      for (const el of block.elements) {
+        if (elId === camelCase(el.label)) {
+          return el.defaultValue?.toString() || '';
+        }
+      }
+    }
+    return '';
+  };
+
+  const {
+    handleSubmit,
+    register,
+    reset,
+    getValues,
+    control,
+    formState: { errors: formError },
+  } = useForm({ resolver: props.resolver });
+  const [submitErrors, setSubmitErrors] = useState<UnprocessableEntity[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [computedValues, setComputedValues] = useState(summary(blocks));
+
+  const onSubmit = async (data: any) => {
+    console.log('onSubmit data:', data);
+    setLoading(true);
+    try {
+      setSubmitErrors([]);
+      setErrorMessage('');
+      console.log('Form Submit', data);
+      await props.onSubmit(data);
+      reset();
+    } catch (err: any) {
+      console.log(err);
+      if (Array.isArray(err)) {
+        setSubmitErrors(err);
+      }
+      setErrorMessage(err['message']);
+    }
+    setLoading(false);
+  };
+
+  const onCloseErrorMessage = () => {
+    setErrorMessage('');
+  };
+
+  const debouncedSearch = useDebounce((event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log({ value: event.target.value, id: event.target.id });
+    for (const block of blocks) {
+      for (const el of block.elements) {
+        const elId = camelCase(el.label);
+        if (el.computedValue) {
+          const computedValue = el.computedValue((id: string) => {
+            if (id === event.target.id) return event.target.value;
+            return getValues(id)?.toString();
+          });
+          computedValues.set(elId, computedValue);
+          setComputedValues(new Map(computedValues));
+        }
+        if (el.watch && elId === event.target.id) {
+          el.watch(event.target.value);
+        }
+      }
+    }
+  }, 1000);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedSearch(event);
+  };
+
+  return (
+    <Grid
+      container
+      spacing={2}
+      sx={{ marginTop: 0 }}
+      component="form"
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+    >
+      {errorMessage && (
+        <Grid item xs={12} sm={12}>
+          <Alert severity="error" onClose={onCloseErrorMessage}>
+            {errorMessage}
+          </Alert>
+        </Grid>
+      )}
+      {blocks.map((b) => (
+        <Grid key={b.id} item xs={12} sm={12} sx={{ display: 'flex', columnGap: '16px' }}>
+          {b.elements.map((el) => {
+            const elId = camelCase(el.label);
+            let elErrors: string[] = [];
+            if (formError[elId]?.message) elErrors.push(formError[elId]?.message?.toString() ?? '');
+
+            const apiError = submitErrors.filter((x) => x.name == elId)[0]?.errors;
+            if (apiError?.length) elErrors = elErrors.concat(apiError);
+
+            if (el.type === 'select')
+              return (
+                <TextField
+                  id={elId}
+                  label={el.label}
+                  key={elId}
+                  {...register(elId, { setValueAs: (v) => (isNaN(v) ? v : parseFloat(v)) })}
+                  select
+                  defaultValue={el.defaultValue ?? el.options[0].value}
+                  error={elErrors.length > 0}
+                  helperText={<ErrorHelperText errors={elErrors} />}
+                  sx={{ minWidth: 120 }}
+                  size="small"
+                >
+                  {el.options.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              );
+            else if (el.type === 'compute')
+              return <React.Fragment key={elId}>{computedValues.get(elId)}</React.Fragment>;
+            else if (el.type === 'datetime') {
+              try {
+                return (
+                  <Controller
+                    key={elId}
+                    name={elId}
+                    control={control}
+                    defaultValue={el.defaultValue}
+                    render={({ field }) => (
+                      <MobileDateTimePicker
+                        label={el.label}
+                        value={field.value}
+                        onChange={(newValue) => {
+                          // Store Dayjs object directly
+                          field.onChange(newValue);
+                        }}
+                        slotProps={{
+                          textField: {
+                            error: elErrors.length > 0,
+                            helperText: <ErrorHelperText errors={elErrors} />,
+                            size: 'small',
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                );
+              } catch (ex) {
+                console.error('Error rendering datetime picker for', elId, ex);
+                return <></>;
+              }
+            }
+
+            console.log(el);
+            return (
+              <TextField
+                key={elId}
+                {...register(elId, {
+                  setValueAs: (v) => {
+                    if (v === '') return null; // Ensure empty input is converted to null
+                    if (el.type === 'number') return isNaN(parseFloat(v)) ? null : parseFloat(v);
+                    return v;
+                  },
+                })}
+                id={elId}
+                defaultValue={el.defaultValue}
+                label={el.label}
+                type={el.type}
+                error={elErrors.length > 0}
+                helperText={<ErrorHelperText errors={elErrors} />}
+                onChange={handleChange}
+                sx={{ flex: el.flex }}
+                // disabled={el.disabled}
+                size="small"
+              />
+            );
+          })}
+          {b.actions.map((a) =>
+            a.onClickButton === undefined ? (
+              <LoadingButton type={a.type} key={a.label} variant="contained" loading={loading}>
+                {a.label}
+              </LoadingButton>
+            ) : (
+              <LoadingButton type={a.type} key={a.label} variant="contained" loading={loading}>
+                {a.label}
+              </LoadingButton>
+            )
+          )}
+        </Grid>
+      ))}
+    </Grid>
+  );
+}

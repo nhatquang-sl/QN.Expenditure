@@ -1,39 +1,41 @@
-﻿using Application.BnbSpotOrder.Commands.SyncSpotOrders;
-using Infrastructure;
+﻿using Auth.Infrastructure;
+using Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders;
 using MediatR;
+using Serilog;
 
 namespace WebAPI.HostedServices
 {
     public class SyncSpotOrdersService(IConfiguration configuration) : BackgroundService
     {
-        private readonly IConfiguration _configuration = configuration;
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddInfrastructureServices(_configuration);
-            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var services = new ServiceCollection();
+            services.AddSingleton(configuration);
+            services.AddAuthInfrastructureServices(configuration);
+            services.AddTransient(p => new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger());
+            var serviceProvider = services.BuildServiceProvider();
 
             await Task.Factory.StartNew(async () =>
             {
+                var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
+                logger.Information("Start {serviceName} started at {startAt}", GetType().Name, DateTime.UtcNow);
                 while (true)
                 {
                     try
                     {
-                        using (var scope = serviceProvider.CreateScope())
-                        {
-                            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                        using var scope = serviceProvider.CreateScope();
+                        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                            await mediator.Send(new SyncSpotOrdersCommand());
-                        }
+                        await mediator.Send(new SyncAllSpotOrdersCommand(), stoppingToken);
                     }
                     catch (Exception ex)
                     {
+                        logger.Information("Exception {serviceName} - {message}", GetType().Name, ex.Message);
                     }
-                    await Task.Delay(60 * 1000);
-                }
-            });
-        }
 
+                    await Task.Delay(5 * 60 * 1000);
+                }
+            }, stoppingToken);
+        }
     }
 }

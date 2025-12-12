@@ -1,0 +1,63 @@
+﻿using Auth.Application.Account.Commands.Register;
+using Lib.Application.Exceptions;
+using MediatR;
+using Shouldly;
+
+namespace Auth.Application.UnitTest.Register
+{
+    public class ValidatorTests : DependencyInjectionFixture
+    {
+        private readonly RegisterCommand _command = new();
+        private readonly ISender _sender;
+
+        public ValidatorTests()
+        {
+            _sender = GetService<ISender>();
+        }
+
+        [Fact]
+        public async void ThrowUnprocessableEntityException_IfCommandIsEmpty()
+        {
+            // Arrange
+
+            // Act
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
+
+            // Assert
+            exception.Message.ShouldBe(
+                "[{\"name\":\"email\",\"errors\":[\"Email is required.\"]},{\"name\":\"password\",\"errors\":[\"Password is required.\"]},{\"name\":\"firstName\",\"errors\":[\"First Name is required.\"]},{\"name\":\"lastName\",\"errors\":[\"Last Name is required.\"]}]");
+        }
+
+        [Fact]
+        public async void ThrowUnprocessableEntityException_IfMissingFirstAndLastName()
+        {
+            // Arrange
+            _command.Email = "sunlight@yopmail.com";
+            _command.Password = "P@ssW0rd";
+
+            // Act
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
+
+            // Assert
+            exception.Message.ShouldBe(
+                "[{\"name\":\"firstName\",\"errors\":[\"First Name is required.\"]},{\"name\":\"lastName\",\"errors\":[\"Last Name is required.\"]}]");
+        }
+
+        [Fact]
+        public async void ThrowUnprocessableEntityException_IfInvalidEmailAndPassword()
+        {
+            // Arrange
+            _command.FirstName = "first";
+            _command.LastName = "last";
+            _command.Email = "sunlightyopmail.com";
+            _command.Password = "password";
+
+            // Act
+            var exception = await Should.ThrowAsync<UnprocessableEntityException>(() => _sender.Send(_command));
+
+            // Assert
+            exception.Message.ShouldBe(
+                "[{\"name\":\"email\",\"errors\":[\"Email is invalid.\"]},{\"name\":\"password\",\"errors\":[\"Password must have at least one uppercase (\\u0027A\\u0027-\\u0027Z\\u0027).\"]}]");
+        }
+    }
+}

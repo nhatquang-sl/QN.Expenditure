@@ -23,7 +23,7 @@ const columns: readonly Column[] = [
       <DateTimePicker defaultValue={new Date(parseInt(value)).toISOString()} />
     ),
   },
-  { id: 'action', label: 'Action', minWidth: 10, align: 'right' },
+  { id: 'action', label: 'Action', minWidth: 150, align: 'right' },
 ];
 
 export { columns };

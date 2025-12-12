@@ -5,7 +5,13 @@ import dayjs, { Dayjs } from 'dayjs';
 import { useState } from 'react';
 import { bnbSpotClient } from 'store';
 
-import { SpotOrderSyncSettingDto, SpotOrderSyncSettingUpdateDto } from 'store/api-client';
+import { showSnackbar } from 'components/snackbar/slice';
+import { useDispatch } from 'react-redux';
+import {
+  BadRequest,
+  SpotOrderSyncSettingDto,
+  SpotOrderSyncSettingUpdateDto,
+} from 'store/api-client';
 import { OnChangeCallback } from './types';
 
 const SyncSettingItem = (props: {
@@ -13,6 +19,7 @@ const SyncSettingItem = (props: {
   onDelete: OnChangeCallback;
 }) => {
   const { syncSetting, onDelete } = props;
+  const dispatch = useDispatch();
   const [lastSyncAt, setLastSyncAt] = useState<Dayjs>(dayjs(syncSetting.lastSyncAt));
   const [loading, setLoading] = useState(false);
 
@@ -24,12 +31,16 @@ const SyncSettingItem = (props: {
   const onClose = async () => {
     setLoading(true);
 
-    await bnbSpotClient.updateSyncSetting(
-      syncSetting.symbol,
-      new SpotOrderSyncSettingUpdateDto({
+    try {
+      await bnbSpotClient.updateSyncSetting(syncSetting.symbol, {
         lastSyncAt: lastSyncAt.unix() * 1000,
-      })
-    );
+      } as SpotOrderSyncSettingUpdateDto);
+    } catch (err: any) {
+      setLastSyncAt(dayjs(syncSetting.lastSyncAt));
+      if (err instanceof BadRequest) {
+        dispatch(showSnackbar(err.message, 'error', 'top', 'right'));
+      }
+    }
 
     setLoading(false);
   };
@@ -38,6 +49,15 @@ const SyncSettingItem = (props: {
     setLoading(true);
     await bnbSpotClient.deleteSyncSetting(syncSetting.symbol);
     onDelete(syncSetting);
+    setLoading(false);
+  };
+
+  const handleSync = async () => {
+    setLoading(true);
+    try {
+      const res = await bnbSpotClient.triggerSync(syncSetting.symbol);
+      setLastSyncAt(dayjs(res.lastSyncAt));
+    } catch (err) {}
     setLoading(false);
   };
 
@@ -59,9 +79,18 @@ const SyncSettingItem = (props: {
         />
       </TableCell>
       <TableCell align="right">
-        <IconButton aria-label="delete" onClick={handleDelete} disabled={loading}>
-          {loading ? <CircularProgress size={20} color="inherit" /> : <Icon>delete</Icon>}
-        </IconButton>
+        {loading ? (
+          <CircularProgress size={20} color="inherit" />
+        ) : (
+          <>
+            <IconButton aria-label="delete" onClick={handleDelete} disabled={loading}>
+              <Icon>delete</Icon>
+            </IconButton>
+            <IconButton aria-label="sync" onClick={handleSync} disabled={loading}>
+              <Icon>sync</Icon>
+            </IconButton>
+          </>
+        )}
       </TableCell>
     </TableRow>
   );

@@ -1,24 +1,16 @@
-﻿using Application.Common.Exceptions;
-using Application.Common.Logging;
-using System.Net;
+﻿using System.Net;
+using Lib.Application.Exceptions;
+using Lib.Application.Logging;
 
 namespace WebAPI.Middleware
 {
-    public class ExceptionMiddleware
+    public class ExceptionMiddleware(RequestDelegate next)
     {
-        private readonly RequestDelegate _next;
-
-        public ExceptionMiddleware(RequestDelegate next)
-        {
-            _next = next;
-        }
-
         public async Task InvokeAsync(HttpContext context, ILogTrace logTrace)
         {
             try
             {
-                await _next(context);
-                logTrace.Flush();
+                await next(context);
             }
             catch (Exception ex)
             {
@@ -33,6 +25,10 @@ namespace WebAPI.Middleware
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 }
+                else if (type == typeof(UnprocessableEntityException))
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.UnprocessableEntity;
+                }
                 else if (type == typeof(ConflictException))
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.Conflict;
@@ -42,8 +38,9 @@ namespace WebAPI.Middleware
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 }
 
-                logTrace.Flush();
-                await context.Response.WriteAsync(context.Response.StatusCode != (int)HttpStatusCode.InternalServerError ? ex.Message : "Internal Server Error");
+                await context.Response.WriteAsync(context.Response.StatusCode != (int)HttpStatusCode.InternalServerError
+                    ? ex.Message
+                    : "Internal Server Error");
             }
         }
     }
@@ -54,6 +51,11 @@ namespace WebAPI.Middleware
     }
 
     public class Conflict
+    {
+        public string Message { get; set; }
+    }
+
+    public class NotFound
     {
         public string Message { get; set; }
     }
