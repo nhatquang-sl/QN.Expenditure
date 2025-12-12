@@ -39,8 +39,12 @@ public class UpsertSyncSettingCommandHandler(
         }
         else
         {
-            // Update: Only update StartSync, preserve LastSync
-            entity.StartSync = startSyncDateTime;
+            // Update: Update StartSync and LastSync if StartSync changed
+            if (entity.StartSync != startSyncDateTime)
+            {
+                entity.StartSync = startSyncDateTime;
+                entity.LastSync = startSyncDateTime;  // Update LastSync to match new StartSync
+            }
             cexDbContext.SyncSettings.Update(entity);
         }
 

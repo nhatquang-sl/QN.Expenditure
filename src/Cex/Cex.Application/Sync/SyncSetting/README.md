@@ -38,8 +38,9 @@ public class SyncSettingDto
    - User provides: Symbol, StartSync
    - System sets: LastSync = StartSync (automatically)
 2. **Update**:
-   - User can only modify: StartSync
-   - LastSync remains unchanged (managed by sync process)
+   - User can modify: StartSync
+   - If StartSync changes: LastSync is updated to match StartSync
+   - If StartSync unchanged: LastSync remains unchanged
 
 ## Backend Architecture
 
@@ -63,7 +64,7 @@ Location: `Cex.Application/Settings/SyncSetting/`
   - Input: Symbol (string), StartSync (long - Unix timestamp in milliseconds)
   - Converts timestamp to DateTime internally
   - Create logic: Sets LastSync = StartSync
-  - Update logic: Only updates StartSync, preserves LastSync
+  - Update logic: If StartSync changes, updates both StartSync and LastSync to new value
 - `Commands/UpsertSyncSetting/UpsertSyncSettingCommandValidator.cs`
   - Symbol: required, max 50 characters
   - StartSync: must be greater than 0 (valid timestamp)
@@ -192,7 +193,8 @@ useDeleteSyncSetting()         // Invalidates: ['syncSettings'], navigates to /s
 
 ### LastSync Management
 - **Create**: Backend automatically sets `LastSync = StartSync`
-- **Update**: Backend preserves existing `LastSync` value (only `StartSync` is updated)
+- **Update**: If `StartSync` changes, backend updates `LastSync = StartSync` (resets sync position)
+- **Update**: If `StartSync` unchanged, `LastSync` remains unchanged
 - **Sync Process**: System updates `LastSync` during actual synchronization operations
 - **Frontend**: `LastSync` is read-only, never editable by user
 
@@ -216,11 +218,17 @@ if (entity == null)
 // Update
 else
 {
-    entity.StartSync = startSyncDateTime;
-    // LastSync remains unchanged
+    // Check if StartSync actually changed
+    if (entity.StartSync != startSyncDateTime)
+    {
+        entity.StartSync = startSyncDateTime;
+        entity.LastSync = startSyncDateTime;  // Reset LastSync to match new StartSync
+    }
     cexDbContext.SyncSettings.Update(entity);
 }
 ```
+
+**Update Logic Rationale**: When a user changes StartSync (deciding to sync from a different starting date), LastSync is also reset to that new starting point. This maintains consistency and allows the sync process to restart from the new StartSync value. If StartSync is unchanged, no updates occur.
 
 ### Frontend-Backend Communication
 - **Request**: Frontend sends `startSync` as Unix timestamp (milliseconds) using `date.getTime()`
