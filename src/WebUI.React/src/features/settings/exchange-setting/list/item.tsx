@@ -15,7 +15,7 @@ export default function ExchangeSettingItem(props: ExchangeSettingItemProps) {
   const { mutate: deleteSetting, isPending } = useDeleteExchangeSetting();
 
   const handleEdit = (exchangeName: ExchangeName) => {
-    navigate(`/exchange-setting/${exchangeName}`);
+    navigate(`/settings/exchange-setting/${exchangeName}`);
   };
 
   const handleDelete = (exchangeName: ExchangeName) => {

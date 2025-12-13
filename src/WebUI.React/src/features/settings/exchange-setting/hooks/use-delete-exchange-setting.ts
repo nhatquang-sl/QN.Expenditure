@@ -11,7 +11,7 @@ export const useDeleteExchangeSetting = () => {
     onSuccess: () => {
       // Invalidate and refetch the exchange settings list
       queryClient.invalidateQueries({ queryKey: ['exchangeSettings'] });
-      navigate(`/exchange-setting`);
+      navigate(`/settings/exchange-setting`);
     },
   });
 };
