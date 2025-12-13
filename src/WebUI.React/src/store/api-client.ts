@@ -2018,6 +2018,71 @@ export class SyncSettingsClient {
     }
 }
 
+export class TradeClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:5000";
+
+    }
+
+    syncTradeHistoryBySymbol(symbol: string, cancelToken?: CancelToken): Promise<SyncTradeHistoryBySymbolResult> {
+        let url_ = this.baseUrl + "/api/trade/sync/{symbol}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "POST",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processSyncTradeHistoryBySymbol(_response);
+        });
+    }
+
+    protected processSyncTradeHistoryBySymbol(response: AxiosResponse): Promise<SyncTradeHistoryBySymbolResult> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SyncTradeHistoryBySymbolResult.fromJS(resultData200);
+            return Promise.resolve<SyncTradeHistoryBySymbolResult>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SyncTradeHistoryBySymbolResult>(null as any);
+    }
+}
+
 export class ValuesClient {
     protected instance: AxiosInstance;
     protected baseUrl: string;
@@ -3275,6 +3340,38 @@ export class UpsertSyncSettingCommand {
         data = typeof data === 'object' ? data : {};
         data["symbol"] = this.symbol;
         data["startSync"] = this.startSync;
+        return data;
+    }
+}
+
+export class SyncTradeHistoryBySymbolResult {
+    totalSynced!: number;
+    totalBuy!: number;
+    totalSell!: number;
+    profit!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            this.totalSynced = _data["totalSynced"];
+            this.totalBuy = _data["totalBuy"];
+            this.totalSell = _data["totalSell"];
+            this.profit = _data["profit"];
+        }
+    }
+
+    static fromJS(data: any): SyncTradeHistoryBySymbolResult {
+        data = typeof data === 'object' ? data : {};
+        let result = new SyncTradeHistoryBySymbolResult();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["totalSynced"] = this.totalSynced;
+        data["totalBuy"] = this.totalBuy;
+        data["totalSell"] = this.totalSell;
+        data["profit"] = this.profit;
         return data;
     }
 }

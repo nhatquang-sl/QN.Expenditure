@@ -27,8 +27,8 @@ export const snackbarSlice = createSlice({
       prepare(
         message?: string | undefined,
         severity: 'error' | 'info' | 'success' | 'warning' = 'info',
-        vertical: 'top' | 'bottom' = 'bottom',
-        horizontal: 'left' | 'right' | 'center' = 'center'
+        vertical: 'top' | 'bottom' = 'top',
+        horizontal: 'left' | 'right' | 'center' = 'right'
       ) {
         return {
           payload: {
