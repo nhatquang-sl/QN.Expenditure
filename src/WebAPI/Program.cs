@@ -59,7 +59,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 // builder.Services.AddHostedService<SpotGridService>();
 // builder.Services.AddHostedService<RunIndicatorService>();
-// builder.Services.AddHostedService<SyncTradeHistoryService>();
+builder.Services.AddHostedService<SyncTradeHistoryService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
@@ -111,7 +111,7 @@ app.Logger.LogInformation("API VERSION: {version}", version);
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    await app.InitializeDatabaseAsync();
+    // await app.InitializeDatabaseAsync();
 }
 
 // Add OpenAPI 3.0 document serving middleware

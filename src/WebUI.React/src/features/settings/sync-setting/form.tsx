@@ -30,6 +30,7 @@ export default function SyncSettingForm({ syncSetting }: SyncSettingFormProps) {
 
   const SYMBOLS = [
     new InputOption('XAUT-USDT'),
+    new InputOption('KCS-USDT'),
     new InputOption('BTC-USDT'),
     new InputOption('ETH-USDT'),
     new InputOption('BNB-USDT'),
