@@ -1,5 +1,5 @@
 import { LoadingButton } from '@mui/lab';
-import { Icon, TableCell, TableRow } from '@mui/material';
+import { Icon, Link, TableCell, TableRow } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { SyncSettingDto } from 'store/api-client';
 import { useDeleteSyncSetting } from '../hooks/use-delete-sync-setting';
@@ -61,6 +61,20 @@ export default function SyncSettingItem(props: SyncSettingItemProps) {
               >
                 <Icon>delete</Icon>
               </LoadingButton>
+            </TableCell>
+          );
+        }
+        if (column.id === 'symbol') {
+          return (
+            <TableCell key={column.id} align={column.align}>
+              <Link
+                component="button"
+                variant="body2"
+                onClick={() => navigate(`/trade/history/${syncSetting.symbol}`)}
+                sx={{ cursor: 'pointer', textDecoration: 'none' }}
+              >
+                {syncSetting.symbol}
+              </Link>
             </TableCell>
           );
         }

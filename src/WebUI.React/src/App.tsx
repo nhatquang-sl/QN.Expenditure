@@ -27,6 +27,7 @@ import ExchangeSettingUpdate from 'features/settings/exchange-setting/update';
 import SyncSetting from 'features/settings/sync-setting';
 import SyncSettingCreate from 'features/settings/sync-setting/create';
 import SyncSettingUpdate from 'features/settings/sync-setting/update';
+import TradeHistory from 'features/trade/trade-history';
 import './App.css';
 const defaultTheme = createTheme();
 const router = createBrowserRouter([
@@ -100,6 +101,10 @@ const router = createBrowserRouter([
       {
         path: '/candle-analytics',
         element: <CandleAnalytics />,
+      },
+      {
+        path: 'trade/history/:symbol',
+        element: <TradeHistory />,
       },
       // {
       //   path: 'bnb/spot-grids/create',

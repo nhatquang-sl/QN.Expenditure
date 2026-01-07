@@ -2081,6 +2081,65 @@ export class TradeClient {
         }
         return Promise.resolve<SyncTradeHistoryBySymbolResult>(null as any);
     }
+
+    getTradeHistoriesBySymbol(symbol: string, pageNumber: number | undefined, pageSize: number | undefined, cancelToken?: CancelToken): Promise<PaginatedListOfTradeHistoryDto> {
+        let url_ = this.baseUrl + "/api/trade/history/{symbol}?";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        if (pageNumber === null)
+            throw new Error("The parameter 'pageNumber' cannot be null.");
+        else if (pageNumber !== undefined)
+            url_ += "pageNumber=" + encodeURIComponent("" + pageNumber) + "&";
+        if (pageSize === null)
+            throw new Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetTradeHistoriesBySymbol(_response);
+        });
+    }
+
+    protected processGetTradeHistoriesBySymbol(response: AxiosResponse): Promise<PaginatedListOfTradeHistoryDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = PaginatedListOfTradeHistoryDto.fromJS(resultData200);
+            return Promise.resolve<PaginatedListOfTradeHistoryDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<PaginatedListOfTradeHistoryDto>(null as any);
+    }
 }
 
 export class ValuesClient {
@@ -3348,14 +3407,22 @@ export class SyncTradeHistoryBySymbolResult {
     totalSynced!: number;
     totalBuy!: number;
     totalSell!: number;
+    totalBuySize!: number;
+    totalSellSize!: number;
     profit!: number;
+    avgBuyPrice!: number;
+    avgSellPrice!: number;
 
     init(_data?: any) {
         if (_data) {
             this.totalSynced = _data["totalSynced"];
             this.totalBuy = _data["totalBuy"];
             this.totalSell = _data["totalSell"];
+            this.totalBuySize = _data["totalBuySize"];
+            this.totalSellSize = _data["totalSellSize"];
             this.profit = _data["profit"];
+            this.avgBuyPrice = _data["avgBuyPrice"];
+            this.avgSellPrice = _data["avgSellPrice"];
         }
     }
 
@@ -3371,7 +3438,104 @@ export class SyncTradeHistoryBySymbolResult {
         data["totalSynced"] = this.totalSynced;
         data["totalBuy"] = this.totalBuy;
         data["totalSell"] = this.totalSell;
+        data["totalBuySize"] = this.totalBuySize;
+        data["totalSellSize"] = this.totalSellSize;
         data["profit"] = this.profit;
+        data["avgBuyPrice"] = this.avgBuyPrice;
+        data["avgSellPrice"] = this.avgSellPrice;
+        return data;
+    }
+}
+
+export class PaginatedListOfTradeHistoryDto {
+    items!: TradeHistoryDto[];
+    pageNumber!: number;
+    totalPages!: number;
+    totalCount!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            if (Array.isArray(_data["items"])) {
+                this.items = [] as any;
+                for (let item of _data["items"])
+                    this.items!.push(TradeHistoryDto.fromJS(item));
+            }
+            this.pageNumber = _data["pageNumber"];
+            this.totalPages = _data["totalPages"];
+            this.totalCount = _data["totalCount"];
+        }
+    }
+
+    static fromJS(data: any): PaginatedListOfTradeHistoryDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new PaginatedListOfTradeHistoryDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (Array.isArray(this.items)) {
+            data["items"] = [];
+            for (let item of this.items)
+                data["items"].push(item.toJSON());
+        }
+        data["pageNumber"] = this.pageNumber;
+        data["totalPages"] = this.totalPages;
+        data["totalCount"] = this.totalCount;
+        return data;
+    }
+}
+
+export class TradeHistoryDto {
+    symbol!: string;
+    tradeId!: number;
+    orderId!: string;
+    side!: string;
+    price!: number;
+    size!: number;
+    funds!: number;
+    fee!: number;
+    feeCurrency!: string;
+    tradedAt!: Date;
+    total!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            this.symbol = _data["symbol"];
+            this.tradeId = _data["tradeId"];
+            this.orderId = _data["orderId"];
+            this.side = _data["side"];
+            this.price = _data["price"];
+            this.size = _data["size"];
+            this.funds = _data["funds"];
+            this.fee = _data["fee"];
+            this.feeCurrency = _data["feeCurrency"];
+            this.tradedAt = _data["tradedAt"] ? new Date(_data["tradedAt"].toString()) : <any>undefined;
+            this.total = _data["total"];
+        }
+    }
+
+    static fromJS(data: any): TradeHistoryDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new TradeHistoryDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["symbol"] = this.symbol;
+        data["tradeId"] = this.tradeId;
+        data["orderId"] = this.orderId;
+        data["side"] = this.side;
+        data["price"] = this.price;
+        data["size"] = this.size;
+        data["funds"] = this.funds;
+        data["fee"] = this.fee;
+        data["feeCurrency"] = this.feeCurrency;
+        data["tradedAt"] = this.tradedAt ? this.tradedAt.toISOString() : <any>undefined;
+        data["total"] = this.total;
         return data;
     }
 }

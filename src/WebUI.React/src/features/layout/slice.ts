@@ -4,6 +4,7 @@ import { createSlice } from '@reduxjs/toolkit';
 export const drawerWidth = 240;
 const initialState = {
   open: true,
+  title: 'Dashboard',
 };
 
 export const layoutSlice = createSlice({
@@ -13,8 +14,11 @@ export const layoutSlice = createSlice({
     toggleDrawer: (state) => {
       state.open = !state.open;
     },
+    setTitle: (state, action) => {
+      state.title = action.payload;
+    },
   },
 });
 
-export const { toggleDrawer } = layoutSlice.actions;
+export const { toggleDrawer, setTitle } = layoutSlice.actions;
 export default layoutSlice.reducer;

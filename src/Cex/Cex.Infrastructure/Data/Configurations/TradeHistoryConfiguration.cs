@@ -34,6 +34,11 @@ namespace Cex.Infrastructure.Data.Configurations
                 .IsRequired();
 
             builder.Property(t => t.CreatedAt).HasDefaultValue(DateTime.UtcNow);
+
+            // Add the index
+            builder.HasIndex(x => new { x.UserId, x.Symbol, x.TradedAt })
+                .HasDatabaseName("IX_TradeHistories_UserId_Symbol_TradedAt")
+                .IsDescending(false, false, true);  // UserId ASC, Symbol ASC, TradedAt DESC
         }
     }
 }

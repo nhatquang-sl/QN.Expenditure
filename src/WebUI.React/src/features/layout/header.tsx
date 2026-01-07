@@ -37,6 +37,7 @@ const AppBar = styled(MuiAppBar, {
 
 function Header() {
   const open = useSelector((state: RootState) => state.layout.open);
+  const title = useSelector((state: RootState) => state.layout.title);
   const dispatch = useDispatch();
   const toggle = () => {
     dispatch(toggleDrawer());
@@ -63,7 +64,7 @@ function Header() {
           <MenuIcon />
         </IconButton>
         <Typography component="h1" variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
-          Dashboard
+          {title}
         </Typography>
         {auth.id ? (
           <IconButton color="inherit">
