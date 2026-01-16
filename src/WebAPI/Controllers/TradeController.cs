@@ -1,5 +1,6 @@
 using Cex.Application.Trade.Commands.SyncTradeHistoryBySymbol;
 using Cex.Application.Trade.Queries.GetTradeHistoriesBySymbol;
+using Cex.Application.Trade.Queries.GetTradeStatisticsBySymbol;
 using Lib.Application.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -36,4 +37,14 @@ public class TradeController(ISender sender) : ControllerBase
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20)
         => sender.Send(new GetTradeHistoriesBySymbolQuery(symbol, pageNumber, pageSize));
+
+    /// <summary>
+    /// Retrieves aggregated trade statistics for a specific symbol.
+    /// Returns separate buy and sell statistics including total funds, fees, sizes, and average prices.
+    /// </summary>
+    /// <param name="symbol">The cryptocurrency symbol (e.g., BTC-USDT)</param>
+    /// <returns>Trade statistics with buy and sell side data</returns>
+    [HttpGet("statistics/{symbol}")]
+    public Task<TradeStatisticsDto> GetTradeStatisticsBySymbol(string symbol)
+        => sender.Send(new GetTradeStatisticsBySymbolQuery(symbol));
 }

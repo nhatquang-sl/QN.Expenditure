@@ -190,6 +190,281 @@ features/
 - **Handle loading states**: Always show loading indicators
 - **Handle errors**: Display user-friendly error messages
 
+#### React Performance Best Practices
+
+When writing or refactoring React components, follow these performance optimization patterns (prioritized by impact):
+
+##### 1. Async/Parallel Data Fetching (CRITICAL)
+
+- **Use Promise.all() for independent operations**: Execute multiple API calls concurrently
+  ```typescript
+  // ❌ Incorrect: sequential (3 round trips)
+  const user = await fetchUser()
+  const posts = await fetchPosts()
+  const comments = await fetchComments()
+
+  // ✅ Correct: parallel (1 round trip)
+  const [user, posts, comments] = await Promise.all([
+    fetchUser(),
+    fetchPosts(),
+    fetchComments()
+  ])
+  ```
+
+- **Defer await until needed**: Move `await` into branches where data is actually used
+  ```typescript
+  // ❌ Incorrect: always waits
+  const data = await fetchData()
+  if (skipProcessing) return { skipped: true }
+  return process(data)
+
+  // ✅ Correct: only waits when needed
+  if (skipProcessing) return { skipped: true }
+  const data = await fetchData()
+  return process(data)
+  ```
+
+##### 2. Re-render Optimization (MEDIUM-HIGH)
+
+- **Use useCallback for event handlers**: Prevent child re-renders
+  ```typescript
+  // ❌ Incorrect: new function every render
+  <Button onClick={() => handleClick(id)}>Click</Button>
+
+  // ✅ Correct: stable reference
+  const handleClick = useCallback(() => {
+    onClick(id)
+  }, [id, onClick])
+  
+  return <Button onClick={handleClick}>Click</Button>
+  ```
+
+- **Use useMemo for expensive computations**: Cache computed values
+  ```typescript
+  // ❌ Incorrect: recalculates every render
+  const sorted = items.sort((a, b) => a.value - b.value)
+  const total = items.reduce((sum, item) => sum + item.price, 0)
+
+  // ✅ Correct: memoized
+  const sorted = useMemo(
+    () => items.toSorted((a, b) => a.value - b.value),
+    [items]
+  )
+  const total = useMemo(
+    () => items.reduce((sum, item) => sum + item.price, 0),
+    [items]
+  )
+  ```
+
+- **Use memo() for expensive components**: Prevent unnecessary re-renders
+  ```typescript
+  // ✅ Memoize expensive child components
+  const ExpensiveChild = memo(function ExpensiveChild({ data }) {
+    const result = useMemo(() => expensiveCalculation(data), [data])
+    return <div>{result}</div>
+  })
+  ```
+
+- **Lazy state initialization**: Use function form for expensive initial values
+  ```typescript
+  // ❌ Incorrect: runs every render
+  const [data, setData] = useState(JSON.parse(localStorage.getItem('data')))
+
+  // ✅ Correct: runs only once
+  const [data, setData] = useState(() => 
+    JSON.parse(localStorage.getItem('data') || '{}')
+  )
+  ```
+
+- **Narrow effect dependencies**: Use primitive values instead of objects
+  ```typescript
+  // ❌ Incorrect: re-runs on any user change
+  useEffect(() => {
+    console.log(user.id)
+  }, [user])
+
+  // ✅ Correct: re-runs only when id changes
+  useEffect(() => {
+    console.log(user.id)
+  }, [user.id])
+  ```
+
+##### 3. Rendering Optimization (MEDIUM)
+
+- **Hoist static constants**: Extract constants outside component
+  ```typescript
+  // ❌ Incorrect: recreated every render
+  function Component() {
+    const options = { year: 'numeric', month: 'long' }
+    return <div>{date.toLocaleString('en-US', options)}</div>
+  }
+
+  // ✅ Correct: defined once
+  const DATE_FORMAT_OPTIONS = { year: 'numeric', month: 'long' } as const
+  
+  function Component() {
+    return <div>{date.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}</div>
+  }
+  ```
+
+- **Hoist static JSX**: Extract static JSX outside component
+  ```typescript
+  // ❌ Incorrect: recreated every render
+  function Container() {
+    return <div>{loading && <div className="spinner" />}</div>
+  }
+
+  // ✅ Correct: reuses same element
+  const loadingSpinner = <div className="spinner" />
+  
+  function Container() {
+    return <div>{loading && loadingSpinner}</div>
+  }
+  ```
+
+- **Optimize conditional rendering**: Use ternary operator instead of `&&` for JSX
+  ```typescript
+  // ❌ Can cause issues when count is 0 (renders "0")
+  {count && <div>Items: {count}</div>}
+
+  // ✅ Correct: explicit boolean
+  {count > 0 ? <div>Items: {count}</div> : null}
+  ```
+
+##### 4. JavaScript Performance (MEDIUM)
+
+- **Use direct comparison**: Avoid unnecessary `.toLowerCase()` calls
+  ```typescript
+  // ❌ Incorrect: creates new string every check
+  if (status.toLowerCase() === 'active') { }
+
+  // ✅ Correct: direct comparison with alternatives
+  if (status === 'active' || status === 'ACTIVE') { }
+  ```
+
+- **Use Set/Map for lookups**: O(1) instead of O(n) for membership checks
+  ```typescript
+  // ❌ Incorrect: O(n) per check
+  const allowedIds = ['a', 'b', 'c']
+  items.filter(item => allowedIds.includes(item.id))
+
+  // ✅ Correct: O(1) per check
+  const allowedIds = new Set(['a', 'b', 'c'])
+  items.filter(item => allowedIds.has(item.id))
+  ```
+
+- **Use toSorted() instead of sort()**: Avoid mutation bugs
+  ```typescript
+  // ❌ Incorrect: mutates original array
+  const sorted = users.sort((a, b) => a.name.localeCompare(b.name))
+
+  // ✅ Correct: creates new array
+  const sorted = users.toSorted((a, b) => a.name.localeCompare(b.name))
+  ```
+
+- **Early return from functions**: Skip unnecessary processing
+  ```typescript
+  // ❌ Incorrect: continues after finding answer
+  function validate(items) {
+    let hasError = false
+    for (const item of items) {
+      if (!item.valid) hasError = true
+    }
+    return hasError
+  }
+
+  // ✅ Correct: returns immediately
+  function validate(items) {
+    for (const item of items) {
+      if (!item.valid) return false
+    }
+    return true
+  }
+  ```
+
+- **Cache property access in loops**: Reduce repeated lookups
+  ```typescript
+  // ❌ Incorrect: 3 lookups × N iterations
+  for (let i = 0; i < arr.length; i++) {
+    process(config.settings.value)
+  }
+
+  // ✅ Correct: 1 lookup total
+  const value = config.settings.value
+  const len = arr.length
+  for (let i = 0; i < len; i++) {
+    process(value)
+  }
+  ```
+
+- **Hoist RegExp creation**: Don't create RegExp inside render
+  ```typescript
+  // ❌ Incorrect: new RegExp every render
+  function Component({ query }) {
+    const regex = new RegExp(query, 'gi')
+    return <div>{text.match(regex)}</div>
+  }
+
+  // ✅ Correct: memoized
+  function Component({ query }) {
+    const regex = useMemo(() => new RegExp(query, 'gi'), [query])
+    return <div>{text.match(regex)}</div>
+  }
+  ```
+
+##### 5. React Query Best Practices
+
+- **Use keepPreviousData**: Prevent loading flicker during pagination/filtering
+  ```typescript
+  const { data, isLoading } = useQuery({
+    queryKey: ['items', page],
+    queryFn: () => fetchItems(page),
+    keepPreviousData: true, // Show previous data while loading new
+  })
+  ```
+
+- **Set appropriate staleTime**: Reduce unnecessary refetches
+  ```typescript
+  const { data } = useQuery({
+    queryKey: ['config'],
+    queryFn: fetchConfig,
+    staleTime: 5 * 60 * 1000, // 5 minutes - config rarely changes
+  })
+  ```
+
+- **Invalidate queries efficiently**: Use specific query keys
+  ```typescript
+  // ❌ Incorrect: invalidates everything
+  queryClient.invalidateQueries()
+
+  // ✅ Correct: targeted invalidation
+  queryClient.invalidateQueries(['trades', symbol])
+  ```
+
+##### 6. Bundle Size Optimization
+
+- **Use dynamic imports**: Lazy-load heavy components
+  ```typescript
+  // ❌ Incorrect: bundles Monaco with main chunk (~300KB)
+  import { MonacoEditor } from './monaco-editor'
+
+  // ✅ Correct: loads on demand
+  const MonacoEditor = dynamic(() => import('./monaco-editor'), {
+    ssr: false
+  })
+  ```
+
+- **Conditional module loading**: Load large data only when needed
+  ```typescript
+  useEffect(() => {
+    if (enabled && !data) {
+      import('./large-data.json')
+        .then(mod => setData(mod.default))
+        .catch(console.error)
+    }
+  }, [enabled, data])
+  ```
+
 ## Common Patterns
 
 ### Creating a New Feature (Backend)

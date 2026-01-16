@@ -2140,6 +2140,57 @@ export class TradeClient {
         }
         return Promise.resolve<PaginatedListOfTradeHistoryDto>(null as any);
     }
+
+    getTradeStatisticsBySymbol(symbol: string, cancelToken?: CancelToken): Promise<TradeStatisticsDto> {
+        let url_ = this.baseUrl + "/api/trade/statistics/{symbol}";
+        if (symbol === undefined || symbol === null)
+            throw new Error("The parameter 'symbol' must be defined.");
+        url_ = url_.replace("{symbol}", encodeURIComponent("" + symbol));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetTradeStatisticsBySymbol(_response);
+        });
+    }
+
+    protected processGetTradeStatisticsBySymbol(response: AxiosResponse): Promise<TradeStatisticsDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = TradeStatisticsDto.fromJS(resultData200);
+            return Promise.resolve<TradeStatisticsDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<TradeStatisticsDto>(null as any);
+    }
 }
 
 export class ValuesClient {
@@ -3536,6 +3587,64 @@ export class TradeHistoryDto {
         data["feeCurrency"] = this.feeCurrency;
         data["tradedAt"] = this.tradedAt ? this.tradedAt.toISOString() : <any>undefined;
         data["total"] = this.total;
+        return data;
+    }
+}
+
+export class TradeStatisticsDto {
+    buy!: SideStatisticsDto;
+    sell!: SideStatisticsDto;
+
+    init(_data?: any) {
+        if (_data) {
+            this.buy = _data["buy"] ? SideStatisticsDto.fromJS(_data["buy"]) : <any>undefined;
+            this.sell = _data["sell"] ? SideStatisticsDto.fromJS(_data["sell"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): TradeStatisticsDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new TradeStatisticsDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["buy"] = this.buy ? this.buy.toJSON() : <any>undefined;
+        data["sell"] = this.sell ? this.sell.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export class SideStatisticsDto {
+    totalFunds!: number;
+    totalFee!: number;
+    totalSize!: number;
+    avgPrice!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            this.totalFunds = _data["totalFunds"];
+            this.totalFee = _data["totalFee"];
+            this.totalSize = _data["totalSize"];
+            this.avgPrice = _data["avgPrice"];
+        }
+    }
+
+    static fromJS(data: any): SideStatisticsDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SideStatisticsDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["totalFunds"] = this.totalFunds;
+        data["totalFee"] = this.totalFee;
+        data["totalSize"] = this.totalSize;
+        data["avgPrice"] = this.avgPrice;
         return data;
     }
 }

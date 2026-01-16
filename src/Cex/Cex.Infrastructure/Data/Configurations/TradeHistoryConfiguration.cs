@@ -35,10 +35,15 @@ namespace Cex.Infrastructure.Data.Configurations
 
             builder.Property(t => t.CreatedAt).HasDefaultValue(DateTime.UtcNow);
 
-            // Add the index
+            // Index for pagination query (GetTradeHistoriesBySymbol)
             builder.HasIndex(x => new { x.UserId, x.Symbol, x.TradedAt })
                 .HasDatabaseName("IX_TradeHistories_UserId_Symbol_TradedAt")
                 .IsDescending(false, false, true);  // UserId ASC, Symbol ASC, TradedAt DESC
+
+            // Covering index for statistics query (GetTradeStatisticsBySymbol)
+            builder.HasIndex(x => new { x.UserId, x.Symbol, x.Side })
+                .HasDatabaseName("IX_TradeHistories_Stats")
+                .IncludeProperties(x => new { x.Funds, x.Fee, x.Size });
         }
     }
 }
