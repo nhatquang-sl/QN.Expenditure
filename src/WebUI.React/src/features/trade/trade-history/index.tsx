@@ -3,8 +3,11 @@ import {
   Box,
   Button,
   Chip,
+  FormControl,
   Grid,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -19,6 +22,7 @@ import { setTitle } from 'features/layout/slice';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useGetSyncSettings } from './hooks/use-get-sync-settings';
 import { useGetTradeHistories } from './hooks/use-get-trade-histories';
 import { useGetTradeStatistics } from './hooks/use-get-trade-statistics';
 import { columns } from './types';
@@ -40,6 +44,7 @@ export default function TradeHistory() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
 
+  const { data: syncSettings } = useGetSyncSettings();
   const { data, isLoading } = useGetTradeHistories(symbol || '', page + 1, rowsPerPage);
   const {
     data: stats,
@@ -50,6 +55,11 @@ export default function TradeHistory() {
   useEffect(() => {
     dispatch(setTitle('Trade History'));
   }, [dispatch]);
+
+  const availableSymbols = useMemo(() => {
+    if (!syncSettings) return [];
+    return syncSettings.map((s) => s.symbol).sort();
+  }, [syncSettings]);
 
   const formattedStats = useMemo(() => {
     if (!stats) return null;
@@ -84,9 +94,23 @@ export default function TradeHistory() {
               >
                 <ArrowBack />
               </Button>
-              <Typography component="h2" variant="h6" color="primary">
-                {symbol}
-              </Typography>
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <Select
+                  value={symbol || ''}
+                  onChange={(e) => {
+                    navigate(`/trade/history/${e.target.value}`);
+                    setPage(0);
+                  }}
+                  displayEmpty
+                  disabled={!availableSymbols.length}
+                >
+                  {availableSymbols.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Box>
             {data && (
               <Typography variant="body2" color="textSecondary">
