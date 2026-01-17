@@ -3,6 +3,7 @@
 ## Project Overview
 
 QN.Expenditure is a comprehensive cryptocurrency expenditure tracking application built with:
+
 - **Backend**: .NET 8.0 with Clean Architecture (Domain, Application, Infrastructure layers)
 - **Frontend**: React with TypeScript, Material-UI, and Vite
 - **Database**: SQLite with Entity Framework Core
@@ -45,6 +46,7 @@ When creating new features, organize them consistently between backend and front
 ### Backend Feature Structure (Application Layer)
 
 **Settings Module Example:**
+
 ```
 Cex.Application/
 └── Settings/                      # Feature category
@@ -59,6 +61,7 @@ Cex.Application/
 ```
 
 **Trade Module Example:**
+
 ```
 Cex.Application/
 └── Trade/                         # Feature category
@@ -75,6 +78,7 @@ Cex.Application/
 ### Frontend Feature Structure
 
 **Settings Module Example:**
+
 ```
 features/
 └── settings/                      # Feature category (matches backend)
@@ -97,6 +101,7 @@ features/
 ```
 
 **TradeHistory Module Example:**
+
 ```
 features/
 └── trade-history/                 # Feature category (matches backend)
@@ -115,12 +120,14 @@ features/
 ### Backend (.NET/C#)
 
 #### Architecture Patterns
+
 - **Follow Clean Architecture**: Domain → Application → Infrastructure → Presentation
 - **Use CQRS**: Separate Commands (write) from Queries (read) using MediatR
 - **Implement Repository Pattern**: Abstract data access through interfaces
 - **Use Dependency Injection**: Constructor injection for all dependencies
 
 #### Naming Conventions
+
 - **Entities**: PascalCase (e.g., `ExchangeSetting`, `SpotGrid`)
 - **DTOs**: Suffix with `Dto` (e.g., `ExchangeSettingDto`)
 - **Commands**: Suffix with `Command` (e.g., `UpsertExchangeSettingCommand`)
@@ -130,6 +137,7 @@ features/
 - **Controllers**: Suffix with `Controller`, use kebab-case routes (e.g., `/api/exchange-configs`)
 
 #### Code Style
+
 - Use **file-scoped namespaces**: `namespace MyNamespace;`
 - Use **primary constructors** for dependency injection (C# 12+)
 - Use **record types** for DTOs and Commands/Queries
@@ -138,18 +146,21 @@ features/
 - Use **CancellationToken**: Pass through all async methods
 
 #### Entity Framework Core
+
 - **Use configurations**: Separate entity configuration in `EntityTypeConfiguration<T>` classes
 - **Composite keys**: Use `HasKey(x => new { x.Property1, x.Property2 })`
 - **Enum storage**: Use `.HasConversion<string>()` for readable database values
 - **Migrations**: Name with descriptive verbs (e.g., `AddExchangeConfig`)
 
 #### Validation
+
 - **Use FluentValidation**: Create separate validator classes
 - **Validate at boundaries**: Commands should have validators
 - **Custom error messages**: Provide user-friendly validation messages
 - **Enum validation**: Use `.IsInEnum()` for enum properties
 
 #### Error Handling
+
 - **Use exceptions**: For exceptional scenarios only
 - **Custom exceptions**: Create domain-specific exceptions when needed
 - **Validation exceptions**: Return `UnprocessableEntityException` for validation errors
@@ -158,11 +169,13 @@ features/
 ### Frontend (React/TypeScript)
 
 #### File Organization
+
 - **Feature-based structure**: Group by feature (e.g., `features/bnb/setting/`)
 - **Component files**: One component per file
 - **Co-locate related files**: types, hooks, components in same directory
 
 #### Naming Conventions
+
 - **Components**: PascalCase (e.g., `ExchangeConfigForm`, `BnbSetting`)
 - **Hooks**: Prefix with `use` (e.g., `useGetExchangeConfigs`, `useUpsertExchangeConfig`)
 - **Types/Interfaces**: PascalCase (e.g., `ExchangeConfigData`, `Column`)
@@ -170,6 +183,7 @@ features/
 - **Functions**: camelCase (e.g., `handleSubmit`, `onSubmit`)
 
 #### TypeScript Patterns
+
 - **Use types over interfaces**: Prefer `type` for simple structures
 - **Zod for validation**: Use Zod schemas for form validation
 - **Infer types**: Use `z.infer<typeof Schema>` for Zod schemas
@@ -177,6 +191,7 @@ features/
 - **Avoid `any`**: Use proper typing or `unknown` when necessary
 
 #### React Patterns
+
 - **Functional components**: Always use function components with hooks
 - **Custom hooks**: Extract reusable logic into custom hooks
 - **React Query**: Use for server state management (queries/mutations)
@@ -184,6 +199,7 @@ features/
 - **Material-UI**: Use MUI components for UI consistency
 
 #### API Integration
+
 - **Use generated client**: Import from `store/api-client.ts` (NSwag generated)
 - **Don't modify generated code**: Auto-generated files should not be edited
 - **Use hooks for API calls**: Wrap API calls in custom hooks
@@ -197,66 +213,83 @@ When writing or refactoring React components, follow these performance optimizat
 ##### 1. Async/Parallel Data Fetching (CRITICAL)
 
 - **Use Promise.all() for independent operations**: Execute multiple API calls concurrently
+
   ```typescript
   // ❌ Incorrect: sequential (3 round trips)
-  const user = await fetchUser()
-  const posts = await fetchPosts()
-  const comments = await fetchComments()
+  const user = await fetchUser();
+  const posts = await fetchPosts();
+  const comments = await fetchComments();
 
   // ✅ Correct: parallel (1 round trip)
-  const [user, posts, comments] = await Promise.all([
-    fetchUser(),
-    fetchPosts(),
-    fetchComments()
-  ])
+  const [user, posts, comments] = await Promise.all([fetchUser(), fetchPosts(), fetchComments()]);
   ```
 
 - **Defer await until needed**: Move `await` into branches where data is actually used
+
   ```typescript
   // ❌ Incorrect: always waits
-  const data = await fetchData()
-  if (skipProcessing) return { skipped: true }
-  return process(data)
+  const data = await fetchData();
+  if (skipProcessing) return { skipped: true };
+  return process(data);
 
   // ✅ Correct: only waits when needed
-  if (skipProcessing) return { skipped: true }
-  const data = await fetchData()
-  return process(data)
+  if (skipProcessing) return { skipped: true };
+  const data = await fetchData();
+  return process(data);
   ```
 
 ##### 2. Re-render Optimization (MEDIUM-HIGH)
 
-- **Use useCallback for event handlers**: Prevent child re-renders
-  ```typescript
-  // ❌ Incorrect: new function every render
-  <Button onClick={() => handleClick(id)}>Click</Button>
+- **Use useCallback for event handlers**: Prevent child re-renders, but prefer inline handlers when possible
 
-  // ✅ Correct: stable reference
+  ```typescript
+  // ✅ Best: Inline handler (simple, no performance issues)
+  <Select onChange={(e) => {
+    navigate(`/path/${e.target.value}`);
+    setPage(0);
+  }}>
+
+  // ✅ Also good: useCallback when passing to memoized child components
   const handleClick = useCallback(() => {
     onClick(id)
   }, [id, onClick])
-  
-  return <Button onClick={handleClick}>Click</Button>
+
+  return <MemoizedButton onClick={handleClick}>Click</MemoizedButton>
+
+  // ❌ Avoid: Unnecessary useCallback for simple inline handlers
+  const handleChange = useCallback((e) => {
+    navigate(`/path/${e.target.value}`);
+  }, [navigate])
+
+  return <Select onChange={handleChange}>
   ```
 
+  **When to use `useCallback`:**
+  - Passing callbacks to child components wrapped in `React.memo()`
+  - Dependencies in `useEffect` or other hooks
+  - Performance-critical lists with hundreds/thousands of items
+  - When profiling shows actual performance issues
+
+  **When to use inline handlers:**
+  - Simple event handlers in small components
+  - Handlers passed to MUI components (they're well-optimized)
+  - When the function logic is short (1-3 lines)
+  - When readability is prioritized over micro-optimizations
+
 - **Use useMemo for expensive computations**: Cache computed values
+
   ```typescript
   // ❌ Incorrect: recalculates every render
-  const sorted = items.sort((a, b) => a.value - b.value)
-  const total = items.reduce((sum, item) => sum + item.price, 0)
+  const sorted = items.sort((a, b) => a.value - b.value);
+  const total = items.reduce((sum, item) => sum + item.price, 0);
 
   // ✅ Correct: memoized
-  const sorted = useMemo(
-    () => items.toSorted((a, b) => a.value - b.value),
-    [items]
-  )
-  const total = useMemo(
-    () => items.reduce((sum, item) => sum + item.price, 0),
-    [items]
-  )
+  const sorted = useMemo(() => items.toSorted((a, b) => a.value - b.value), [items]);
+  const total = useMemo(() => items.reduce((sum, item) => sum + item.price, 0), [items]);
   ```
 
 - **Use memo() for expensive components**: Prevent unnecessary re-renders
+
   ```typescript
   // ✅ Memoize expensive child components
   const ExpensiveChild = memo(function ExpensiveChild({ data }) {
@@ -266,32 +299,33 @@ When writing or refactoring React components, follow these performance optimizat
   ```
 
 - **Lazy state initialization**: Use function form for expensive initial values
+
   ```typescript
   // ❌ Incorrect: runs every render
-  const [data, setData] = useState(JSON.parse(localStorage.getItem('data')))
+  const [data, setData] = useState(JSON.parse(localStorage.getItem('data')));
 
   // ✅ Correct: runs only once
-  const [data, setData] = useState(() => 
-    JSON.parse(localStorage.getItem('data') || '{}')
-  )
+  const [data, setData] = useState(() => JSON.parse(localStorage.getItem('data') || '{}'));
   ```
 
 - **Narrow effect dependencies**: Use primitive values instead of objects
+
   ```typescript
   // ❌ Incorrect: re-runs on any user change
   useEffect(() => {
-    console.log(user.id)
-  }, [user])
+    console.log(user.id);
+  }, [user]);
 
   // ✅ Correct: re-runs only when id changes
   useEffect(() => {
-    console.log(user.id)
-  }, [user.id])
+    console.log(user.id);
+  }, [user.id]);
   ```
 
 ##### 3. Rendering Optimization (MEDIUM)
 
 - **Hoist static constants**: Extract constants outside component
+
   ```typescript
   // ❌ Incorrect: recreated every render
   function Component() {
@@ -301,13 +335,14 @@ When writing or refactoring React components, follow these performance optimizat
 
   // ✅ Correct: defined once
   const DATE_FORMAT_OPTIONS = { year: 'numeric', month: 'long' } as const
-  
+
   function Component() {
     return <div>{date.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}</div>
   }
   ```
 
 - **Hoist static JSX**: Extract static JSX outside component
+
   ```typescript
   // ❌ Incorrect: recreated every render
   function Container() {
@@ -316,13 +351,14 @@ When writing or refactoring React components, follow these performance optimizat
 
   // ✅ Correct: reuses same element
   const loadingSpinner = <div className="spinner" />
-  
+
   function Container() {
     return <div>{loading && loadingSpinner}</div>
   }
   ```
 
 - **Optimize conditional rendering**: Use ternary operator instead of `&&` for JSX
+
   ```typescript
   // ❌ Can cause issues when count is 0 (renders "0")
   {count && <div>Items: {count}</div>}
@@ -334,70 +370,78 @@ When writing or refactoring React components, follow these performance optimizat
 ##### 4. JavaScript Performance (MEDIUM)
 
 - **Use direct comparison**: Avoid unnecessary `.toLowerCase()` calls
+
   ```typescript
   // ❌ Incorrect: creates new string every check
-  if (status.toLowerCase() === 'active') { }
+  if (status.toLowerCase() === 'active') {
+  }
 
   // ✅ Correct: direct comparison with alternatives
-  if (status === 'active' || status === 'ACTIVE') { }
+  if (status === 'active' || status === 'ACTIVE') {
+  }
   ```
 
 - **Use Set/Map for lookups**: O(1) instead of O(n) for membership checks
+
   ```typescript
   // ❌ Incorrect: O(n) per check
-  const allowedIds = ['a', 'b', 'c']
-  items.filter(item => allowedIds.includes(item.id))
+  const allowedIds = ['a', 'b', 'c'];
+  items.filter((item) => allowedIds.includes(item.id));
 
   // ✅ Correct: O(1) per check
-  const allowedIds = new Set(['a', 'b', 'c'])
-  items.filter(item => allowedIds.has(item.id))
+  const allowedIds = new Set(['a', 'b', 'c']);
+  items.filter((item) => allowedIds.has(item.id));
   ```
 
 - **Use toSorted() instead of sort()**: Avoid mutation bugs
+
   ```typescript
   // ❌ Incorrect: mutates original array
-  const sorted = users.sort((a, b) => a.name.localeCompare(b.name))
+  const sorted = users.sort((a, b) => a.name.localeCompare(b.name));
 
   // ✅ Correct: creates new array
-  const sorted = users.toSorted((a, b) => a.name.localeCompare(b.name))
+  const sorted = users.toSorted((a, b) => a.name.localeCompare(b.name));
   ```
 
 - **Early return from functions**: Skip unnecessary processing
+
   ```typescript
   // ❌ Incorrect: continues after finding answer
   function validate(items) {
-    let hasError = false
+    let hasError = false;
     for (const item of items) {
-      if (!item.valid) hasError = true
+      if (!item.valid) hasError = true;
     }
-    return hasError
+    return hasError;
   }
 
   // ✅ Correct: returns immediately
   function validate(items) {
     for (const item of items) {
-      if (!item.valid) return false
+      if (!item.valid) return false;
     }
-    return true
+    return true;
   }
   ```
 
 - **Cache property access in loops**: Reduce repeated lookups
+
   ```typescript
   // ❌ Incorrect: 3 lookups × N iterations
   for (let i = 0; i < arr.length; i++) {
-    process(config.settings.value)
+    process(config.settings.value);
   }
 
   // ✅ Correct: 1 lookup total
-  const value = config.settings.value
-  const len = arr.length
+  const value = config.settings.value;
+  const len = arr.length;
   for (let i = 0; i < len; i++) {
-    process(value)
+    process(value);
   }
   ```
 
 - **Hoist RegExp creation**: Don't create RegExp inside render
+
   ```typescript
   // ❌ Incorrect: new RegExp every render
   function Component({ query }) {
@@ -415,54 +459,56 @@ When writing or refactoring React components, follow these performance optimizat
 ##### 5. React Query Best Practices
 
 - **Use keepPreviousData**: Prevent loading flicker during pagination/filtering
+
   ```typescript
   const { data, isLoading } = useQuery({
     queryKey: ['items', page],
     queryFn: () => fetchItems(page),
     keepPreviousData: true, // Show previous data while loading new
-  })
+  });
   ```
 
 - **Set appropriate staleTime**: Reduce unnecessary refetches
+
   ```typescript
   const { data } = useQuery({
     queryKey: ['config'],
     queryFn: fetchConfig,
     staleTime: 5 * 60 * 1000, // 5 minutes - config rarely changes
-  })
+  });
   ```
 
 - **Invalidate queries efficiently**: Use specific query keys
+
   ```typescript
   // ❌ Incorrect: invalidates everything
-  queryClient.invalidateQueries()
+  queryClient.invalidateQueries();
 
   // ✅ Correct: targeted invalidation
-  queryClient.invalidateQueries(['trades', symbol])
+  queryClient.invalidateQueries(['trades', symbol]);
   ```
 
 ##### 6. Bundle Size Optimization
 
 - **Use dynamic imports**: Lazy-load heavy components
+
   ```typescript
   // ❌ Incorrect: bundles Monaco with main chunk (~300KB)
-  import { MonacoEditor } from './monaco-editor'
+  import { MonacoEditor } from './monaco-editor';
 
   // ✅ Correct: loads on demand
   const MonacoEditor = dynamic(() => import('./monaco-editor'), {
-    ssr: false
-  })
+    ssr: false,
+  });
   ```
 
 - **Conditional module loading**: Load large data only when needed
   ```typescript
   useEffect(() => {
     if (enabled && !data) {
-      import('./large-data.json')
-        .then(mod => setData(mod.default))
-        .catch(console.error)
+      import('./large-data.json').then((mod) => setData(mod.default)).catch(console.error);
     }
-  }, [enabled, data])
+  }, [enabled, data]);
   ```
 
 ## Common Patterns
@@ -470,6 +516,7 @@ When writing or refactoring React components, follow these performance optimizat
 ### Creating a New Feature (Backend)
 
 1. **Domain Layer**:
+
    ```csharp
    // Entity
    public class MyEntity
@@ -481,6 +528,7 @@ When writing or refactoring React components, follow these performance optimizat
    ```
 
 2. **Infrastructure Layer**:
+
    ```csharp
    // Configuration
    public class MyEntityConfiguration : IEntityTypeConfiguration<MyEntity>
@@ -494,6 +542,7 @@ When writing or refactoring React components, follow these performance optimizat
    ```
 
 3. **Application Layer**:
+
    ```csharp
    // DTO
    public record MyEntityDto(string Id, string Name);
@@ -542,49 +591,53 @@ When writing or refactoring React components, follow these performance optimizat
 1. **Create feature folder**: `src/features/my-feature/`
 
 2. **Define types**: `types.ts`
+
    ```typescript
    import { z } from 'zod';
 
    export const MySchema = z.object({
-       name: z.string().min(1).max(100),
+     name: z.string().min(1).max(100),
    });
 
    export type MyData = z.infer<typeof MySchema>;
    ```
 
 3. **Create custom hooks**: `hooks/use-create-my-entity.ts`
+
    ```typescript
    import { useMutation, useQueryClient } from '@tanstack/react-query';
    import { myEntityClient } from 'store/api-client';
 
    export function useCreateMyEntity() {
-       const queryClient = useQueryClient();
-       return useMutation({
-           mutationFn: (command) => myEntityClient.create(command),
-           onSuccess: () => {
-               queryClient.invalidateQueries(['my-entities']);
-           },
-       });
+     const queryClient = useQueryClient();
+     return useMutation({
+       mutationFn: (command) => myEntityClient.create(command),
+       onSuccess: () => {
+         queryClient.invalidateQueries(['my-entities']);
+       },
+     });
    }
    ```
 
 4. **Create component**: `index.tsx`
+
    ```typescript
    import { useForm } from 'react-hook-form';
    import { zodResolver } from '@hookform/resolvers/zod';
 
    export default function MyFeature() {
-       const { handleSubmit } = useForm({
-           resolver: zodResolver(MySchema),
-       });
+     const { handleSubmit } = useForm({
+       resolver: zodResolver(MySchema),
+     });
 
-       // Component implementation
+     // Component implementation
    }
    ```
 
 ## Testing Guidelines
 
 ### Backend Testing
+
 - **Unit tests**: Test handlers, validators in isolation
 - **Integration tests**: Test database operations with in-memory database
 - **Use xUnit**: Standard testing framework
@@ -592,6 +645,7 @@ When writing or refactoring React components, follow these performance optimizat
 - **Name tests clearly**: `MethodName_Scenario_ExpectedResult`
 
 ### Frontend Testing
+
 - **Component tests**: Test user interactions
 - **Hook tests**: Test custom hooks in isolation
 - **Mock API calls**: Use MSW or similar for API mocking
@@ -599,6 +653,7 @@ When writing or refactoring React components, follow these performance optimizat
 ## Database Migrations
 
 ### Creating Migrations
+
 ```bash
 dotnet ef migrations add MigrationName \
   --project src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj \
@@ -607,6 +662,7 @@ dotnet ef migrations add MigrationName \
 ```
 
 ### Applying Migrations
+
 ```bash
 dotnet ef database update \
   --project src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj \
@@ -617,6 +673,7 @@ dotnet ef database update \
 ## API Client Generation
 
 After modifying API controllers, regenerate TypeScript client:
+
 ```bash
 # From project root
 npm run generate-api-client
@@ -634,6 +691,7 @@ npm run generate-api-client
 ## Common Commands
 
 ### Development
+
 ```bash
 # Run backend
 dotnet run --project src/WebAPI/WebAPI.csproj
@@ -649,6 +707,7 @@ dotnet format
 ```
 
 ### Docker
+
 ```bash
 # Build and run with Docker Compose
 docker-compose up --build
