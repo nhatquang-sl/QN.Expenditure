@@ -103,7 +103,7 @@ const router = createBrowserRouter([
         element: <CandleAnalytics />,
       },
       {
-        path: 'trade/history/:symbol',
+        path: 'trade/history/:symbol?',
         element: <TradeHistory />,
       },
       // {

@@ -2,18 +2,20 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import LogoutIcon from '@mui/icons-material/Logout';
 import {
   Divider,
+  Icon,
   IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  ListSubheader,
   Toolbar,
   styled,
 } from '@mui/material';
 import MuiDrawer from '@mui/material/Drawer';
 import { logout } from 'features/auth/slice';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from 'store';
 import { BnbMenuItems, mainListItems } from './listItems';
 import { drawerWidth, toggleDrawer } from './slice';
@@ -41,7 +43,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
         },
       }),
     },
-  })
+  }),
 );
 function Sidebar() {
   const open = useSelector((state: RootState) => state.layout.open);
@@ -68,6 +70,16 @@ function Sidebar() {
       <Divider />
       <List component="nav" sx={{ flex: 1 }}>
         {mainListItems}
+        <Divider sx={{ my: 1 }} />
+        <ListSubheader component="div" inset>
+          Trade
+        </ListSubheader>
+        <ListItemButton component={Link} to="trade/history">
+          <ListItemIcon>
+            <Icon>history</Icon>
+          </ListItemIcon>
+          <ListItemText primary="Histories" />
+        </ListItemButton>
         <Divider sx={{ my: 1 }} />
         {/* {secondaryListItems} */}
         <BnbMenuItems />
