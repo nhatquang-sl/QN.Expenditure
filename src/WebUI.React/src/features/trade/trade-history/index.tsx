@@ -22,6 +22,7 @@ import { setTitle } from 'features/layout/slice';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
+import { StatisticsCard } from './components/StatisticsCard';
 import { useGetSyncSettings } from './hooks/use-get-sync-settings';
 import { useGetTradeHistories } from './hooks/use-get-trade-histories';
 import { useGetTradeStatistics } from './hooks/use-get-trade-statistics';
@@ -58,7 +59,7 @@ export default function TradeHistory() {
 
   const availableSymbols = useMemo(() => {
     if (!syncSettings) return [];
-    return syncSettings.map((s) => s.symbol).sort();
+    return syncSettings.map((s) => s.symbol).toSorted();
   }, [syncSettings]);
 
   const formattedStats = useMemo(() => {
@@ -137,108 +138,10 @@ export default function TradeHistory() {
               {formattedStats && (
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
-                    <Paper variant="outlined" sx={{ p: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <Chip label="BUY" color="success" size="small" />
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Statistics
-                        </Typography>
-                      </Box>
-                      <Grid container>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Total Funds
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography align="right" variant="body2">
-                            {formattedStats.buy.totalFunds}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Total Fee
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography align="right" variant="body2">
-                            {formattedStats.buy.totalFee}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Total Size
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography align="right" variant="body2">
-                            {formattedStats.buy.totalSize}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Avg Price
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography align="right" variant="body2">
-                            {formattedStats.buy.avgPrice}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </Paper>
+                    <StatisticsCard type="BUY" stats={formattedStats.buy} />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <Paper variant="outlined" sx={{ p: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <Chip label="SELL" color="error" size="small" />
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Statistics
-                        </Typography>
-                      </Box>
-                      <Grid container>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Total Funds
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography align="right" variant="body2">
-                            {formattedStats.sell.totalFunds}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Total Fee
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography align="right" variant="body2">
-                            {formattedStats.sell.totalFee}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Total Size
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography align="right" variant="body2">
-                            {formattedStats.sell.totalSize}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Avg Price
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography align="right" variant="body2">
-                            {formattedStats.sell.avgPrice}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </Paper>
+                    <StatisticsCard type="SELL" stats={formattedStats.sell} />
                   </Grid>
                 </Grid>
               )}
@@ -270,7 +173,7 @@ export default function TradeHistory() {
                       <TableCell align="center">
                         <Chip
                           label={trade.side.toUpperCase()}
-                          color={trade.side === 'buy' || trade.side === 'BUY' ? 'success' : 'error'}
+                          color={trade.side.toUpperCase() === 'BUY' ? 'success' : 'error'}
                           size="small"
                         />
                       </TableCell>
