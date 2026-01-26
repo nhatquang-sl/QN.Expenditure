@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Cex.Application.Indicator.Shared;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
@@ -31,7 +30,7 @@ namespace WebAPI.Controllers
         {
             const IntervalType interval = IntervalType.OneDay;
             var startDate = interval.GetStartDate();
-            return await kuCoinService.GetKlines("BTCUSDT", interval.GetDescription(), startDate,
+            return await kuCoinService.GetKlines("BTCUSDT", interval, startDate,
                 DateTime.UtcNow, kuCoinConfig.Value);
         }
 
@@ -42,7 +41,7 @@ namespace WebAPI.Controllers
             {
                 const IntervalType interval = IntervalType.OneDay;
                 var startDate = interval.GetStartDate();
-                return await kuCoinService.GetKlines("BTCUSDT", interval.GetDescription(), startDate,
+                return await kuCoinService.GetKlines("BTCUSDT", interval, startDate,
                     DateTime.UtcNow, kuCoinConfig.Value);
             }, cancellationToken: token);
         }
@@ -61,7 +60,7 @@ namespace WebAPI.Controllers
 
             const IntervalType interval = IntervalType.OneDay;
             var startDate = interval.GetStartDate();
-            candles = await kuCoinService.GetKlines("BTCUSDT", interval.GetDescription(), startDate,
+            candles = await kuCoinService.GetKlines("BTCUSDT", interval, startDate,
                 DateTime.UtcNow, kuCoinConfig.Value);
             await distributedCache.SetStringAsync("WeatherForecastDistributedCache", JsonSerializer.Serialize(candles),
                 token);

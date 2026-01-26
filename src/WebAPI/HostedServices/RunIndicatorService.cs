@@ -1,5 +1,5 @@
 ﻿using Cex.Application.Indicator.Commands;
-using Cex.Application.Indicator.Shared;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 
 namespace WebAPI.HostedServices

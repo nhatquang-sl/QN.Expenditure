@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Skill(vercel-react-best-practices)",
-      "Skill(vercel-react-best-practices:*)"
+      "Skill(vercel-react-best-practices:*)",
+      "Bash(dotnet build:*)",
+      "Bash(echo:*)",
+      "Bash(/usr/local/share/dotnet/dotnet test --verbosity normal)",
+      "Bash(ls:*)",
+      "Bash(/usr/local/share/dotnet/dotnet test QN.Expenditure.sln --verbosity normal)"
     ]
   }
 }

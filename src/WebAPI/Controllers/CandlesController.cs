@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using Cex.Application.Indicator.Shared;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
@@ -33,7 +32,7 @@ namespace WebAPI.Controllers
             }
 
             var startDate = interval.GetStartDate();
-            candles = await kuCoinService.GetKlines(symbol, interval.GetDescription(), startDate,
+            candles = await kuCoinService.GetKlines(symbol, interval, startDate,
                 DateTime.UtcNow, kuCoinConfig.Value);
             await distributedCache.SetStringAsync($"candles_{symbol}_{interval}", JsonSerializer.Serialize(candles),
                 cancellationToken);

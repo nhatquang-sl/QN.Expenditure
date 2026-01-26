@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Cex.Application.Indicator.Commands.Rsi;
-using Cex.Application.Indicator.Shared;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
@@ -54,7 +53,7 @@ namespace Cex.Application.Indicator.Commands
             var batchSize = 1400;
             while (from <= DateTime.UtcNow)
             {
-                var result = await kuCoinService.GetKlines("BTCUSDT", intervalType.GetDescription(),
+                var result = await kuCoinService.GetKlines("BTCUSDT", intervalType,
                     from, from.AddHours(batchSize), kuCoinConfig.Value);
                 allCandles.AddRange(result);
                 from = from.AddHours(batchSize);

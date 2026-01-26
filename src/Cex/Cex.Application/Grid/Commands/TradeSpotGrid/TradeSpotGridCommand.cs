@@ -51,7 +51,7 @@ namespace Cex.Application.Grid.Commands.TradeSpotGrid
         {
             var tasks = symbols.Select(async symbol =>
             {
-                var res = await kuCoinService.GetKlines(symbol, "5min",
+                var res = await kuCoinService.GetKlines(symbol, IntervalType.FiveMinutes,
                     DateTime.UtcNow.AddHours(-1), DateTime.UtcNow, kuCoinConfig.Value);
                 var curr = res.Last();
                 _spotPrice.TryAdd(symbol, curr);

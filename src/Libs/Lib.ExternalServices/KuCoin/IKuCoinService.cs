@@ -96,11 +96,12 @@ namespace Lib.ExternalServices.KuCoin
             return res.Data;
         }
 
-        public async Task<List<Kline>> GetKlines(string symbol, string type, DateTime startAt, DateTime endAt,
+        public async Task<List<Kline>> GetKlines(string symbol, IntervalType intervalType, DateTime startAt, DateTime endAt,
             KuCoinConfig credentials)
         {
             var startAtUnix = new DateTimeOffset(startAt).ToUnixTimeSeconds();
             var endAtUnix = new DateTimeOffset(endAt).ToUnixTimeSeconds();
+            var type = intervalType.GetDescription();
 
             var (signature, timestamp) = GenerateSignature(credentials.ApiSecret, "GET",
                 $"/api/v1/market/candles?symbol={symbol.ToKcSymbol()}&type={type}&startAt={startAt}&endAt={endAt}");

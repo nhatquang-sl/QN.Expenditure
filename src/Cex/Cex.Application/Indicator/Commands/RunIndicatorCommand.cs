@@ -1,10 +1,10 @@
 using System.Text;
 using Cex.Application.Indicator.Commands.Rsi;
-using Cex.Application.Indicator.Shared;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
 using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
+using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.Extensions.Options;
 
@@ -26,7 +26,7 @@ namespace Cex.Application.Indicator.Commands
         public async Task Handle(RunIndicatorCommand command, CancellationToken cancellationToken)
         {
             logTrace.LogInformation(command.Type.GetDescription());
-            var candles = await kuCoinService.GetKlines("BTCUSDT", command.Type.GetDescription(),
+            var candles = await kuCoinService.GetKlines("BTCUSDT", command.Type,
                 command.Type.GetStartDate(), DateTime.UtcNow, //.AddHours(-1).AddMinutes(-15),
                 kuCoinConfig.Value);
             var rsiValues = await sender.Send(new RsiCommand(candles), cancellationToken);
