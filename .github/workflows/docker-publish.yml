@@ -96,19 +96,21 @@ jobs:
           mkdir -p $HOME/.ssh
           echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
           chmod 600 $HOME/.ssh/ssh.key
+          SOURCE_COMPOSE="src/WebAPI/QN.Expenditure.Credentials/qex/docker-compose.yml"
+          TARGET_DIR="workspace/qex"
+
+          if [ ! -f "$SOURCE_COMPOSE" ]; then
+            echo "Source compose file not found in GitHub runner: $SOURCE_COMPOSE"
+            exit 1
+          fi
+
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR"
+          scp -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key "$SOURCE_COMPOSE" ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/docker-compose.yml
+
           ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
             set -euo pipefail
 
-            SOURCE_COMPOSE="src/WebAPI/QN.Expenditure.Credentials/qex/docker-compose.yml"
             TARGET_DIR="workspace/qex"
-
-            if [ ! -f "$SOURCE_COMPOSE" ]; then
-              echo "Source compose file not found: $SOURCE_COMPOSE"
-              exit 1
-            fi
-
-            mkdir -p "$TARGET_DIR"
-            cp -f "$SOURCE_COMPOSE" "$TARGET_DIR/docker-compose.yml"
 
             cd "$TARGET_DIR"
             ls -la
