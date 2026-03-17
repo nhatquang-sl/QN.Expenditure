@@ -82,8 +82,15 @@ jobs:
   deploy-docker-to-vps:
     runs-on: ubuntu-latest
     needs: [build-push-image]
+    # Run deploy in two cases:
+    # 1) Tag contains 'deploy' (deploy-only tag; build job can be skipped)
+    # 2) Non-deploy tag where build-push-image completed successfully
     if: ${{ always() && (contains(github.ref_name, 'deploy') || needs.build-push-image.result == 'success') }}
     steps:
+      # Derive IMAGE_TAGS from pushed tag by removing 'deploy' marker.
+      # Examples:
+      # - deploy-1.33 -> 1.33
+      # - v1.33 -> v1.33
       - name: Derive IMAGE_TAGS from tag
         run: |
           IMAGE_TAGS="${GITHUB_REF_NAME//deploy/}"
