@@ -5,5 +5,8 @@ qndbupdate() {
     echo $curDir
     cd $QNEDIR/src/Cex/Cex.Infrastructure
     dotnet ef database update
+
+    cd $QNEDIR/src/Auth/Auth.Infrastructure
+    dotnet ef database update
     cd $curDir
 }
