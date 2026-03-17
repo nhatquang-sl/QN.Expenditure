@@ -119,7 +119,11 @@ namespace Lib.Application.Logging
                     prop.SetValue(data, HideSensitiveData(prop.GetValue(data)));
                     if (prop.Name.Equals("password", StringComparison.OrdinalIgnoreCase)
                         || prop.Name.Equals("SecretKey", StringComparison.OrdinalIgnoreCase)
+                        || prop.Name.Equals("Secret", StringComparison.OrdinalIgnoreCase)
                         || prop.Name.Equals("apikey", StringComparison.OrdinalIgnoreCase)
+                        || prop.Name.Equals("ApiSecret", StringComparison.OrdinalIgnoreCase)
+                        || prop.Name.Equals("Passphrase", StringComparison.OrdinalIgnoreCase)
+                        || prop.Name.Equals("ApiPassphrase", StringComparison.OrdinalIgnoreCase)
                         || prop.Name.Equals("AccessToken", StringComparison.OrdinalIgnoreCase)
                         || prop.Name.Equals("RefreshToken", StringComparison.OrdinalIgnoreCase))
                     {
