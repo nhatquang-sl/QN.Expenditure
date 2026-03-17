@@ -10,5 +10,4 @@ source $QNEDIR/scripts/qndkbuildapi.zsh
 source $QNEDIR/scripts/qndkbuildui.zsh
 source $QNEDIR/scripts/qndkcp.zsh
 source $QNEDIR/scripts/qndkpushapi.zsh
-source $QNEDIR/scripts/qnsshconnect.zsh
 source $QNEDIR/scripts/qnuistart.zsh
