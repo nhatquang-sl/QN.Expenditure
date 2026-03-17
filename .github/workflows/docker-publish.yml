@@ -85,6 +85,11 @@ jobs:
       - env:
           IMAGE_TAGS: ${{needs.build-push-image.outputs.IMAGE_TAGS}}
         run: echo "$IMAGE_TAGS"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.SUB_CREDENTIALS }}
+          submodules: true
       - name: 🚀Deploy Docker to VPS
         run: |
           echo "${{needs.build-push-image.outputs.IMAGE_TAGS}}" 
