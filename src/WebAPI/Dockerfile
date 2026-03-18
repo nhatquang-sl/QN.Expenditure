@@ -36,7 +36,6 @@ COPY ["src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj", "src/Cex/Cex.Infra
 COPY ["src/Libs/Lib.Application/Lib.Application.csproj", "src/Libs/Lib.Application/"]
 COPY ["src/Libs/Lib.ExternalServices/Lib.ExternalServices.csproj", "src/Libs/Lib.ExternalServices/"]
 COPY ["src/Libs/Lib.Notifications/Lib.Notifications.csproj", "src/Libs/Lib.Notifications/"]
-COPY ["src/WebAPI/QN.Expenditure.Credentials/appsettings.json", "src/WebAPI/QN.Expenditure.Credentials/"]
 
 RUN dotnet restore "./src/WebAPI/WebAPI.csproj"
 
