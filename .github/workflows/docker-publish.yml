@@ -135,5 +135,5 @@ jobs:
           UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${IMAGE_TAGS}
           EOF
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f
+          docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps
           ENDSSH
