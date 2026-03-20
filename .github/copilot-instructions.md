@@ -726,6 +726,95 @@ docker-compose up --build
 - **Prefer `List<T>` over `IEnumerable<T>`**: Use concrete `List<T>` for parameters when you need to access `.Count` property
 - **Use `.Count` instead of `.Any()`**: For materialized collections (like `List<T>`), use `.Count == 0` or `.Count > 0` instead of `.Any()` for better performance and clarity
 
+## Technical Documentation
+
+When writing technical documents for a feature (e.g., a feature README.md), follow this standard structure:
+
+```markdown
+## Overview
+
+Brief description of the feature, its purpose, and how it fits into the system.
+
+## Data Model
+
+Description of the data structures involved.
+
+### Entity: <EntityName> (Existing|New)
+
+Fields, types, and notes for each relevant entity.
+
+### Business Rules
+
+- List of business constraints and rules that govern the feature.
+
+## Backend Architecture
+
+### Domain Layer
+
+New or modified domain entities, enums, value objects.
+
+### Infrastructure Layer
+
+Repository implementations, EF Core configurations, migration notes.
+
+### Application Layer
+
+Commands, queries, handlers, validators, DTOs.
+
+### Algorithm
+
+Step-by-step description of any non-trivial logic or processing flow.
+
+### API Layer
+
+Controller endpoints: HTTP method, route, request/response shape.
+
+## Performance Considerations
+
+Known bottlenecks, recommended optimizations, indexing strategy.
+
+## Error Handling
+
+Expected failure scenarios and how they are handled (exceptions, HTTP status codes).
+
+## Implementation Checklist
+
+### Backend
+
+- [ ] Domain entities / enums defined
+- [ ] EF Core configuration and migration added
+- [ ] Command / Query / Handler / Validator created
+- [ ] Controller endpoint added
+- [ ] API client regenerated (`npm run generate-api-client`)
+
+### Testing
+
+- [ ] Unit tests for handlers and validators
+- [ ] Integration tests for database operations
+
+### Frontend Integration
+
+- [ ] Custom hooks created
+- [ ] UI components implemented
+- [ ] Loading and error states handled
+
+## Technical Notes
+
+Any implementation caveats, decisions, trade-offs, or gotchas worth recording.
+
+## Database Migration
+
+Migration command and name used for this feature.
+
+## Related Features
+
+Links or references to related features or documents.
+
+## Future Enhancements
+
+Deferred improvements or known limitations to address later.
+```
+
 ## When in Doubt
 
 1. Check existing similar features for patterns
