@@ -8,7 +8,7 @@ namespace Cex.Infrastructure.Data
     {
         public CexDbContext CreateDbContext(string[] args)
         {
-            var path = "/Users/quang/workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials";
+            const string path = "/Users/quang/workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials";
             var config = new ConfigurationBuilder()
                 .AddJsonFile($"{path}/appsettings.json")
                 // .AddJsonFile($"{path}/appsettings.Production.json", optional: true, reloadOnChange: true)
