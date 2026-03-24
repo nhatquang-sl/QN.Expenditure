@@ -2,7 +2,7 @@
 using Auth.Application.Common.Abstractions;
 using Auth.Domain.Entities;
 using AutoMapper;
-using Lib.Application.Logging;
+using Lib.Application.Extensions;
 using MediatR;
 
 namespace Auth.Application.Account.Commands.Login
@@ -18,24 +18,24 @@ namespace Auth.Application.Account.Commands.Login
 
     public class LoginCommandHandler(
         IMapper mapper,
-        ILogTrace logTrace,
         IIdentityService identityService,
         IJwtProvider jwtService,
         IAuthDbContext dbContext)
         : IRequestHandler<LoginCommand, UserAuthDto>
     {
-        private readonly ILogTrace _logTrace = logTrace;
-
         public async Task<UserAuthDto> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
             var userProfile =
                 await identityService.LoginAsync(request.Email, request.Password, request.RememberMe);
 
-            var (accessToken, refreshToken) = jwtService.GenerateTokens(userProfile);
+            var (accessToken, refreshToken, accessTokenExpires, refreshTokenExpires) =
+                jwtService.GenerateTokens(userProfile);
 
             var userAuth = mapper.Map<UserAuthDto>(userProfile);
             userAuth.AccessToken = accessToken;
             userAuth.RefreshToken = refreshToken;
+            userAuth.AccessTokenExpires = accessTokenExpires.ToUnixTimestampMilliseconds();
+            userAuth.RefreshTokenExpires = refreshTokenExpires.ToUnixTimestampMilliseconds();
 
             await dbContext.UserLoginHistories.AddAsync(new UserLoginHistory
             {

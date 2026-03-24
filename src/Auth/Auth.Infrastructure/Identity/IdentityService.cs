@@ -218,5 +218,7 @@ namespace Auth.Infrastructure.Identity
                 throw new BadRequestException(result.Errors.First().Description);
             }
         }
+
+        public Task LogoutAsync() => _signInManager.SignOutAsync();
     }
 }

@@ -1,7 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import snackbarReducer from 'components/snackbar/slice';
-import authReducer from 'features/auth/slice';
+import authReducer, { logout } from 'features/auth/slice';
 
 import spotGridReducer, {
   spotGridDetailsReducer,
@@ -46,20 +46,9 @@ export const store = configureStore({
 export type RootState = ReturnType<typeof store.getState>;
 
 // Create instance
-const instance = axios.create();
-
-// Set the AUTH token for any request
-instance.interceptors.request.use(
-  function (config) {
-    // console.log(store.getState().auth);
-    const token = store.getState().auth.accessToken;
-    config.headers.Authorization = token ? `Bearer ${token}` : '';
-    return config;
-  },
-  function (error) {
-    console.log({ error });
-  }
-);
+const instance = axios.create({
+  withCredentials: true,
+});
 
 const authClient = new AuthClient(API_ENDPOINT, instance);
 const bnbSpotClient = new BnbSpotClient(API_ENDPOINT, instance);
@@ -69,6 +58,52 @@ const candlesClient = new CandlesClient(API_ENDPOINT, instance);
 const exchangeSettingsClient = new ExchangeSettingsClient(API_ENDPOINT, instance);
 const syncSettingsClient = new SyncSettingsClient(API_ENDPOINT, instance);
 const tradeClient = new TradeClient(API_ENDPOINT, instance);
+
+// --- 401 Interceptor: auto-refresh tokens ---
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (v: unknown) => void; reject: (e: unknown) => void }> = [];
+
+const processQueue = (error: unknown) => {
+  failedQueue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve(undefined)));
+  failedQueue = [];
+};
+
+instance.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then(() => instance(originalRequest))
+        .catch((err) => Promise.reject(err));
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      await instance.post(`${API_ENDPOINT}/api/auth/refresh`);
+      processQueue(null);
+      return instance(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError);
+      store.dispatch(logout());
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  },
+);
 
 export {
   authClient,

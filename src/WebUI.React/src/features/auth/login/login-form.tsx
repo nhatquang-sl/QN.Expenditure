@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authClient } from 'store';
 import { BadRequest, LoginCommand } from 'store/api-client';
-import { TokenType, selectAuthType, setAuth } from '../slice';
+import { selectAuth, setAuth } from '../slice';
 import { LoginData, LoginDataSchema } from './types';
 
 function LoginForm() {
@@ -33,28 +33,28 @@ function LoginForm() {
   const dispatch = useDispatch();
   const location = useLocation();
 
-  const authType = useSelector(selectAuthType);
+  const auth = useSelector(selectAuth);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    console.log({ authType });
-    switch (authType) {
-      case TokenType.Login:
-        const from = location.state?.from?.pathname ?? '/login-history';
-        navigate(from, { replace: true });
-        break;
-      case TokenType.NeedActivate:
-        navigate('/request-activate-email', { replace: true });
-        break;
+    if (!auth.id) {
+      return;
     }
-  }, [authType, location, navigate]);
+
+    if (auth.emailConfirmed) {
+      const from = location.state?.from?.pathname ?? '/login-history';
+      navigate(from, { replace: true });
+      return;
+    }
+
+    navigate('/request-activate-email', { replace: true });
+  }, [auth.emailConfirmed, auth.id, location, navigate]);
 
   const onSubmit: SubmitHandler<LoginData> = async (data) => {
     setLoading(true);
     try {
-      var res = await authClient.login(data as LoginCommand);
-
-      dispatch(setAuth(res.accessToken ?? ''));
+      const response = await authClient.login(data as LoginCommand);
+      dispatch(setAuth(response));
     } catch (err: any) {
       if (err instanceof BadRequest) {
         dispatch(showSnackbar(err.message, 'error', 'top', 'left'));

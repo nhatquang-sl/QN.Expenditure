@@ -19,6 +19,13 @@ namespace WebAPI.Services
             FirstName = claims.FindFirstValue(JwtClaimNames.FirstName) ?? string.Empty;
             LastName = claims.FindFirstValue(JwtClaimNames.LastName) ?? string.Empty;
             EmailConfirmed = bool.Parse(claims.FindFirstValue(JwtClaimNames.EmailConfirmed) ?? false.ToString());
+            AccessTokenExpires = new DateTimeOffset(claims.Identity is System.Security.Claims.ClaimsIdentity identity
+                ? identity.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Exp) is { } expClaim
+                    && long.TryParse(expClaim.Value, out var expSeconds)
+                    ? DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime
+                    : DateTime.UtcNow
+                : DateTime.UtcNow).ToUnixTimeMilliseconds();
+            RefreshTokenExpires = long.TryParse(claims.FindFirstValue(JwtClaimNames.RefreshTokenExpires), out var rte) ? rte : 0;
         }
 
         public string Id { get; set; }
@@ -26,5 +33,7 @@ namespace WebAPI.Services
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public bool EmailConfirmed { get; set; }
+        public long AccessTokenExpires { get; set; }
+        public long RefreshTokenExpires { get; set; }
     }
 }

@@ -34,10 +34,13 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         var corsOrigins = (builder.Configuration.GetValue<string>("CorsOrigins") ?? "").Split(",")
-            .Select(x => x.Trim()).ToArray();
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToArray();
         policy.WithOrigins(corsOrigins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -50,12 +53,12 @@ builder.Host.UseSerilog((context, loggerConfig) =>
 // Add services to the container.
 // builder.Services.AddTransient(_ =>
 //     new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
-builder.Services.AddControllers();
 builder.Services.AddTelegramNotifier(builder.Configuration);
 builder.Services.AddAuthInfrastructureServices(builder.Configuration);
 builder.Services.AddCexInfrastructureServices(builder.Configuration);
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddControllers();
 
 // builder.Services.AddHostedService<SpotGridService>();
 builder.Services.AddHostedService<RunIndicatorService>();
@@ -128,6 +131,7 @@ app.UseHttpsRedirection();
 
 app.UseCors();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseExceptionMiddleware();

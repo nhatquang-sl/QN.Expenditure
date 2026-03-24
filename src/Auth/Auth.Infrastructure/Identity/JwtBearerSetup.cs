@@ -31,6 +31,29 @@ namespace Auth.Infrastructure.Identity
                 ValidAudience = _jwtConfig.Audience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.AccessTokenSecretKey))
             };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    // 1. Cookie takes priority (browser clients)
+                    var cookieToken = context.Request.Cookies["accessToken"];
+                    if (string.IsNullOrWhiteSpace(cookieToken))
+                    {
+                        return Task.CompletedTask;
+                    }
+
+                    context.Token = cookieToken;
+                    return Task.CompletedTask;
+
+                    // // 2. Bearer header fallback (Swagger / API clients)
+                    // var authorization = context.Request.Headers[HeaderNames.Authorization].ToString();
+                    // if (authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    // {
+                    //     context.Token = authorization["Bearer ".Length..].Trim();
+                    // }
+                }
+            };
         }
     }
 }

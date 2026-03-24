@@ -19,5 +19,6 @@ namespace Auth.Application.Common.Abstractions
         Task<string> ChangeEmail(string userId, ChangeEmailCommand request);
         Task<string> ForgotPasswordAsync(ForgotPasswordCommand request);
         Task ResetPasswordAsync(ResetPasswordCommand request);
+        Task LogoutAsync();
     }
 }

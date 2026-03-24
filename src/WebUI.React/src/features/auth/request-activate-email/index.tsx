@@ -3,25 +3,26 @@ import { Box, Container } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { TokenType, selectAuthType } from '../slice';
+import { selectAuth, selectNeedsEmailConfirmation } from '../slice';
 
 import { authClient } from 'store';
 
 const RequestActivateEmail = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const authType = useSelector(selectAuthType);
+  const auth = useSelector(selectAuth);
+  const needsEmailConfirmation = useSelector(selectNeedsEmailConfirmation);
 
   useEffect(() => {
-    switch (authType) {
-      case TokenType.Login:
-        navigate('/', { replace: true });
-        break;
-      case TokenType.NeedActivate:
-        navigate('/request-activate-email', { replace: true });
-        break;
+    if (!auth.id) {
+      navigate('/login', { replace: true });
+      return;
     }
-  }, [authType, navigate]);
+
+    if (!needsEmailConfirmation) {
+      navigate('/', { replace: true });
+    }
+  }, [auth.id, navigate, needsEmailConfirmation]);
 
   const handleSendActivateEmail = async () => {
     setLoading(true);

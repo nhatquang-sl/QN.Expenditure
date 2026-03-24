@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using AutoMapper;
 using Lib.Application.Abstractions;
 
@@ -10,12 +11,15 @@ namespace Auth.Application.Account.DTOs
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public bool EmailConfirmed { get; set; }
+        public long AccessTokenExpires { get; set; }
+        public long RefreshTokenExpires { get; set; }
     }
 
     public class UserAuthDto : UserProfileDto
     {
-        public string AccessToken { get; set; }
-        public string RefreshToken { get; set; }
+        [JsonIgnore] public string AccessToken { get; set; }
+
+        [JsonIgnore] public string RefreshToken { get; set; }
 
         private class Mapping : Profile
         {

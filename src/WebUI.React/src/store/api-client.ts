@@ -268,6 +268,59 @@ export class AuthClient {
         return Promise.resolve<UserAuthDto>(null as any);
     }
 
+    logout( cancelToken?: CancelToken): Promise<FileResponse> {
+        let url_ = this.baseUrl + "/api/auth/logout";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            responseType: "blob",
+            method: "POST",
+            url: url_,
+            headers: {
+                "Accept": "application/octet-stream"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processLogout(_response);
+        });
+    }
+
+    protected processLogout(response: AxiosResponse): Promise<FileResponse> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers["content-disposition"] : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return Promise.resolve({ fileName: fileName, status: status, data: new Blob([response.data], { type: response.headers["content-type"] }), headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<FileResponse>(null as any);
+    }
+
     resendEmailConfirmation( cancelToken?: CancelToken): Promise<FileResponse> {
         let url_ = this.baseUrl + "/api/auth/resend-email-confirmation";
         url_ = url_.replace(/[?&]$/, "");
@@ -610,6 +663,61 @@ export class AuthClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
         return Promise.resolve<UserLoginHistory[]>(null as any);
+    }
+
+    check( cancelToken?: CancelToken): Promise<UserAuthDto> {
+        let url_ = this.baseUrl + "/api/auth/check";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processCheck(_response);
+        });
+    }
+
+    protected processCheck(response: AxiosResponse): Promise<UserAuthDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = UserAuthDto.fromJS(resultData200);
+            return Promise.resolve<UserAuthDto>(result200);
+
+        } else if (status === 401) {
+            const _responseText = response.data;
+            let result401: any = null;
+            let resultData401  = _responseText;
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<UserAuthDto>(null as any);
     }
 }
 
@@ -2546,6 +2654,8 @@ export class UserProfileDto {
     firstName!: string;
     lastName!: string;
     emailConfirmed!: boolean;
+    accessTokenExpires!: number;
+    refreshTokenExpires!: number;
 
     init(_data?: any) {
         if (_data) {
@@ -2554,6 +2664,8 @@ export class UserProfileDto {
             this.firstName = _data["firstName"];
             this.lastName = _data["lastName"];
             this.emailConfirmed = _data["emailConfirmed"];
+            this.accessTokenExpires = _data["accessTokenExpires"];
+            this.refreshTokenExpires = _data["refreshTokenExpires"];
         }
     }
 
@@ -2571,20 +2683,16 @@ export class UserProfileDto {
         data["firstName"] = this.firstName;
         data["lastName"] = this.lastName;
         data["emailConfirmed"] = this.emailConfirmed;
+        data["accessTokenExpires"] = this.accessTokenExpires;
+        data["refreshTokenExpires"] = this.refreshTokenExpires;
         return data;
     }
 }
 
 export class UserAuthDto extends UserProfileDto {
-    accessToken!: string;
-    refreshToken!: string;
 
     override init(_data?: any) {
         super.init(_data);
-        if (_data) {
-            this.accessToken = _data["accessToken"];
-            this.refreshToken = _data["refreshToken"];
-        }
     }
 
     static override fromJS(data: any): UserAuthDto {
@@ -2596,8 +2704,6 @@ export class UserAuthDto extends UserProfileDto {
 
     override toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["accessToken"] = this.accessToken;
-        data["refreshToken"] = this.refreshToken;
         super.toJSON(data);
         return data;
     }
@@ -2782,6 +2888,51 @@ export class UserLoginHistory {
         data["accessToken"] = this.accessToken;
         data["refreshToken"] = this.refreshToken;
         data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : <any>undefined;
+        return data;
+    }
+}
+
+export class ProblemDetails {
+    type!: string | undefined;
+    title!: string | undefined;
+    status!: number | undefined;
+    detail!: string | undefined;
+    instance!: string | undefined;
+
+    [key: string]: any;
+
+    init(_data?: any) {
+        if (_data) {
+            for (var property in _data) {
+                if (_data.hasOwnProperty(property))
+                    this[property] = _data[property];
+            }
+            this.type = _data["type"];
+            this.title = _data["title"];
+            this.status = _data["status"];
+            this.detail = _data["detail"];
+            this.instance = _data["instance"];
+        }
+    }
+
+    static fromJS(data: any): ProblemDetails {
+        data = typeof data === 'object' ? data : {};
+        let result = new ProblemDetails();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        for (var property in this) {
+            if (this.hasOwnProperty(property))
+                data[property] = this[property];
+        }
+        data["type"] = this.type;
+        data["title"] = this.title;
+        data["status"] = this.status;
+        data["detail"] = this.detail;
+        data["instance"] = this.instance;
         return data;
     }
 }

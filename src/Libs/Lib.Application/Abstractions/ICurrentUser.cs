@@ -7,5 +7,7 @@ namespace Lib.Application.Abstractions
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public bool EmailConfirmed { get; set; }
+        public long AccessTokenExpires { get; set; }
+        public long RefreshTokenExpires { get; set; }
     }
 }

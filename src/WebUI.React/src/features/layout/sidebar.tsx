@@ -13,10 +13,12 @@ import {
   styled,
 } from '@mui/material';
 import MuiDrawer from '@mui/material/Drawer';
+import axios from 'axios';
 import { logout } from 'features/auth/slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from 'store';
+import { API_ENDPOINT } from 'store/constants';
 import { BnbMenuItems, mainListItems } from './listItems';
 import { drawerWidth, toggleDrawer } from './slice';
 
@@ -86,7 +88,12 @@ function Sidebar() {
         <Divider sx={{ my: 1 }} />
         <ListItemButton
           sx={{ position: 'absolute', bottom: 0, width: '100%' }}
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await axios.post(`${API_ENDPOINT}/api/auth/logout`, null, { withCredentials: true });
+            } catch {
+              // Always clear local auth state even when API logout fails.
+            }
             dispatch(logout());
             navigate('/login', { replace: true });
           }}

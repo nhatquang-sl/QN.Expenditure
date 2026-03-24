@@ -4,20 +4,22 @@ using MediatR;
 
 namespace Auth.Application.Account.Queries.GetProfile
 {
-    public record GetProfileQuery : IRequest<UserProfileDto>;
+    public record GetProfileQuery : IRequest<UserAuthDto>;
 
     public class GetProfileQueryHandler(ICurrentUser currentUser)
-        : IRequestHandler<GetProfileQuery, UserProfileDto>
+        : IRequestHandler<GetProfileQuery, UserAuthDto>
     {
-        public Task<UserProfileDto> Handle(GetProfileQuery request, CancellationToken cancellationToken)
+        public Task<UserAuthDto> Handle(GetProfileQuery request, CancellationToken cancellationToken)
         {
-            var profile = new UserProfileDto
+            var profile = new UserAuthDto
             {
                 Id = currentUser.Id,
                 Email = currentUser.Email,
                 FirstName = currentUser.FirstName,
                 LastName = currentUser.LastName,
                 EmailConfirmed = currentUser.EmailConfirmed,
+                AccessTokenExpires = currentUser.AccessTokenExpires,
+                RefreshTokenExpires = currentUser.RefreshTokenExpires,
             };
 
             return Task.FromResult(profile);

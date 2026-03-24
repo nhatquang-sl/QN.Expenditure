@@ -1,10 +1,12 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-import { Box, CssBaseline } from '@mui/material';
+import { Box, CircularProgress, CssBaseline } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import NotFound from 'components/errors/not-found';
+import { useInitAuth } from 'features/auth/hooks/use-init-auth';
 
 import Login from 'features/auth/login';
 import LoginHistory from 'features/auth/login-history';
@@ -30,6 +32,15 @@ import SyncSettingUpdate from 'features/settings/sync-setting/update';
 import TradeHistory from 'features/trade/trade-history';
 import './App.css';
 const defaultTheme = createTheme();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+      networkMode: 'online',
+    },
+  },
+});
 const router = createBrowserRouter([
   {
     path: '/login',
@@ -114,11 +125,31 @@ const router = createBrowserRouter([
   },
 ]);
 
+function AuthInitializer({ children }: { children: React.ReactNode }) {
+  const { isLoading } = useInitAuth();
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <RouterProvider router={router} />
-    </LocalizationProvider>
+    <QueryClientProvider client={queryClient}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <AuthInitializer>
+          <RouterProvider router={router} />
+        </AuthInitializer>
+      </LocalizationProvider>
+    </QueryClientProvider>
   );
 }
 
