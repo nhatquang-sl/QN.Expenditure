@@ -12,8 +12,8 @@ namespace Auth.Infrastructure.Identity
     {
         private readonly JwtConfig _jwtConfig = jwtConfig.Value;
 
-        public static int AccessTokenExpiresMinutes => 1;
-        public static int RefreshTokenExpiresMinutes => 24 * 60;
+        public static int AccessTokenExpiresMinutes => 5;
+        public static int RefreshTokenExpiresMinutes => 5 * 60;
 
         public (string accessToken, string refreshToken, DateTime accessTokenExpires, DateTime refreshTokenExpires) GenerateTokens(UserProfileDto userProfile)
         {
