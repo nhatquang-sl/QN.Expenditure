@@ -10,8 +10,11 @@ public class HttpContextEnricher(IHttpContextAccessor httpContextAccessor) : ILo
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext is null) return;
 
-        logEvent.AddPropertyIfAbsent(propertyFactory.CreateProperty(
-            "IPAddress", httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"));
+        var ip = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim()
+                 ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                 ?? "unknown";
+
+        logEvent.AddPropertyIfAbsent(propertyFactory.CreateProperty("IPAddress", ip));
 
         logEvent.AddPropertyIfAbsent(propertyFactory.CreateProperty(
             "UserAgent", httpContext.Request.Headers.UserAgent.ToString()));
