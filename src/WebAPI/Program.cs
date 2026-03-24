@@ -1,6 +1,5 @@
 using System.Reflection;
 using Auth.Infrastructure;
-using Auth.Infrastructure.Data;
 using Cex.Infrastructure;
 using Lib.Application.Abstractions;
 using Lib.Notifications;
@@ -127,9 +126,9 @@ app.UseSwaggerUi();
 
 app.UseOutputCache();
 
-app.UseHttpsRedirection();
-
 app.UseCors();
+
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
