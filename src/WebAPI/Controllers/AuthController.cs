@@ -8,6 +8,7 @@ using Auth.Application.Account.Commands.Register;
 using Auth.Application.Account.Commands.ResendEmailConfirmation;
 using Auth.Application.Account.Commands.RefreshToken;
 using Auth.Application.Account.Commands.ResetPassword;
+using Lib.Application.Exceptions;
 using Auth.Application.Account.DTOs;
 using Auth.Application.Account.Queries.GetProfile;
 using Auth.Application.Account.Queries.GetUserLoginHistories;
@@ -166,7 +167,7 @@ namespace WebAPI.Controllers
         public async Task<UserAuthDto> Refresh()
         {
             var refreshToken = Request.Cookies["refreshToken"]
-                ?? throw new BadHttpRequestException("Refresh token cookie is missing.", StatusCodes.Status400BadRequest);
+                ?? throw new BadRequestException("Refresh token cookie is missing.");
 
             var command = new RefreshTokenCommand
             {
