@@ -46,8 +46,12 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
 
-builder.Host.UseSerilog((context, loggerConfig) =>
-    loggerConfig.ReadFrom.Configuration(context.Configuration)
+builder.Services.AddHttpContextAccessor();
+builder.Host.UseSerilog((context, services, loggerConfig) =>
+    loggerConfig
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.With(services.GetRequiredService<HttpContextEnricher>())
 );
 // Add services to the container.
 // builder.Services.AddTransient(_ =>
@@ -56,6 +60,7 @@ builder.Services.AddTelegramNotifier(builder.Configuration);
 builder.Services.AddAuthInfrastructureServices(builder.Configuration);
 builder.Services.AddCexInfrastructureServices(builder.Configuration);
 
+builder.Services.AddSingleton<HttpContextEnricher>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddControllers();
 
@@ -134,15 +139,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseExceptionMiddleware();
-
-app.UseSerilogRequestLogging(options =>
-{
-    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
-    {
-        diagnosticContext.Set("IPAddress", httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
-        diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.ToString());
-    };
-});
 
 app.MapControllers();
 
