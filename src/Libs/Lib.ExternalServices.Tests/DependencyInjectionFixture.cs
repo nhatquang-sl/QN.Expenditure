@@ -13,7 +13,7 @@ namespace Lib.ExternalServices.Tests
         {
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(
-                    "/Users/quang/Workspace/QN.Expenditure/src/WebAPI/QN.Expenditure.Credentials/appsettings.json")
+                    "/Users/quang/Workspace/QN.Expenditure/credentials/appsettings.json")
                 .Build();
             Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "true");
             var serviceCollection = new ServiceCollection();

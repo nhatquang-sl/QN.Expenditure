@@ -1,1 +1,1 @@
-aspire publish -p docker-compose -o ../src/WebAPI/QN.Expenditure.Credentials/qex
+aspire publish -p docker-compose -o ../credentials/qex

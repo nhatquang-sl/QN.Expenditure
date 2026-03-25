@@ -109,7 +109,7 @@ jobs:
           mkdir -p $HOME/.ssh
           echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
           chmod 600 $HOME/.ssh/ssh.key
-          SOURCE_COMPOSE="src/WebAPI/QN.Expenditure.Credentials/qex/docker-compose.yml"
+          SOURCE_COMPOSE="credentials/qex/docker-compose.yml"
           TARGET_DIR="workspace/qex"
 
           if [ ! -f "$SOURCE_COMPOSE" ]; then

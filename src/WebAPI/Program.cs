@@ -13,9 +13,16 @@ using WebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var credentialsPathCandidates = new[]
+{
+    Path.Combine(builder.Environment.ContentRootPath, "credentials"),
+    Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "credentials"))
+};
+var credentialsPath = credentialsPathCandidates.FirstOrDefault(Directory.Exists) ?? credentialsPathCandidates[0];
+
 builder.Configuration
-    .AddJsonFile("QN.Expenditure.Credentials/appsettings.json")
-    .AddJsonFile($"QN.Expenditure.Credentials/appsettings.{builder.Environment.EnvironmentName}.json", true, true)
+    .AddJsonFile(Path.Combine(credentialsPath, "appsettings.json"), false, true)
+    .AddJsonFile(Path.Combine(credentialsPath, $"appsettings.{builder.Environment.EnvironmentName}.json"), true, true)
     .AddEnvironmentVariables();
 builder.AddServiceDefaults();
 builder.Services.AddOutputCache();

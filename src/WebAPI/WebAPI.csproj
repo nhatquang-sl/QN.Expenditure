@@ -28,8 +28,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Update="QN.Expenditure.Credentials\appsettings.Development.json">
-            <DependentUpon>appsettings.json</DependentUpon>
+        <Content Include="..\..\credentials\appsettings*.json">
+            <Link>credentials\%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </Content>
     </ItemGroup>
 </Project>
