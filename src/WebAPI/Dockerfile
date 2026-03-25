@@ -52,7 +52,9 @@ ARG VERSION=1.1
 RUN dotnet publish "./WebAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false -p:Version=${VERSION}
 
 FROM base AS final
+ARG VERSION=1.1
 WORKDIR /app
+ENV Application__Version=${VERSION}
 COPY --from=publish /app/publish .
 RUN mkdir -p /home/app/.aspnet/DataProtection-Keys && chown -R app:app /home/app/.aspnet/DataProtection-Keys
 # Run the app
