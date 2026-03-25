@@ -96,28 +96,30 @@ namespace Cex.Application.Indicator.Commands
             decimal previousRsiValue,
             CancellationToken cancellationToken)
         {
-            var interval = command.Type.GetDescription();
-            var alreadyExists = await dbContext.SignalRecords
-                .AnyAsync(x => x.Symbol == "BTCUSDT" && x.Interval == interval && x.DetectedAt == div.Time,
-                    cancellationToken);
-
-            if (alreadyExists) return;
-
-            await dbContext.SignalRecords.AddAsync(new SignalRecord
+            try
             {
-                Symbol = "BTCUSDT",
-                Interval = interval,
-                SignalType = signalType,
-                DetectedAt = div.Time,
-                PreviousCandleAt = div.PreviousTime,
-                RsiValue = div.Rsi,
-                PreviousRsiValue = previousRsiValue,
-                EntryPrice = entryPrice,
-                StopLoss = stopLoss,
-                TakeProfit = takeProfit,
-            }, cancellationToken);
+                var interval = command.Type.GetDescription();
 
-            await dbContext.SaveChangesAsync(cancellationToken);
+                await dbContext.SignalRecords.AddAsync(new SignalRecord
+                {
+                    Symbol = "BTCUSDT",
+                    Interval = interval,
+                    SignalType = signalType,
+                    DetectedAt = div.Time,
+                    PreviousCandleAt = div.PreviousTime,
+                    RsiValue = div.Rsi,
+                    PreviousRsiValue = previousRsiValue,
+                    EntryPrice = entryPrice,
+                    StopLoss = stopLoss,
+                    TakeProfit = takeProfit,
+                }, cancellationToken);
+
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate key") == true)
+            {
+                logTrace.LogError("SaveSignalRecordIfNewAsync()", ex);
+            }
         }
 
         private Task NotifyInProductionAsync(string message, CancellationToken cancellationToken)
