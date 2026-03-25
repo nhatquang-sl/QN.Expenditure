@@ -33,7 +33,9 @@ namespace Cex.Application.Trade.Commands.SyncTradeHistory
             while (true)
             {
                 var exchangeSettings = await cexDbContext.ExchangeSettings
+                    .AsNoTracking()
                     .Where(x => x.ExchangeName == ExchangeName.KuCoin)
+                    .OrderBy(x => x.UserId)
                     .Skip((pageNumber - 1) * PageSize)
                     .Take(PageSize)
                     .ToListAsync(cancellationToken);
