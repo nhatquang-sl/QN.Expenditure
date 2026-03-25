@@ -13,20 +13,14 @@ using WebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//builder.AddRedisOutputCache("redis-cache");
 builder.Configuration
     .AddJsonFile("QN.Expenditure.Credentials/appsettings.json")
     .AddJsonFile($"QN.Expenditure.Credentials/appsettings.{builder.Environment.EnvironmentName}.json", true, true)
     .AddEnvironmentVariables();
 builder.AddServiceDefaults();
-builder.AddRedisOutputCache("Redis");
-builder.AddRedisDistributedCache("Redis");
+builder.Services.AddOutputCache();
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddHybridCache();
-// builder.Services.AddStackExchangeRedisCache(options =>
-// {
-//     options.Configuration =
-//         builder.Configuration.GetConnectionString("Redis");
-// });
 
 builder.Services.AddCors(options =>
 {
