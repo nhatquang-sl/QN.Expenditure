@@ -1,5 +1,5 @@
 {
-  "runtime": "Net80",
+  "runtime": "Net100",
   "defaultVariables": null,
   "documentGenerator": {
     "fromDocument": {
@@ -13,7 +13,7 @@
       "className": "{controller}Client",
       "moduleName": "",
       "namespace": "",
-      "typeScriptVersion": 4.3,
+      "typeScriptVersion": 5.0,
       "template": "Axios",
       "promiseType": "Promise",
       "httpClass": "HttpClient",
