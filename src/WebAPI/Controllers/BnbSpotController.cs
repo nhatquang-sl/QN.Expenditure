@@ -62,7 +62,7 @@ namespace WebAPI.Controllers
             return _sender.Send(new GetSpotOrdersQuery());
         }
 
-        [HttpGet("/{symbol}")]
+        [HttpGet("{symbol}")]
         public Task<List<SpotOrderRaw>> GetSpotOrdersBySymbol(string symbol)
         {
             return _sender.Send(new GetSpotOrdersBySymbolQuery(symbol));

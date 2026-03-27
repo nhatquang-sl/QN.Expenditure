@@ -3,6 +3,7 @@ using Auth.Infrastructure;
 using Cex.Infrastructure;
 using Lib.Application.Abstractions;
 using Lib.Notifications;
+using Microsoft.Extensions.Caching.Hybrid;
 using NSwag;
 using NSwag.Generation.Processors.Security;
 using Serilog;
@@ -25,9 +26,14 @@ builder.Configuration
     .AddJsonFile(Path.Combine(credentialsPath, $"appsettings.{builder.Environment.EnvironmentName}.json"), true, true)
     .AddEnvironmentVariables();
 builder.AddServiceDefaults();
-builder.Services.AddOutputCache();
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddHybridCache();
+
+// builder.AddRedisOutputCache("redis-cache");
+// builder.AddRedisDistributedCache("redis-cache");
+builder.Services.AddHybridCache(options =>
+    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    {
+        Expiration = TimeSpan.FromMinutes(5)
+    });
 
 builder.Services.AddCors(options =>
 {
@@ -130,7 +136,7 @@ app.UseOpenApi();
 // Available at: http://localhost:<port>/swagger
 app.UseSwaggerUi();
 
-app.UseOutputCache();
+// app.UseOutputCache();
 
 app.UseCors();
 

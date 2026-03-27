@@ -1,9 +1,7 @@
 using System.Text.Json;
-using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Options;
@@ -25,7 +23,7 @@ namespace WebAPI.Controllers
         ];
 
         [HttpGet("output-cache")]
-        [OutputCache]
+        // [OutputCache]
         public async Task<IEnumerable<Kline>> Get(CancellationToken token = default)
         {
             const IntervalType interval = IntervalType.OneDay;
