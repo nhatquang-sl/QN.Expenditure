@@ -24,7 +24,7 @@ WORKDIR /src
 # Copy project files and restore as distinct layers
 COPY ["src/WebAPI/WebAPI.csproj", "src/WebAPI/"]
 COPY ["Directory.Packages.props", "./"]
-COPY ["QN.Expenditure.ServiceDefaults/QN.Expenditure.ServiceDefaults.csproj", "QN.Expenditure.ServiceDefaults/"]
+COPY ["src/Aspire/ServiceDefaults/ServiceDefaults.csproj", "src/Aspire/ServiceDefaults/"]
 COPY ["src/Auth/Auth.Application/Auth.Application.csproj", "src/Auth/Auth.Application/"]
 COPY ["src/Auth/Auth.Domain/Auth.Domain.csproj", "src/Auth/Auth.Domain/"]
 COPY ["src/Auth/Auth.Infrastructure/Auth.Infrastructure.csproj", "src/Auth/Auth.Infrastructure/"]
