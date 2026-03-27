@@ -1618,7 +1618,7 @@ export class HybridCacheClient {
         return Promise.resolve<string>(null as any);
     }
 
-    delete(key: string, cancelToken?: CancelToken): Promise<void> {
+    delete(key: string, cancelToken?: CancelToken): Promise<FileResponse> {
         let url_ = this.baseUrl + "/api/hybridcache/{key}";
         if (key === undefined || key === null)
             throw new globalThis.Error("The parameter 'key' must be defined.");
@@ -1629,6 +1629,7 @@ export class HybridCacheClient {
             method: "DELETE",
             url: url_,
             headers: {
+                "Accept": "application/octet-stream"
             },
             cancelToken
         };
@@ -1644,7 +1645,7 @@ export class HybridCacheClient {
         });
     }
 
-    protected processDelete(response: AxiosResponse): Promise<void> {
+    protected processDelete(response: AxiosResponse): Promise<FileResponse> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1654,18 +1655,22 @@ export class HybridCacheClient {
                 }
             }
         }
-        if (status === 200) {
+        if (status === 204) {
             const _responseText = response.data;
-            return Promise.resolve<void>(null as any);
+            let result204: any = null;
+            let resultData204  = _responseText;
+                result204 = resultData204 !== undefined ? resultData204 : null as any;
+    
+            return Promise.resolve<FileResponse>(result204);
 
         } else if (status !== 200 && status !== 204) {
             const _responseText = response.data;
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<FileResponse>(null as any);
     }
 
-    deleteByTags(tags: string, cancelToken?: CancelToken): Promise<void> {
+    deleteByTags(tags: string, cancelToken?: CancelToken): Promise<FileResponse> {
         let url_ = this.baseUrl + "/api/hybridcache/tags/{tags}";
         if (tags === undefined || tags === null)
             throw new globalThis.Error("The parameter 'tags' must be defined.");
@@ -1676,6 +1681,7 @@ export class HybridCacheClient {
             method: "DELETE",
             url: url_,
             headers: {
+                "Accept": "application/octet-stream"
             },
             cancelToken
         };
@@ -1691,7 +1697,7 @@ export class HybridCacheClient {
         });
     }
 
-    protected processDeleteByTags(response: AxiosResponse): Promise<void> {
+    protected processDeleteByTags(response: AxiosResponse): Promise<FileResponse> {
         const status = response.status;
         let _headers: any = {};
         if (response.headers && typeof response.headers === "object") {
@@ -1701,15 +1707,19 @@ export class HybridCacheClient {
                 }
             }
         }
-        if (status === 200) {
+        if (status === 204) {
             const _responseText = response.data;
-            return Promise.resolve<void>(null as any);
+            let result204: any = null;
+            let resultData204  = _responseText;
+                result204 = resultData204 !== undefined ? resultData204 : null as any;
+    
+            return Promise.resolve<FileResponse>(result204);
 
         } else if (status !== 200 && status !== 204) {
             const _responseText = response.data;
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<FileResponse>(null as any);
     }
 }
 

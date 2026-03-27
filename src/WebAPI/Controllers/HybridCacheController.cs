@@ -20,15 +20,19 @@ namespace WebAPI.Controllers
         }
 
         [HttpDelete("{key}")]
-        public async Task Delete(string key, CancellationToken token)
+        [ProducesResponseType(typeof(NoContentResult), StatusCodes.Status204NoContent)]
+        public async Task<NoContentResult> Delete(string key, CancellationToken token)
         {
             await hybridCache.RemoveAsync($"key: {key}", token);
+            return NoContent();
         }
 
         [HttpDelete("tags/{tags}")]
-        public async Task DeleteByTags(string tags, CancellationToken token)
+        [ProducesResponseType(typeof(NoContentResult), StatusCodes.Status204NoContent)]
+        public async Task<NoContentResult> DeleteByTags(string tags, CancellationToken token)
         {
             await hybridCache.RemoveByTagAsync(tags.Split(","), token);
+            return NoContent();
         }
     }
 }
