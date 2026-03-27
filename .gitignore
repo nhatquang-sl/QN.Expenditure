@@ -405,3 +405,6 @@ FodyWeavers.xsd
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio
 
 .idea/
+
+# Claude Code local settings
+.claude/settings.local.json

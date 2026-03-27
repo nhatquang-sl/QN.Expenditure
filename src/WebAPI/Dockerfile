@@ -9,7 +9,7 @@
 # docker run -d -p 5001:5001 -e ASPNETCORE_HTTP_PORTS=5001 nhatquang/qex.api:1.15
 
 # Base stage: runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER app
 WORKDIR /app
 ENV ASPNETCORE_ENVIRONMENT=Production
@@ -17,7 +17,7 @@ EXPOSE 5000
 EXPOSE 5001
 
 # Build stage: SDK image to restore and build
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
