@@ -1,0 +1,33 @@
+<Solution>
+  <Folder Name="/Aspire/">
+    <Project Path="src/Aspire/AppHost/AppHost.csproj" />
+    <Project Path="src/Aspire/ServiceDefaults/ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/Auth/">
+    <Project Path="src/Auth/Auth.Application.UnitTest/Auth.Application.UnitTest.csproj" />
+    <Project Path="src/Auth/Auth.Application/Auth.Application.csproj" />
+    <Project Path="src/Auth/Auth.Domain/Auth.Domain.csproj" />
+    <Project Path="src/Auth/Auth.Infrastructure.IntegrationTests/Auth.Infrastructure.IntegrationTests.csproj" />
+    <Project Path="src/Auth/Auth.Infrastructure/Auth.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Cex/">
+    <Project Path="src/Cex/Cex.Application/Cex.Application.csproj" />
+    <Project Path="src/Cex/Cex.Domain/Cex.Domain.csproj" />
+    <Project Path="src/Cex/Cex.Infrastructure.IntegrationTests/Cex.Infrastructure.IntegrationTests.csproj" />
+    <Project Path="src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Libs/">
+    <Project Path="src/Libs/Lib.Application.Tests/Lib.Application.Tests.csproj" />
+    <Project Path="src/Libs/Lib.Application/Lib.Application.csproj" />
+    <Project Path="src/Libs/Lib.ExternalServices.Tests/Lib.ExternalServices.Tests.csproj" />
+    <Project Path="src/Libs/Lib.ExternalServices/Lib.ExternalServices.csproj" />
+    <Project Path="src/Libs/Lib.Notifications.Tests/Lib.Notifications.Tests.csproj" />
+    <Project Path="src/Libs/Lib.Notifications/Lib.Notifications.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="src/WebAPI/WebAPI.csproj" />
+  <Project Path="src/WebUI.Identity/WebUI.Identity.csproj" />
+</Solution>
