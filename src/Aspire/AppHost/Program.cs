@@ -2,7 +2,7 @@ using Projects;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// builder.AddDockerComposePublisher();
+builder.AddDockerComposeEnvironment("env");
 
 var redisCache = builder.AddRedis("redis-cache")
     .WithRedisInsight();
