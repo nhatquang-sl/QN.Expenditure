@@ -117,10 +117,10 @@ jobs:
             exit 1
           fi
 
-          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR"
-          scp -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key "$SOURCE_COMPOSE" ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/docker-compose.yml
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR"
+          scp -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -P ${{ secrets.VPS_PORT }} "$SOURCE_COMPOSE" ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/docker-compose.yml
 
-          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
             set -euo pipefail
 
             TARGET_DIR="workspace/qex"
