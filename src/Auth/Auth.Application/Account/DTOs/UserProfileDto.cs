@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using AutoMapper;
 using Lib.Application.Abstractions;
 
 namespace Auth.Application.Account.DTOs
@@ -20,13 +19,5 @@ namespace Auth.Application.Account.DTOs
         [JsonIgnore] public string AccessToken { get; set; }
 
         [JsonIgnore] public string RefreshToken { get; set; }
-
-        private class Mapping : Profile
-        {
-            public Mapping()
-            {
-                CreateMap<UserProfileDto, UserAuthDto>();
-            }
-        }
     }
 }

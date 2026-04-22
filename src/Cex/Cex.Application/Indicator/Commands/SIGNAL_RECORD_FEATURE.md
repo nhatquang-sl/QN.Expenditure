@@ -148,7 +148,7 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
 
 ### Application Layer
 
-No new Command/Query/Handler needed for the initial save — the insert is done directly inside `RunIndicatorCommandHandler.Handle()` via `ICexDbContext`, following the same pattern used in other handlers.
+No new Command/Query/Handler needed for the initial save — the insert is done directly inside `FindSignalCommandHandler.Handle()` via `ICexDbContext`, following the same pattern used in other handlers.
 
 **`ICexDbContext`** — add one line:
 
@@ -156,7 +156,7 @@ No new Command/Query/Handler needed for the initial save — the insert is done 
 DbSet<SignalRecord> SignalRecords { get; }
 ```
 
-**`RunIndicatorCommandHandler`** — inject `ICexDbContext dbContext`, then after `notifier.Notify(...)` in each case block, build and add a `SignalRecord` and call `SaveChangesAsync`.
+**`FindSignalCommandHandler`** — inject `ICexDbContext dbContext`, then after `notifier.Notify(...)` in each case block, build and add a `SignalRecord` and call `SaveChangesAsync`.
 
 ### Algorithm (updated handler flow)
 
@@ -203,8 +203,8 @@ No new endpoint in this iteration. `SignalRecord` data is for internal use and f
 - [ ] Create `SignalRecord` entity in `Cex.Domain`
 - [ ] Create `SignalRecordConfiguration` EF Core config in `Cex.Infrastructure`
 - [ ] Add `DbSet<SignalRecord> SignalRecords` to `ICexDbContext` and `CexDbContext`
-- [ ] Add `ICexDbContext dbContext` to `RunIndicatorCommandHandler` constructor
-- [ ] Update `RunIndicatorCommandHandler` to insert `SignalRecord` after notifying
+- [ ] Add `ICexDbContext dbContext` to `FindSignalCommandHandler` constructor
+- [ ] Update `FindSignalCommandHandler` to insert `SignalRecord` after notifying
 - [ ] Add migration: `AddSignalRecord`
 - [ ] Confirm TakeProfit formula
 
@@ -238,7 +238,7 @@ dotnet ef migrations add AddSignalRecord \
 
 ## Related Features
 
-- `RunIndicatorCommand` — the triggering command
+- `FindSignalCommand` — the triggering command
 - `DivergenceCommand` / `DivergenceRsiPeakCommand` / `DivergenceRsiTroughCommand` — signal detection logic
 - `StatisticTrade` entity — a similar but separate historical record concept; evaluate whether to unify in the future
 

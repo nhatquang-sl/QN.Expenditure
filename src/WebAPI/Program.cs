@@ -72,7 +72,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddControllers();
 
 // builder.Services.AddHostedService<SpotGridService>();
-builder.Services.AddHostedService<RunIndicatorService>();
+builder.Services.AddHostedService<FindSignalService>();
 builder.Services.AddHostedService<SyncTradeHistoryService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 

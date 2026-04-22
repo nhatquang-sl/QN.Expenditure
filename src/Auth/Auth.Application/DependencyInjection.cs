@@ -1,4 +1,5 @@
 using System.Reflection;
+using Auth.Application.Common.Mappings;
 using FluentValidation;
 using Lib.Application;
 using Lib.Application.Behaviors;
@@ -16,7 +17,7 @@ namespace Auth.Application
         {
             services.AddLibApplicationServices(configuration);
 
-            services.AddAutoMapper(Assembly.GetExecutingAssembly());
+            services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MappingProfile)));
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
             ValidatorOptions.Global.DefaultRuleLevelCascadeMode = CascadeMode.Stop;

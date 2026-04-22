@@ -15,12 +15,12 @@ using Microsoft.Extensions.Options;
 
 namespace Cex.Application.Indicator.Commands
 {
-    public class RunIndicatorCommand(IntervalType interval) : IRequest
+    public class FindSignalCommand(IntervalType interval) : IRequest
     {
         public IntervalType Type { get; set; } = interval;
     }
 
-    public class RunIndicatorCommandHandler(
+    public class FindSignalCommandHandler(
         IKuCoinService kuCoinService,
         IOptions<KuCoinConfig> kuCoinConfig,
         ISender sender,
@@ -28,9 +28,9 @@ namespace Cex.Application.Indicator.Commands
         ILogTrace logTrace,
         ICexDbContext dbContext,
         IConfiguration configuration)
-        : IRequestHandler<RunIndicatorCommand>
+        : IRequestHandler<FindSignalCommand>
     {
-        public async Task Handle(RunIndicatorCommand command, CancellationToken cancellationToken)
+        public async Task Handle(FindSignalCommand command, CancellationToken cancellationToken)
         {
             logTrace.LogInformation(command.Type.GetDescription());
             var candles = await kuCoinService.GetKlines("BTCUSDT", command.Type,
@@ -87,7 +87,7 @@ namespace Cex.Application.Indicator.Commands
         }
 
         private async Task SaveSignalRecordIfNewAsync(
-            RunIndicatorCommand command,
+            FindSignalCommand command,
             DivergenceResult div,
             SignalType signalType,
             decimal entryPrice,
