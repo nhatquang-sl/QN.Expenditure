@@ -1,14 +1,81 @@
-version: '3.4'
-
 services:
-  webapi:
-    image: ${DOCKER_REGISTRY-}webapi
+  qex.api:
+    container_name: qex-api
+    restart: unless-stopped
     build:
       context: .
       dockerfile: src/WebAPI/Dockerfile
-
-  redis.cache:
-    image: redis:latest
-    container_name: redis.cache
+    environment:
+      ASPNETCORE_HTTP_PORTS: 5000
+      ASPNETCORE_ENVIRONMENT: Development
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://aspire.dashboard:18889'
+      OTEL_SERVICE_NAME: 'qexapi'
     ports:
-    - 6379:6379 
+      - '5000:5000'
+    networks:
+      - "aspire"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/alive || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  qex.ui:
+    container_name: qex-ui
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: src/WebUI.React/Dockerfile
+      args:
+        VITE_API_ENDPOINT: 'http://localhost:5000'
+    ports:
+      - '80:5174'
+    networks:
+      - "aspire"
+    depends_on:
+      qex.api:
+        condition: service_healthy
+
+    #  redis.cache:
+    #    image: "docker.io/library/redis:7.4"
+    #    command:
+    #      - "-c"
+    #      - "redis-server --requirepass $$REDIS_PASSWORD"
+    #    entrypoint:
+    #      - "/bin/sh"
+    #    environment:
+    #      REDIS_PASSWORD: "${REDIS_CACHE_PASSWORD}"
+    #    ports:
+    #      - "6379:6379"
+    # networks:
+    #   - "aspire"
+
+  aspire.dashboard:
+    container_name: qex-aspire.dashboard
+    restart: unless-stopped
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    ports:
+      - '18888:18888'
+      - '18890:18890' # OTLP/HTTP listening on
+      - '18889:18889' # OTLP/gRPC listening on
+    environment:
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
+    networks:
+      - "aspire"
+  seq.logs:
+    container_name: qex-seq.logs
+    restart: unless-stopped
+    image: datalust/seq:latest
+    env_file:
+      - credentials/qex/.env
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - 5341:5341
+      - 8081:80
+    networks:
+      - "aspire"
+networks:
+  aspire:
+    driver: "bridge"

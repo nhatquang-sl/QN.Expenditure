@@ -12,7 +12,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER app
 WORKDIR /app
-ENV ASPNETCORE_ENVIRONMENT=Production
+
 EXPOSE 5000
 EXPOSE 5001
 

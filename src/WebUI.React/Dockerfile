@@ -16,7 +16,10 @@ COPY src/WebUI.React .
 # into this layer.
 RUN npm i -g serve
 RUN npm i
-    
+
+ARG VITE_API_ENDPOINT=https://quangnn.store
+ENV VITE_API_ENDPOINT=$VITE_API_ENDPOINT
+
 # RUN cd node_modules && ls
 RUN npm run build
 RUN rm -rf node_modules

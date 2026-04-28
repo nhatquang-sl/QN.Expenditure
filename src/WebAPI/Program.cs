@@ -120,7 +120,7 @@ app.Logger.LogInformation("OTEL_EXPORTER_OTLP_ENDPOINT {endpoint}",
     builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
 app.Logger.LogInformation("API VERSION: {version}", version);
-//app.MapDefaultEndpoints();
+app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
