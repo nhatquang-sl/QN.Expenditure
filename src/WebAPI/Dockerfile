@@ -10,6 +10,8 @@
 
 # Base stage: runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 USER app
 WORKDIR /app
 

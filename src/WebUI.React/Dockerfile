@@ -3,8 +3,6 @@ ARG NODE_VERSION=20.18.2
 FROM node:${NODE_VERSION}-alpine
 
 # Use production node environment by default.
-ENV NODE_ENV=production
-
 WORKDIR /app
 
 COPY src/WebUI.React .
@@ -15,7 +13,7 @@ COPY src/WebUI.React .
 # Leverage a bind mounts to package.json and package-lock.json to avoid having to copy them into
 # into this layer.
 RUN npm i -g serve
-RUN npm i
+RUN npm ci --include=dev
 
 ARG VITE_API_ENDPOINT=https://quangnn.store
 ENV VITE_API_ENDPOINT=$VITE_API_ENDPOINT
@@ -23,6 +21,8 @@ ENV VITE_API_ENDPOINT=$VITE_API_ENDPOINT
 # RUN cd node_modules && ls
 RUN npm run build
 RUN rm -rf node_modules
+
+ENV NODE_ENV=production
 
 # Copy the rest of the source files into the image.
 # COPY . .

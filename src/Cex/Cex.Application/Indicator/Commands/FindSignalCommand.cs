@@ -10,7 +10,6 @@ using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Cex.Application.Indicator.Commands
@@ -26,8 +25,7 @@ namespace Cex.Application.Indicator.Commands
         ISender sender,
         INotifier notifier,
         ILogTrace logTrace,
-        ICexDbContext dbContext,
-        IConfiguration configuration)
+        ICexDbContext dbContext)
         : IRequestHandler<FindSignalCommand>
     {
         public async Task Handle(FindSignalCommand command, CancellationToken cancellationToken)
@@ -55,7 +53,7 @@ namespace Cex.Application.Indicator.Commands
                         msg.AppendLine($"[{divPreTime}]: <b>{rsiValues[div.PreviousTime]} - {preCandle.HighestPrice}</b>");
                         msg.AppendLine($"Entry price: <b>{entryPrice}</b>");
                         msg.AppendLine($"Liquidation 8x10: <b>{stopLoss.FixedNumber(2)}</b>");
-                        await NotifyInProductionAsync(msg.ToString(), cancellationToken);
+                        await notifier.Notify(msg.ToString(), cancellationToken);
 
                         await SaveSignalRecordIfNewAsync(command, div, SignalType.Short, entryPrice, stopLoss, takeProfit,
                             rsiValues[div.PreviousTime], cancellationToken);
@@ -74,7 +72,7 @@ namespace Cex.Application.Indicator.Commands
                         msg.AppendLine($"[{divPreTime}]: <b>{rsiValues[div.PreviousTime]} - {preCandle.LowestPrice}</b>");
                         msg.AppendLine($"Entry price: <b>{entryPrice}</b>");
                         msg.AppendLine($"Liquidation 8x10: <b>{stopLoss.FixedNumber(2)}</b>");
-                        await NotifyInProductionAsync(msg.ToString(), cancellationToken);
+                        await notifier.Notify(msg.ToString(), cancellationToken);
 
                         await SaveSignalRecordIfNewAsync(command, div, SignalType.Long, entryPrice, stopLoss, takeProfit,
                             rsiValues[div.PreviousTime], cancellationToken);
@@ -122,13 +120,5 @@ namespace Cex.Application.Indicator.Commands
             }
         }
 
-        private Task NotifyInProductionAsync(string message, CancellationToken cancellationToken)
-        {
-            var environmentName = configuration["ASPNETCORE_ENVIRONMENT"] ?? configuration["DOTNET_ENVIRONMENT"];
-
-            return string.Equals(environmentName, "Production", StringComparison.OrdinalIgnoreCase)
-                ? notifier.Notify(message, cancellationToken)
-                : Task.CompletedTask;
-        }
     }
 }
