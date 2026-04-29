@@ -133,6 +133,9 @@ jobs:
           WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${IMAGE_TAGS}
 
           UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${IMAGE_TAGS}
+
+          # Seq log server
+          SEQ_FIRSTRUN_ADMINPASSWORD=@dmin191092
           EOF
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps
