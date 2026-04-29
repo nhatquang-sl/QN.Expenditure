@@ -50,9 +50,11 @@ PreviousRsiValue decimal      RSI of the previous peak/trough (rsiValues[div.Pre
 EntryPrice       decimal      Close price (short) or Open price (long) of the last candle
 StopLoss         decimal      Computed at detection time (see Business Rules)
 TakeProfit       decimal      Computed at detection time (see Business Rules)
-StopLossHitAt    DateTime?    Nullable — set by a future monitoring job
-TakeProfitHitAt  DateTime?    Nullable — set by a future monitoring job
-CreatedAt        DateTime     UTC timestamp set by DB default (GETUTCDATE()) on insert
+EntryHitAt           DateTime?    Nullable — set when price reaches EntryPrice; set by a future monitoring job
+StopLossHitAt        DateTime?    Nullable — set by a future monitoring job
+TakeProfitHitAt      DateTime?    Nullable — set by a future monitoring job
+CreatedAt            DateTime     UTC timestamp set by DB default (GETUTCDATE()) on insert
+LastCheckedCandleAt  DateTime     Set to DateTime.UtcNow on insert (same as CreatedAt); updated by CheckSignalEntry job after each check
 ```
 
 ### Enum: `SignalType` (New, in `Cex.Domain`)
@@ -106,9 +108,11 @@ public class SignalRecord
     public decimal EntryPrice { get; set; }
     public decimal StopLoss { get; set; }
     public decimal TakeProfit { get; set; }
+    public DateTime? EntryHitAt { get; set; }
     public DateTime? StopLossHitAt { get; set; }
     public DateTime? TakeProfitHitAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime LastCheckedCandleAt { get; set; }
 }
 ```
 
@@ -136,10 +140,17 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
         builder.Property(x => x.EntryPrice).HasPrecision(18, 8);
         builder.Property(x => x.StopLoss).HasPrecision(18, 8);
         builder.Property(x => x.TakeProfit).HasPrecision(18, 8);
-        builder.Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(x => x.DetectedAt).HasPrecision(0);
+        builder.Property(x => x.PreviousCandleAt).HasPrecision(0);
+        builder.Property(x => x.EntryHitAt).HasPrecision(0);
+        builder.Property(x => x.StopLossHitAt).HasPrecision(0);
+        builder.Property(x => x.TakeProfitHitAt).HasPrecision(0);
+        builder.Property(x => x.CreatedAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(x => x.LastCheckedCandleAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
 
         // Uniqueness guard: one signal record per symbol + interval + candle time
         builder.HasIndex(x => new { x.Symbol, x.Interval, x.DetectedAt }).IsUnique();
+        builder.HasIndex(x => x.LastCheckedCandleAt);
     }
 }
 ```
@@ -204,7 +215,7 @@ No new endpoint in this iteration. `SignalRecord` data is for internal use and f
 - [ ] Create `SignalRecordConfiguration` EF Core config in `Cex.Infrastructure`
 - [ ] Add `DbSet<SignalRecord> SignalRecords` to `ICexDbContext` and `CexDbContext`
 - [ ] Add `ICexDbContext dbContext` to `FindSignalCommandHandler` constructor
-- [ ] Update `FindSignalCommandHandler` to insert `SignalRecord` after notifying
+- [ ] Update `FindSignalCommandHandler` to insert `SignalRecord` after notifying (set `LastCheckedCandleAt = DateTime.UtcNow`)
 - [ ] Add migration: `AddSignalRecord`
 - [ ] Confirm TakeProfit formula
 
@@ -220,7 +231,7 @@ No new endpoint in this iteration. `SignalRecord` data is for internal use and f
 ## Technical Notes
 
 - `IntervalType` is defined in `Lib.ExternalServices` — it will be referenced as a dependency from `Cex.Domain`. If that creates a cross-layer concern, consider mirroring the enum in `Cex.Domain` and mapping at the handler level.
-- `StopLossHitAt` and `TakeProfitHitAt` are future fields. They will be `NULL` for all records created by this feature; a separate monitoring command will update them.
+- `EntryHitAt`, `StopLossHitAt` and `TakeProfitHitAt` are future fields. They will be `NULL` for all records created by this feature; a separate monitoring command will update them.
 - The Telegram message is sent **before** `SaveChangesAsync` to ensure notification delivery even if the DB insert fails. If atomicity between notification and persistence is required, reverse the order.
 
 ---

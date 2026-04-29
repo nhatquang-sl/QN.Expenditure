@@ -19,9 +19,16 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
         builder.Property(x => x.EntryPrice).HasPrecision(18, 8);
         builder.Property(x => x.StopLoss).HasPrecision(18, 8);
         builder.Property(x => x.TakeProfit).HasPrecision(18, 8);
-        builder.Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(x => x.DetectedAt).HasPrecision(0);
+        builder.Property(x => x.PreviousCandleAt).HasPrecision(0);
+        builder.Property(x => x.EntryHitAt).HasPrecision(0);
+        builder.Property(x => x.StopLossHitAt).HasPrecision(0);
+        builder.Property(x => x.TakeProfitHitAt).HasPrecision(0);
+        builder.Property(x => x.CreatedAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(x => x.LastCheckedCandleAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
 
         // Uniqueness guard: one signal record per symbol + interval + candle time
         builder.HasIndex(x => new { x.Symbol, x.Interval, x.DetectedAt }).IsUnique();
+        builder.HasIndex(x => x.LastCheckedCandleAt);
     }
 }

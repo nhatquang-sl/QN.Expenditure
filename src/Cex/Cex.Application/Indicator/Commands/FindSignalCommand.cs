@@ -110,6 +110,7 @@ namespace Cex.Application.Indicator.Commands
                     EntryPrice = entryPrice,
                     StopLoss = stopLoss,
                     TakeProfit = takeProfit,
+                    LastCheckedCandleAt = DateTime.UtcNow,
                 }, cancellationToken);
 
                 await dbContext.SaveChangesAsync(cancellationToken);

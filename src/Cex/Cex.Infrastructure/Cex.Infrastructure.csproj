@@ -15,7 +15,7 @@
         <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
-        <PackageReference Include="System.Security.Cryptography.Xml" />
+        <PackageReference Include="System.Security.Cryptography.Xml" />  
     </ItemGroup>
 
     <ItemGroup>

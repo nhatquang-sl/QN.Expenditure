@@ -73,7 +73,7 @@ builder.Services.AddControllers();
 
 // builder.Services.AddHostedService<SpotGridService>();
 builder.Services.AddHostedService<FindSignalService>();
-builder.Services.AddHostedService<SyncTradeHistoryService>();
+// builder.Services.AddHostedService<SyncTradeHistoryService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
 var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";

@@ -1,43 +1,35 @@
 ARG NODE_VERSION=20.18.2
 
-FROM node:${NODE_VERSION}-alpine
+# Stage 1: build
+FROM node:${NODE_VERSION}-alpine AS build
 
-# Use production node environment by default.
 WORKDIR /app
 
-COPY src/WebUI.React .
-# RUN corepack enable
+# Copy manifests first so npm ci layer is cached independently of source changes
+COPY src/WebUI.React/package.json src/WebUI.React/package-lock.json ./
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.npm to speed up subsequent builds.
-# Leverage a bind mounts to package.json and package-lock.json to avoid having to copy them into
-# into this layer.
-RUN npm i -g serve
 RUN npm ci --include=dev
+
+# Copy source after install to preserve cache when only source changes
+COPY src/WebUI.React .
 
 ARG VITE_API_ENDPOINT=https://quangnn.store
 ENV VITE_API_ENDPOINT=$VITE_API_ENDPOINT
 
-# RUN cd node_modules && ls
 RUN npm run build
-RUN rm -rf node_modules
 
-ENV NODE_ENV=production
+# Stage 2: serve static files with nginx
+FROM nginx:alpine
 
-# Copy the rest of the source files into the image.
-# COPY . .
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose the port that the application listens on.
-EXPOSE 5174
+EXPOSE 80
 
-# Run the application.
-CMD [ "serve", "-s", "dist", "-l", "5174" ]
+CMD ["nginx", "-g", "daemon off;"]
+
 # docker build . --no-cache --progress plain -t qex.ui:1.0 -f src/WebUI.React/Dockerfile
 # docker build . -t qex.ui:1.0 -f src/WebUI.React/Dockerfile
-# docker run -it --rm -p 8000:8080 qex.ui:1.0
-# http://localhost:8000/api/weatherforecast
-
 # docker tag qex.ui:1.0 nhatquang/qex.ui:1.0
 # docker push nhatquang/qex.ui:1.0
 # docker pull nhatquang/qex.ui:1.0
-# docker run -d -p 5174:5174 nhatquang/qex.ui:1.0
+# docker run -d -p 80:80 nhatquang/qex.ui:1.0
