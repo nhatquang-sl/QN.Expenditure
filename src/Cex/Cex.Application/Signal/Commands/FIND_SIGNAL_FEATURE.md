@@ -2,7 +2,7 @@
 
 ## Overview
 
-When the `RunIndicatorCommandHandler` detects an RSI divergence and sends a Telegram notification, it should also persist the signal details to the database. This allows historical analysis, back-testing, and tracking whether a signal's stop-loss or take-profit level was eventually hit.
+When the `RunSignalCommandHandler` detects an RSI divergence and sends a Telegram notification, it should also persist the signal details to the database. This allows historical analysis, back-testing, and tracking whether a signal's stop-loss or take-profit level was eventually hit.
 
 ---
 
@@ -50,9 +50,11 @@ PreviousRsiValue decimal      RSI of the previous peak/trough (rsiValues[div.Pre
 EntryPrice       decimal      Close price (short) or Open price (long) of the last candle
 StopLoss         decimal      Computed at detection time (see Business Rules)
 TakeProfit       decimal      Computed at detection time (see Business Rules)
-StopLossHitAt    DateTime?    Nullable — set by a future monitoring job
-TakeProfitHitAt  DateTime?    Nullable — set by a future monitoring job
-CreatedAt        DateTime     UTC timestamp set by DB default (GETUTCDATE()) on insert
+EntryHitAt           DateTime?    Nullable — set when price reaches EntryPrice; set by a future monitoring job
+StopLossHitAt        DateTime?    Nullable — set by a future monitoring job
+TakeProfitHitAt      DateTime?    Nullable — set by a future monitoring job
+CreatedAt            DateTime     UTC timestamp set by DB default (GETUTCDATE()) on insert
+LastCheckedCandleAt  DateTime     Set to DateTime.UtcNow on insert (same as CreatedAt); updated by CheckSignalEntry job after each check
 ```
 
 ### Enum: `SignalType` (New, in `Cex.Domain`)
@@ -82,7 +84,7 @@ Maps to divergence detection:
 
 **Duplicate prevention**: If a signal for the same `Symbol + Interval + DetectedAt` already exists, skip saving (idempotency guard for retried scheduled jobs).
 
-**`StopLossHitAt` / `TakeProfitHitAt`**: These are **not** set by `RunIndicatorCommandHandler`. They are reserved for a future price-monitoring background job.
+**`StopLossHitAt` / `TakeProfitHitAt`**: These are **not** set by `RunSignalCommandHandler`. They are reserved for a future price-monitoring background job.
 
 ---
 
@@ -106,9 +108,11 @@ public class SignalRecord
     public decimal EntryPrice { get; set; }
     public decimal StopLoss { get; set; }
     public decimal TakeProfit { get; set; }
+    public DateTime? EntryHitAt { get; set; }
     public DateTime? StopLossHitAt { get; set; }
     public DateTime? TakeProfitHitAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime LastCheckedCandleAt { get; set; }
 }
 ```
 
@@ -136,10 +140,17 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
         builder.Property(x => x.EntryPrice).HasPrecision(18, 8);
         builder.Property(x => x.StopLoss).HasPrecision(18, 8);
         builder.Property(x => x.TakeProfit).HasPrecision(18, 8);
-        builder.Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(x => x.DetectedAt).HasPrecision(0);
+        builder.Property(x => x.PreviousCandleAt).HasPrecision(0);
+        builder.Property(x => x.EntryHitAt).HasPrecision(0);
+        builder.Property(x => x.StopLossHitAt).HasPrecision(0);
+        builder.Property(x => x.TakeProfitHitAt).HasPrecision(0);
+        builder.Property(x => x.CreatedAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(x => x.LastCheckedCandleAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
 
         // Uniqueness guard: one signal record per symbol + interval + candle time
         builder.HasIndex(x => new { x.Symbol, x.Interval, x.DetectedAt }).IsUnique();
+        builder.HasIndex(x => x.LastCheckedCandleAt);
     }
 }
 ```
@@ -148,7 +159,7 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
 
 ### Application Layer
 
-No new Command/Query/Handler needed for the initial save — the insert is done directly inside `RunIndicatorCommandHandler.Handle()` via `ICexDbContext`, following the same pattern used in other handlers.
+No new Command/Query/Handler needed for the initial save — the insert is done directly inside `FindSignalCommandHandler.Handle()` via `ICexDbContext`, following the same pattern used in other handlers.
 
 **`ICexDbContext`** — add one line:
 
@@ -156,7 +167,7 @@ No new Command/Query/Handler needed for the initial save — the insert is done 
 DbSet<SignalRecord> SignalRecords { get; }
 ```
 
-**`RunIndicatorCommandHandler`** — inject `ICexDbContext dbContext`, then after `notifier.Notify(...)` in each case block, build and add a `SignalRecord` and call `SaveChangesAsync`.
+**`FindSignalCommandHandler`** — inject `ICexDbContext dbContext`, then after `notifier.Notify(...)` in each case block, build and add a `SignalRecord` and call `SaveChangesAsync`.
 
 ### Algorithm (updated handler flow)
 
@@ -203,8 +214,8 @@ No new endpoint in this iteration. `SignalRecord` data is for internal use and f
 - [ ] Create `SignalRecord` entity in `Cex.Domain`
 - [ ] Create `SignalRecordConfiguration` EF Core config in `Cex.Infrastructure`
 - [ ] Add `DbSet<SignalRecord> SignalRecords` to `ICexDbContext` and `CexDbContext`
-- [ ] Add `ICexDbContext dbContext` to `RunIndicatorCommandHandler` constructor
-- [ ] Update `RunIndicatorCommandHandler` to insert `SignalRecord` after notifying
+- [ ] Add `ICexDbContext dbContext` to `FindSignalCommandHandler` constructor
+- [ ] Update `FindSignalCommandHandler` to insert `SignalRecord` after notifying (set `LastCheckedCandleAt = DateTime.UtcNow`)
 - [ ] Add migration: `AddSignalRecord`
 - [ ] Confirm TakeProfit formula
 
@@ -220,7 +231,7 @@ No new endpoint in this iteration. `SignalRecord` data is for internal use and f
 ## Technical Notes
 
 - `IntervalType` is defined in `Lib.ExternalServices` — it will be referenced as a dependency from `Cex.Domain`. If that creates a cross-layer concern, consider mirroring the enum in `Cex.Domain` and mapping at the handler level.
-- `StopLossHitAt` and `TakeProfitHitAt` are future fields. They will be `NULL` for all records created by this feature; a separate monitoring command will update them.
+- `EntryHitAt`, `StopLossHitAt` and `TakeProfitHitAt` are future fields. They will be `NULL` for all records created by this feature; a separate monitoring command will update them.
 - The Telegram message is sent **before** `SaveChangesAsync` to ensure notification delivery even if the DB insert fails. If atomicity between notification and persistence is required, reverse the order.
 
 ---
@@ -238,7 +249,7 @@ dotnet ef migrations add AddSignalRecord \
 
 ## Related Features
 
-- `RunIndicatorCommand` — the triggering command
+- `FindSignalCommand` — the triggering command
 - `DivergenceCommand` / `DivergenceRsiPeakCommand` / `DivergenceRsiTroughCommand` — signal detection logic
 - `StatisticTrade` entity — a similar but separate historical record concept; evaluate whether to unify in the future
 

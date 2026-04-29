@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Lib.ExternalServices.KuCoin.Models;
 
-namespace Cex.Infrastructure.IntegrationTests.Indicator
+namespace Cex.Infrastructure.IntegrationTests.Signal
 {
     public static class Data
     {

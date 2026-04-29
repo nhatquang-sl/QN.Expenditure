@@ -33,7 +33,7 @@ namespace Cex.Application
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
                 cfg.NotificationPublisher = new TaskWhenAllPublisher();
             });
-            services.AddAutoMapper(typeof(MappingProfile));
+            services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MappingProfile)));
 
             return services;
         }

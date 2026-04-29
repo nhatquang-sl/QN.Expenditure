@@ -1,17 +1,25 @@
-﻿using Cex.Application.Indicator.Commands;
+using Cex.Application.Signal.Commands;
+using Cex.Application.Signal.Commands.CheckSignalEntry;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 
 namespace WebAPI.HostedServices
 {
-    public class RunIndicatorService(IServiceScopeFactory serviceScopeFactory, ILogger<RunIndicatorService> logger)
+    public class FindSignalService(IServiceScopeFactory serviceScopeFactory, ILogger<FindSignalService> logger)
         : BackgroundService
     {
-        private async Task RunIndicator(IntervalType intervalType, CancellationToken stoppingToken)
+        private async Task FindSignal(IntervalType intervalType, CancellationToken stoppingToken)
         {
             using var scope = serviceScopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            await mediator.Send(new RunIndicatorCommand(intervalType), stoppingToken);
+            await mediator.Send(new FindSignalCommand(intervalType), stoppingToken);
+        }
+
+        private async Task CheckSignalEntry(CancellationToken stoppingToken)
+        {
+            using var scope = serviceScopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new CheckSignalEntryCommand(), stoppingToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -23,34 +31,36 @@ namespace WebAPI.HostedServices
                 {
                     try
                     {
+                        await CheckSignalEntry(stoppingToken);
+
                         if (DateTime.UtcNow.Minute % 5 == 1)
                         {
-                            await RunIndicator(IntervalType.FiveMinutes, stoppingToken);
+                            await FindSignal(IntervalType.FiveMinutes, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Minute % 15 == 1)
                         {
-                            await RunIndicator(IntervalType.FifteenMinutes, stoppingToken);
+                            await FindSignal(IntervalType.FifteenMinutes, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Minute % 30 == 1)
                         {
-                            await RunIndicator(IntervalType.ThirtyMinutes, stoppingToken);
+                            await FindSignal(IntervalType.ThirtyMinutes, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Minute == 1)
                         {
-                            await RunIndicator(IntervalType.OneHour, stoppingToken);
+                            await FindSignal(IntervalType.OneHour, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Hour % 4 == 1 && DateTime.UtcNow.Minute == 1)
                         {
-                            await RunIndicator(IntervalType.FourHours, stoppingToken);
+                            await FindSignal(IntervalType.FourHours, stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Hour == 1 && DateTime.UtcNow.Minute == 1)
                         {
-                            await RunIndicator(IntervalType.OneDay, stoppingToken);
+                            await FindSignal(IntervalType.OneDay, stoppingToken);
                         }
                     }
                     catch (Exception ex)

@@ -15,7 +15,9 @@ public class SignalRecord
     public decimal EntryPrice { get; set; }
     public decimal StopLoss { get; set; }
     public decimal TakeProfit { get; set; }
+    public DateTime? EntryHitAt { get; set; }
     public DateTime? StopLossHitAt { get; set; }
     public DateTime? TakeProfitHitAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime LastCheckedCandleAt { get; set; }
 }

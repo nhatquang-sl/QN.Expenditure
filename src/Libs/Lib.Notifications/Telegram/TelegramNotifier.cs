@@ -28,7 +28,9 @@ namespace Lib.Notifications.Telegram
             _botToken = urlConfig?[0] ?? throw new InvalidOperationException();
             _chatId = urlConfig[1];
             _msgThreadId = urlConfig[2];
-            _hasEnabled = !string.IsNullOrWhiteSpace(_chatId) && !string.IsNullOrWhiteSpace(_msgThreadId);
+            var env = configuration["ASPNETCORE_ENVIRONMENT"] ?? configuration["DOTNET_ENVIRONMENT"];
+            var isProduction = string.Equals(env, "Production", StringComparison.OrdinalIgnoreCase);
+            _hasEnabled = isProduction && !string.IsNullOrWhiteSpace(_chatId) && !string.IsNullOrWhiteSpace(_msgThreadId);
         }
 
         public Task NotifyInfo(string title, string description, CancellationToken cancellationToken = default)
@@ -73,9 +75,10 @@ namespace Lib.Notifications.Telegram
             return Notify(title, description, sb.ToString(), cancellationToken);
         }
 
-        public async Task Notify(string message, CancellationToken cancellationToken = default)
+        public Task Notify(string message, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.SendMessage(_botToken,
+            if (!_hasEnabled) return Task.CompletedTask;
+            return _httpClient.SendMessage(_botToken,
                 new TelegramTopicMessage(_chatId, _msgThreadId, message));
         }
 

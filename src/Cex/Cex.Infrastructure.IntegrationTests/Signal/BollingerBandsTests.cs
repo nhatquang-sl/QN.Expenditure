@@ -1,8 +1,8 @@
-using Cex.Application.Indicator.Commands;
+using Cex.Application.Signal.Commands;
 using MediatR;
 using Shouldly;
 
-namespace Cex.Infrastructure.IntegrationTests.Indicator
+namespace Cex.Infrastructure.IntegrationTests.Signal
 {
     public class BollingerBandsTests : DependencyInjectionFixture
     {

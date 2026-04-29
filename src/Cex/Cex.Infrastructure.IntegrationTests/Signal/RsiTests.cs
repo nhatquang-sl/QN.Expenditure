@@ -1,8 +1,8 @@
-using Cex.Application.Indicator.Commands.Rsi;
+using Cex.Application.Signal.Commands.Rsi;
 using MediatR;
 using Shouldly;
 
-namespace Cex.Infrastructure.IntegrationTests.Indicator
+namespace Cex.Infrastructure.IntegrationTests.Signal
 {
     public class RsiTests : DependencyInjectionFixture
     {

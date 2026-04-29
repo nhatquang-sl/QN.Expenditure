@@ -33,7 +33,7 @@ namespace Cex.Infrastructure.Data.Configurations
                 .HasPrecision(13, 6)
                 .IsRequired();
 
-            builder.Property(t => t.CreatedAt).HasDefaultValue(DateTime.UtcNow);
+            builder.Property(t => t.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
 
             // Index for pagination query (GetTradeHistoriesBySymbol)
             builder.HasIndex(x => new { x.UserId, x.Symbol, x.TradedAt })

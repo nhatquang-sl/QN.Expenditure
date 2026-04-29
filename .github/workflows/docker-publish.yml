@@ -117,10 +117,10 @@ jobs:
             exit 1
           fi
 
-          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR"
-          scp -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key "$SOURCE_COMPOSE" ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/docker-compose.yml
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR"
+          scp -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -P ${{ secrets.VPS_PORT }} "$SOURCE_COMPOSE" ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/docker-compose.yml
 
-          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
             set -euo pipefail
 
             TARGET_DIR="workspace/qex"
@@ -133,6 +133,12 @@ jobs:
           WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${IMAGE_TAGS}
 
           UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${IMAGE_TAGS}
+
+          # Seq log server
+          SEQ_FIRSTRUN_ADMINPASSWORD=${{ secrets.SEQ_ADMIN_PASSWORD }}
+
+          # Aspire Dashboard
+          ASPIRE_DASHBOARD_TOKEN=${{ secrets.ASPIRE_DASHBOARD_TOKEN }}
           EOF
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps

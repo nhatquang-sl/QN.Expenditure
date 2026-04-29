@@ -115,7 +115,20 @@ export default function TradeHistory() {
 - **Handlers**: Suffix with `Handler`
 - **Validators**: Suffix with `Validator`
 
-#### 3. Modern C# Features
+#### 3. DateTime Precision in EF Core
+- All `DateTime` and `DateTime?` properties **must** be stored with second-level precision using `HasPrecision(0)` → maps to `datetime2(0)` in SQL Server
+- This applies to every entity configuration; sub-second precision is never needed in this codebase
+
+```csharp
+// ✅ Required for all DateTime columns
+builder.Property(x => x.DetectedAt).HasPrecision(0);
+builder.Property(x => x.CreatedAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
+
+// ❌ Never rely on the default datetime2(7) precision
+builder.Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+```
+
+#### 4. Modern C# Features
 - Use **file-scoped namespaces**: `namespace MyNamespace;`
 - Use **primary constructors** for dependency injection (C# 12+)
 - Use **record types** for DTOs and Commands/Queries
@@ -224,6 +237,7 @@ When reviewing or writing code, check:
 - [ ] Are modern C# features used (file-scoped namespace, primary constructors, records)?
 - [ ] Is `CancellationToken` passed through async methods?
 - [ ] Are entities properly configured in EF Core?
+- [ ] Do all `DateTime`/`DateTime?` columns use `HasPrecision(0)` in their EF Core configuration?
 
 ## Common Patterns
 

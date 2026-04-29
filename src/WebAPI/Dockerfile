@@ -10,11 +10,12 @@
 
 # Base stage: runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 USER app
 WORKDIR /app
-ENV ASPNETCORE_ENVIRONMENT=Production
+
 EXPOSE 5000
-EXPOSE 5001
 
 # Build stage: SDK image to restore and build
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
@@ -42,13 +43,11 @@ RUN dotnet restore "./src/WebAPI/WebAPI.csproj"
 # Copy the remaining source code to build and publish
 COPY . .
 
-WORKDIR "/src/src/WebAPI"
-RUN dotnet build "./WebAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
-
-# Publish stage: build release version
+# Publish stage: dotnet publish already compiles — no separate build step needed
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 ARG VERSION=1.1
+WORKDIR "/src/src/WebAPI"
 RUN dotnet publish "./WebAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false -p:Version=${VERSION}
 
 FROM base AS final
