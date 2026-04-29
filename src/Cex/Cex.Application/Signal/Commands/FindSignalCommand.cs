@@ -1,6 +1,6 @@
 using System.Text;
 using Cex.Application.Common.Abstractions;
-using Cex.Application.Indicator.Commands.Rsi;
+using Cex.Application.Signal.Commands.Rsi;
 using Cex.Domain.Entities;
 using Cex.Domain.Enums;
 using Lib.Application.Abstractions;
@@ -12,7 +12,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Indicator.Commands
+namespace Cex.Application.Signal.Commands
 {
     public class FindSignalCommand(IntervalType interval) : IRequest
     {

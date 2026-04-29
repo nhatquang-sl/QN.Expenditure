@@ -1,5 +1,5 @@
-using Cex.Application.Indicator.Commands;
-using Cex.Application.Indicator.Commands.CheckSignalEntry;
+using Cex.Application.Signal.Commands;
+using Cex.Application.Signal.Commands.CheckSignalEntry;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 

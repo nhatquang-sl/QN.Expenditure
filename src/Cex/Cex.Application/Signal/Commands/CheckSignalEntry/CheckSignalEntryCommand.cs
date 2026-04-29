@@ -7,7 +7,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Indicator.Commands.CheckSignalEntry;
+namespace Cex.Application.Signal.Commands.CheckSignalEntry;
 
 public record CheckSignalEntryCommand : IRequest;
 

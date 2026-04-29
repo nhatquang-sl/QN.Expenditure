@@ -2,7 +2,7 @@
 
 ## Overview
 
-When the `RunIndicatorCommandHandler` detects an RSI divergence and sends a Telegram notification, it should also persist the signal details to the database. This allows historical analysis, back-testing, and tracking whether a signal's stop-loss or take-profit level was eventually hit.
+When the `RunSignalCommandHandler` detects an RSI divergence and sends a Telegram notification, it should also persist the signal details to the database. This allows historical analysis, back-testing, and tracking whether a signal's stop-loss or take-profit level was eventually hit.
 
 ---
 
@@ -84,7 +84,7 @@ Maps to divergence detection:
 
 **Duplicate prevention**: If a signal for the same `Symbol + Interval + DetectedAt` already exists, skip saving (idempotency guard for retried scheduled jobs).
 
-**`StopLossHitAt` / `TakeProfitHitAt`**: These are **not** set by `RunIndicatorCommandHandler`. They are reserved for a future price-monitoring background job.
+**`StopLossHitAt` / `TakeProfitHitAt`**: These are **not** set by `RunSignalCommandHandler`. They are reserved for a future price-monitoring background job.
 
 ---
 

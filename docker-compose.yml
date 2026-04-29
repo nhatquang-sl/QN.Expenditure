@@ -15,11 +15,7 @@ services:
     networks:
       - "aspire"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/alive || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      disable: true
 
   qex.ui:
     container_name: qex-ui
@@ -34,8 +30,7 @@ services:
     networks:
       - "aspire"
     depends_on:
-      qex.api:
-        condition: service_healthy
+      - qex.api
 
     #  redis.cache:
     #    image: "docker.io/library/redis:7.4"

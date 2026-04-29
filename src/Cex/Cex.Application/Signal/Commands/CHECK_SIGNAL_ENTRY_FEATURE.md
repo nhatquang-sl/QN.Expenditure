@@ -161,7 +161,7 @@ foreach (var signal in candidates)
 
 ### Application Layer
 
-**New file**: `src/Cex/Cex.Application/Indicator/Commands/CheckSignalEntry/CheckSignalEntryCommand.cs`
+**New file**: `src/Cex/Cex.Application/Signal/Commands/CheckSignalEntry/CheckSignalEntryCommand.cs`
 
 - Command: `CheckSignalEntryCommand` (no parameters — always operates on BTCUSDT 1min)
 - Handler: `CheckSignalEntryCommandHandler`

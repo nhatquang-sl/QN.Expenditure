@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Cex.Application.Indicator.Commands.Rsi;
+using Cex.Application.Signal.Commands.Rsi;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
@@ -7,9 +7,9 @@ using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Indicator.Commands
+namespace Cex.Application.Signal.Commands
 {
-    public class StatisticIndicatorCommand : IRequest
+    public class StatisticSignalCommand : IRequest
     {
     }
 
@@ -30,16 +30,16 @@ namespace Cex.Application.Indicator.Commands
         StopLoss
     }
 
-    public class StatisticIndicatorCommandHandler(
+    public class StatisticSignalCommandHandler(
         IKuCoinService kuCoinService,
         IOptions<KuCoinConfig> kuCoinConfig,
         ISender sender,
         INotifier notifier)
-        : IRequestHandler<StatisticIndicatorCommand>
+        : IRequestHandler<StatisticSignalCommand>
     {
         private const int Leverage = 10;
 
-        public async Task Handle(StatisticIndicatorCommand command, CancellationToken cancellationToken)
+        public async Task Handle(StatisticSignalCommand command, CancellationToken cancellationToken)
         {
             var divergences = new List<StatisticDivergence>();
             const IntervalType intervalType = IntervalType.OneHour;

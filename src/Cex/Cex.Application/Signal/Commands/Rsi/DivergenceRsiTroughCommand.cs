@@ -1,7 +1,7 @@
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 
-namespace Cex.Application.Indicator.Commands.Rsi
+namespace Cex.Application.Signal.Commands.Rsi
 {
     public record DivergenceRsiTroughCommand(
         DateTime RsiTime,
