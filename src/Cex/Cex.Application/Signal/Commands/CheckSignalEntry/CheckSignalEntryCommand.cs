@@ -63,12 +63,10 @@ public class CheckSignalEntryCommandHandler(
                                               ? c.LowestPrice  <= signal.EntryPrice
                                               : c.HighestPrice >= signal.EntryPrice));
 
-                    if (hit is null)
-                    {
-                        continue;
-                    }
+                    if (hit is null) continue;
 
                     signal.EntryHitAt = hit.OpenTime;
+                    signal.LastCheckedCandleAt = hit.OpenTime; // anchor for stop-loss check
                     unhitCount--;
                 }
 
@@ -80,9 +78,9 @@ public class CheckSignalEntryCommandHandler(
             logTrace.LogError("CheckSignalEntry loop interrupted — saving partial progress", ex);
         }
 
-        if (lastCandleOpenTime is null || unhitCount == candidates.Count) return;
+        if (lastCandleOpenTime is null) return;
 
-        foreach (var signal in candidates.Where(signal => lastCandleOpenTime.Value > signal.LastCheckedCandleAt))
+        foreach (var signal in candidates.Where(s => s.EntryHitAt == null && lastCandleOpenTime.Value > s.LastCheckedCandleAt))
             signal.LastCheckedCandleAt = lastCandleOpenTime.Value;
 
         await dbContext.SaveChangesAsync(cancellationToken);

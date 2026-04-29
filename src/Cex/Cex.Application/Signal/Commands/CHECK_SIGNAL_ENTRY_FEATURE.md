@@ -38,12 +38,13 @@ This is the key field that avoids re-scanning already-checked candles on subsequ
             candle.OpenTime > signal.LastCheckedCandleAt
             Long  signal hit: candle.LowestPrice  <= signal.EntryPrice
             Short signal hit: candle.HighestPrice >= signal.EntryPrice
-        - If hit found → set EntryHitAt = hit.OpenTime; decrement unhitCount
+        - If hit found → set EntryHitAt = hit.OpenTime; set LastCheckedCandleAt = hit.OpenTime; decrement unhitCount
    e. Advance startAt = batch[^1].OpenTime + 1 min
    f. If unhitCount == 0 → break early
 5. If no batches were fetched → return early (no DB write)
-6. For every candidate: set LastCheckedCandleAt = Max(LastCheckedCandleAt, lastCandleOpenTime)
+6. For every candidate where EntryHitAt IS NULL: set LastCheckedCandleAt = Max(LastCheckedCandleAt, lastCandleOpenTime)
    (never move the pointer backwards in case of an early-exit gap)
+   Signals that hit entry already had LastCheckedCandleAt set to hit.OpenTime in step 4 — do not overwrite
 7. SaveChangesAsync
 ```
 
@@ -110,6 +111,7 @@ try
             if (hit is not null)
             {
                 signal.EntryHitAt = hit.OpenTime;
+                signal.LastCheckedCandleAt = hit.OpenTime; // anchor for stop-loss check
                 unhitCount--;
             }
         }
@@ -125,11 +127,12 @@ catch (Exception ex)
     logTrace.Error(ex, "CheckSignalEntry loop interrupted — saving partial progress");
 }
 
-// Only write to DB if at least one entry was hit (unhitCount decreased from its initial value).
-// LastCheckedCandleAt is advanced for all candidates to avoid re-scanning on the next run.
-if (lastCandleOpenTime is null || unhitCount == candidates.Count) return;
+// Always write to DB if at least one batch was fetched — we need to advance LastCheckedCandleAt
+// for unhit signals so the next run (or stop-loss check) only fetches new candles.
+// Signals that hit entry already have LastCheckedCandleAt = hit.OpenTime; skip them.
+if (lastCandleOpenTime is null) return;
 
-foreach (var signal in candidates)
+foreach (var signal in candidates.Where(s => s.EntryHitAt == null))
     if (lastCandleOpenTime.Value > signal.LastCheckedCandleAt)
         signal.LastCheckedCandleAt = lastCandleOpenTime.Value;
 ```
