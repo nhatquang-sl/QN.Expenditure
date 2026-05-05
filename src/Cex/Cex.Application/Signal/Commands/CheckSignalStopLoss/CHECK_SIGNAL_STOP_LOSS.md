@@ -2,7 +2,7 @@
 
 ## Overview
 
-`CheckSignalStopLossCommand` runs every minute inside `FindSignalService` and detects when active leveraged positions have been stopped out. It queries up to 100 `SignalRecord` rows where `EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL`, fetches 1-minute BTCUSDT candles in batches starting from each signal's `LastCheckedCandleAt` pointer (anchored to `EntryHitAt` by `CheckSignalEntry`), and marks `StopLossHitAt` when the market price moves 70% of margin against the position (scaled by leverage). While the position is open, the `StopLoss` field is updated in-flight to track the worst observed adverse price, enabling analytics to show proximity-to-stop without replaying historical candles.
+`CheckSignalStopLossCommand` runs every minute inside `FindSignalService` and detects when active positions have been stopped out. It queries up to 100 `SignalRecord` rows where `EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL`, fetches 1-minute BTCUSDT candles in batches starting from each signal's `LastCheckedCandleAt` pointer (anchored to `EntryHitAt` by `CheckSignalEntry`), and marks `StopLossHitAt` when the market price crosses the stored `StopLoss` threshold set by `FindSignalCommandHandler`.
 
 **Module Location**: `src/Cex/Cex.Application/Signal/Commands/CheckSignalStopLoss/`
 **Scope**: BTCUSDT only; all signal intervals
@@ -11,15 +11,11 @@
 
 ## Data Model
 
-### Entity: `SignalRecord` (Existing — modified)
+### Entity: `SignalRecord` (Existing — no changes)
 
-New column:
-
-| Column   | Type | Nullable | Default | Constraints                          | Notes                                               |
-|----------|------|----------|---------|--------------------------------------|-----------------------------------------------------|
-| Leverage | int  | No       | 10      | CK: `Leverage >= 1 AND Leverage <= 125` | Position leverage multiplier; used to compute the dynamic stop-loss threshold |
-
-Updated entity definition:
+No new columns. The existing `StopLoss` field already holds the stop-loss threshold price seeded by `FindSignalCommandHandler`:
+- Long: `entryPrice × 0.92` (8% below entry)
+- Short: `entryPrice × 1.08` (8% above entry)
 
 ```csharp
 public class SignalRecord
@@ -35,7 +31,6 @@ public class SignalRecord
     public decimal EntryPrice { get; set; }
     public decimal StopLoss { get; set; }
     public decimal TakeProfit { get; set; }
-    public int Leverage { get; set; } = 10;
     public DateTime? EntryHitAt { get; set; }
     public DateTime? StopLossHitAt { get; set; }
     public DateTime? TakeProfitHitAt { get; set; }
@@ -46,30 +41,15 @@ public class SignalRecord
 
 ### Business Rules
 
-1. **Stop-loss threshold** is computed from `EntryPrice` and `Leverage` once per command run; it is constant for a given signal's lifetime.
-   - Long: `stopLossPrice = EntryPrice × (1 − 0.70 / Leverage)`
-   - Short: `stopLossPrice = EntryPrice × (1 + 0.70 / Leverage)`
+1. **Stop-loss threshold** — `StopLoss` is seeded by `FindSignalCommandHandler` and used directly as the hit threshold. No recomputation needed.
+   - Long threshold: `StopLoss = entryPrice × 0.92` (8% below entry)
+   - Short threshold: `StopLoss = entryPrice × 1.08` (8% above entry)
 
-   Example — Long, entry = 100, leverage = 10:
-   `stopLossPrice = 100 × (1 − 0.07) = 93` → hit when any 1-min candle has low ≤ 93.
+2. **Hit condition** — stop-loss is triggered when a 1-minute candle's extreme price crosses `signal.StopLoss`:
+   - Long: `candle.LowestPrice ≤ signal.StopLoss`
+   - Short: `candle.HighestPrice ≥ signal.StopLoss`
 
-2. **Hit condition** — stop-loss is triggered when a 1-minute candle's extreme price crosses `stopLossPrice`:
-   - Long: `candle.LowestPrice ≤ stopLossPrice`
-   - Short: `candle.HighestPrice ≥ stopLossPrice`
-
-3. **`StopLoss` field tracking** — while open, `StopLoss` is overwritten with the running worst adverse price across all candles processed since the previous run:
-   - Long: `StopLoss = Math.Min(StopLoss, candle.LowestPrice)`
-   - Short: `StopLoss = Math.Max(StopLoss, candle.HighestPrice)`
-
-   Tracking applies to `relevantCandles` (those with `OpenTime > signal.LastCheckedCandleAt`) up to and including the hit candle. Once `StopLossHitAt` is set, `StopLoss` is frozen.
-
-4. **`StopLoss` field repurposing** — `StopLoss` is initially written by `FindSignalCommandHandler` as a static divergence-based reference price (Long: `entryPrice × 0.92`, Short: `entryPrice × 1.08`). `CheckSignalStopLoss` intentionally overwrites this value with the running worst-observed price. The original divergence-based value is not preserved; once a position is entered, live proximity-to-stop is operationally more useful.
-
-5. **`Leverage` default** — existing rows without an explicit value default to 10 (most common trading configuration).
-
-6. **`Leverage` range** — values outside 1–125 are rejected by a database check constraint.
-
-7. **Pointer monotonicity** — `LastCheckedCandleAt` must never move backward. For unhit signals it is updated to `Max(LastCheckedCandleAt, lastCandleOpenTime)` at the end of each run.
+3. **Pointer monotonicity** — `LastCheckedCandleAt` must never move backward. For unhit signals it is updated to `Max(LastCheckedCandleAt, lastCandleOpenTime)` at the end of each run.
 
 ---
 
@@ -80,60 +60,40 @@ public class SignalRecord
      WHERE EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL
      ORDER BY LastCheckedCandleAt ASC
 2. If candidates is empty → return early (no KuCoin call)
-3. startAt       = Min(candidates, s => s.LastCheckedCandleAt)
-   now            = DateTime.UtcNow
-   unhitCount     = candidates.Count
+3. startAt           = Min(candidates, s => s.LastCheckedCandleAt)
+   now               = DateTime.UtcNow
+   unhitCount        = candidates.Count
    lastCandleOpenTime = null
 
-4. Pre-compute stopLossPrice per signal (constant for this run):
-     Long:  EntryPrice × (1 − 0.70 / Leverage)
-     Short: EntryPrice × (1 + 0.70 / Leverage)
-
-5. while startAt < now:
+4. while startAt < now:
    a. batch = GetKlines("BTCUSDT", 1min, startAt, interval.GetEndDate(startAt))
       (returns ≤ 1500 candles sorted ascending by OpenTime)
    b. if batch is empty → break
    c. lastCandleOpenTime = batch[^1].OpenTime
-      startAt = lastCandleOpenTime + 1 min      ← advances the shared window pointer
+      startAt = lastCandleOpenTime + 1 min
 
    d. for each signal in candidates where StopLossHitAt is null:
-        relevantCandles = batch WHERE OpenTime > signal.LastCheckedCandleAt, ORDER BY OpenTime ASC
-        if none → skip this signal for this batch
+        hit = batch.FirstOrDefault(c =>
+                  c.OpenTime > signal.LastCheckedCandleAt &&
+                  (Long  ? c.LowestPrice  <= signal.StopLoss
+                         : c.HighestPrice >= signal.StopLoss))
 
-        stopLossPrice = pre-computed value for signal.Id
-        hit = relevantCandles.FirstOrDefault(hit condition)
+        if hit is null → skip this signal for this batch
 
-        candlesToTrack = (hit is null) ? relevantCandles
-                                       : relevantCandles.TakeWhile(c => c.OpenTime <= hit.OpenTime)
-        for each c in candlesToTrack:
-          Long:  signal.StopLoss = Math.Min(signal.StopLoss, c.LowestPrice)
-          Short: signal.StopLoss = Math.Max(signal.StopLoss, c.HighestPrice)
-
-        if hit is not null:
-          signal.StopLossHitAt       = hit.OpenTime
-          signal.LastCheckedCandleAt = hit.OpenTime
-          unhitCount--
+        signal.StopLossHitAt       = hit.OpenTime
+        signal.LastCheckedCandleAt = hit.OpenTime
+        unhitCount--
 
    e. if unhitCount == 0 → break (all signals stopped out)
 
-6. if lastCandleOpenTime is null → return (no DB write — no batch was fetched)
+5. if lastCandleOpenTime is null → return (no DB write — no batch was fetched)
 
-7. For each signal in candidates WHERE StopLossHitAt IS NULL
+6. For each signal in candidates WHERE StopLossHitAt IS NULL
                                  AND lastCandleOpenTime > signal.LastCheckedCandleAt:
      signal.LastCheckedCandleAt = lastCandleOpenTime
-     (never move the pointer backwards in case of an early-exit gap)
 
-8. SaveChangesAsync
+7. SaveChangesAsync
 ```
-
-> **Why pre-compute `stopLossPrice`?**
-> `EntryPrice` and `Leverage` are constants for a given signal. Pre-computing into a dictionary avoids redundant decimal arithmetic inside the inner loop and makes each lookup O(1).
-
-> **Why track `StopLoss` candle-by-candle up to the hit?**
-> Processing candle-by-candle with `TakeWhile(c => c.OpenTime <= hit.OpenTime)` ensures tracking stops precisely at the hit candle and never includes candles from after the stop was triggered. Since `relevantCandles` is sorted ascending, `TakeWhile` on `OpenTime` is safe and includes the hit candle itself.
-
-> **Why use `Max(LastCheckedCandleAt, lastCandleOpenTime)` in step 7?**
-> If all signals are stopped out before the final batch (`unhitCount == 0` break in step 5e), `lastCandleOpenTime` may be earlier than some signals' existing `LastCheckedCandleAt`. The `Max` guard prevents regressing the pointer for any signal.
 
 ---
 
@@ -151,7 +111,7 @@ var candidates = await dbContext.SignalRecords
 if (candidates.Count == 0) return;
 ```
 
-**Steps 3–8 — Candle loop, adverse tracking, hit detection:**
+**Steps 3–7 — Candle loop, hit detection:**
 
 ```csharp
 const IntervalType interval = IntervalType.OneMinute;
@@ -159,15 +119,6 @@ var startAt = candidates.Min(s => s.LastCheckedCandleAt);
 var now = DateTime.UtcNow;
 DateTime? lastCandleOpenTime = null;
 var unhitCount = candidates.Count;
-
-// Pre-compute per-signal stop-loss prices.
-// EntryPrice, Leverage, and SignalType are constants for the lifetime of this command.
-// 0.70m / s.Leverage: s.Leverage is int; C# promotes to decimal for the division — no integer truncation.
-var stopLossPrices = candidates.ToDictionary(
-    s => s.Id,
-    s => s.SignalType == SignalType.Long
-        ? s.EntryPrice * (1 - 0.70m / s.Leverage)
-        : s.EntryPrice * (1 + 0.70m / s.Leverage));
 
 try
 {
@@ -179,37 +130,15 @@ try
         if (batch.Count == 0) break;
 
         lastCandleOpenTime = batch[^1].OpenTime;
-        startAt = lastCandleOpenTime.Value.AddMinutes(1); // advance shared window pointer
+        startAt = lastCandleOpenTime.Value.AddMinutes(1);
 
         foreach (var signal in candidates.Where(s => s.StopLossHitAt == null))
         {
-            var checkFrom = signal.LastCheckedCandleAt;
-            var stopLossPrice = stopLossPrices[signal.Id];
-
-            // GetKlines returns candles sorted ascending by OpenTime.
-            // The explicit OrderBy is a defensive guard against contract changes.
-            var relevantCandles = batch
-                .Where(c => c.OpenTime > checkFrom)
-                .OrderBy(c => c.OpenTime)
-                .ToList();
-
-            if (relevantCandles.Count == 0) continue;
-
-            var hit = relevantCandles.FirstOrDefault(c =>
-                signal.SignalType == SignalType.Long
-                    ? c.LowestPrice  <= stopLossPrice
-                    : c.HighestPrice >= stopLossPrice);
-
-            var candlesToTrack = hit is null
-                ? (IEnumerable<KlineDto>)relevantCandles
-                : relevantCandles.TakeWhile(c => c.OpenTime <= hit.OpenTime);
-
-            foreach (var c in candlesToTrack)
-            {
-                signal.StopLoss = signal.SignalType == SignalType.Long
-                    ? Math.Min(signal.StopLoss, c.LowestPrice)
-                    : Math.Max(signal.StopLoss, c.HighestPrice);
-            }
+            var hit = batch.FirstOrDefault(c =>
+                c.OpenTime > signal.LastCheckedCandleAt &&
+                (signal.SignalType == SignalType.Long
+                    ? c.LowestPrice  <= signal.StopLoss
+                    : c.HighestPrice >= signal.StopLoss));
 
             if (hit is null) continue;
 
@@ -242,23 +171,6 @@ await dbContext.SaveChangesAsync(cancellationToken);
 ---
 
 ## Backend Architecture
-
-### Domain Layer
-
-**Modified:** `src/Cex/Cex.Domain/Entities/SignalRecord.cs`
-- Add `public int Leverage { get; set; } = 10;`
-
-### Infrastructure Layer
-
-**Modified:** `src/Cex/Cex.Infrastructure/Data/Configurations/SignalRecordConfiguration.cs`
-
-```csharp
-builder.Property(x => x.Leverage)
-    .HasDefaultValue(10);
-builder.HasCheckConstraint("CK_SignalRecords_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
-```
-
-**Migration name:** `AddSignalRecordLeverage`
 
 ### Application Layer
 
@@ -316,10 +228,10 @@ await CheckSignalStopLoss(stoppingToken);
 ## Performance Considerations
 
 - **`IX_SignalRecords_LastCheckedCandleAt`** (existing index) — the `ORDER BY LastCheckedCandleAt ASC TAKE 100` candidate query uses an index scan rather than a full table scan.
-- **Pre-computed `stopLossPrices` dictionary** — computed once before the loop; O(1) lookup during the inner per-signal per-batch iteration.
 - **Shared candle stream** — a single `GetKlines` call per batch serves all 100 candidates. Each signal filters independently via `OpenTime > signal.LastCheckedCandleAt`.
 - **Early exit when `unhitCount == 0`** — stops fetching batches once every candidate is stopped out, eliminating unnecessary KuCoin API calls.
 - **Batch ceiling ≤ 1500 candles** — `interval.GetEndDate(startAt)` computes the correct end boundary so each fetch covers exactly one window without over-fetching.
+- **No batch-level skip optimization** — unlike `CheckSignalEntry` (which pre-computes `batchHigh`/`batchLow` and skips signals whose entry price is outside the batch range), `CheckSignalStopLoss` runs a full `FirstOrDefault` scan per signal per batch regardless of whether the batch price range can cross `signal.StopLoss`. This is acceptable given the expected low count of active candidates; the optimization can be added if profiling shows it is needed.
 
 ---
 
@@ -328,8 +240,9 @@ await CheckSignalStopLoss(stoppingToken);
 | Scenario | Handling |
 |---|---|
 | No entered open signals | Early return after candidate query — no KuCoin call |
-| Empty candle batch returned | Break inner loop; `lastCandleOpenTime` is null; no DB write |
-| Signal not yet stopped out | `StopLoss` and `LastCheckedCandleAt` updated; `StopLossHitAt` remains null |
+| First batch is empty | Break inner loop; `lastCandleOpenTime` is null; no DB write |
+| Subsequent batch is empty | Break inner loop; partial progress from prior batches saved via `SaveChangesAsync` |
+| Signal not yet stopped out | `LastCheckedCandleAt` updated; `StopLossHitAt` remains null |
 | Exception in loop (429 rate-limit, network, timeout) | Caught in `try/catch`; partial progress saved if ≥ 1 batch fetched; error logged via `ILogTrace`; no rethrow |
 | DB `SaveChangesAsync` failure | Exception propagates to `FindSignalService` outer `catch` block and is logged there |
 
@@ -337,31 +250,19 @@ await CheckSignalStopLoss(stoppingToken);
 
 ## Implementation Checklist
 
-### Domain Layer
-- [ ] Add `public int Leverage { get; set; } = 10;` to `SignalRecord`
-
-### Infrastructure Layer
-- [ ] Add `Leverage` column config in `SignalRecordConfiguration`:
-  - `builder.Property(x => x.Leverage).HasDefaultValue(10);`
-  - `builder.HasCheckConstraint("CK_SignalRecords_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");`
-- [ ] Add migration: `AddSignalRecordLeverage`
-- [ ] Confirm migration does not backfill — `HasDefaultValue(10)` handles existing rows via SQL Server column default
-
 ### Application Layer
-- [ ] Create `CheckSignalStopLossCommand.cs` in `src/Cex/Cex.Application/Signal/Commands/CheckSignalStopLoss/`
+- [x] Create `CheckSignalStopLossCommand.cs` in `src/Cex/Cex.Application/Signal/Commands/CheckSignalStopLoss/`
   - `CheckSignalStopLossCommand` record implementing `IRequest`
   - `CheckSignalStopLossCommandHandler` with primary constructor injecting `IKuCoinService`, `IOptions<KuCoinConfig>`, `ILogTrace`, `ICexDbContext`
   - Full algorithm per Data Access section
 
 ### Hosted Service
-- [ ] Add `CheckSignalStopLoss(CancellationToken)` private method to `FindSignalService`
-- [ ] Call `await CheckSignalStopLoss(stoppingToken)` immediately after `await CheckSignalEntry(stoppingToken)` in `ExecuteAsync`
-- [ ] Add `using Cex.Application.Signal.Commands.CheckSignalStopLoss;` import
+- [x] Add `CheckSignalStopLoss(CancellationToken)` private method to `FindSignalService`
+- [x] Call `await CheckSignalStopLoss(stoppingToken)` immediately after `await CheckSignalEntry(stoppingToken)` in `ExecuteAsync`
+- [x] Add `using Cex.Application.Signal.Commands.CheckSignalStopLoss;` import
 
 ### Testing
-- [ ] Unit test: `stopLossPrice` formula — Long and Short at multiple leverage values (1, 10, 125)
-- [ ] Unit test: hit detection boundary — Long (low exactly at / one tick above `stopLossPrice`), Short equivalent
-- [ ] Unit test: `StopLoss` tracking stops at the hit candle and does not include subsequent candles
+- [ ] Unit test: hit detection boundary — Long (low exactly at / one tick above `StopLoss`), Short equivalent
 - [ ] Unit test: pointer monotonicity — `LastCheckedCandleAt` does not regress when `lastCandleOpenTime < existing LastCheckedCandleAt`
 - [ ] Unit test: empty candidate list → `Handle` returns without calling `GetKlines`
 - [ ] Unit test: exception mid-loop → `SaveChangesAsync` called if at least one batch was fetched
@@ -370,15 +271,11 @@ await CheckSignalStopLoss(stoppingToken);
 
 ## Technical Notes
 
-- **`GetKlines` sort contract** — the service returns candles sorted ascending by `OpenTime`. The inner loop relies on this for `TakeWhile(c => c.OpenTime <= hit.OpenTime)` to safely bound tracking to candles at or before the hit. The explicit `.OrderBy(c => c.OpenTime)` on `relevantCandles` is a defensive guard in case the upstream contract changes.
+- **`GetKlines` sort contract** — the service returns candles sorted ascending by `OpenTime`. The `FirstOrDefault` hit search relies on this order to find the **chronologically earliest** hit candle. If the contract is violated, `StopLossHitAt` would record a non-chronological candle's `OpenTime`, producing an incorrect timestamp. No defensive sort is applied; the contract is trusted.
 
-- **`StopLoss` seed gap** — `FindSignalCommandHandler` seeds `StopLoss` with a static divergence target: `entryPrice × 0.92` (Long) or `entryPrice × 1.08` (Short), an 8% offset. At 10× leverage, `stopLossPrice = 0.93 × entryPrice` (7% below entry). A hit candle whose `LowestPrice` falls between `0.93×` and `0.92×` entry (i.e., 7–8% adverse) triggers the stop but does not update `StopLoss`, because `Math.Min(0.92×entry, 0.925×entry) = 0.92×entry`. In that narrow range, `StopLoss` retains the original divergence seed rather than the true worst observed price. This is a known limitation of reusing the `StopLoss` field as both a divergence target and an adverse-price tracker.
-
-- **`StopLoss` field repurposing** — `StopLoss` starts as a static divergence reference price and is overwritten once `CheckSignalStopLoss` processes the signal for the first time. The original divergence-based value is discarded. This is intentional — after entry, live worst-price proximity is operationally more useful.
+- **`StopLoss` as fixed threshold** — `StopLoss` is seeded by `FindSignalCommandHandler` and treated as a constant for the lifetime of the position. `CheckSignalStopLoss` never overwrites it; it is read-only during stop-loss scanning.
 
 - **`LastCheckedCandleAt` dual purpose** — for un-entered signals (`EntryHitAt IS NULL`) it is the `CheckSignalEntry` scan pointer; for entered signals (`EntryHitAt IS NOT NULL`) it is the stop-loss scan pointer anchored to `EntryHitAt.OpenTime` by `CheckSignalEntry`. Both commands share the same field by design; `CheckSignalStopLoss` picks up exactly where `CheckSignalEntry` left off.
-
-- **`0.70m / s.Leverage` type safety** — `s.Leverage` is `int`; dividing a `decimal` literal by an `int` causes C# to promote the `int` to `decimal` before division. No integer truncation occurs.
 
 - **First-run fetch volume** — the first time a signal is processed after entry, `LastCheckedCandleAt` equals `EntryHitAt.OpenTime`, which may be minutes or hours in the past. That run may fetch many candle batches. Subsequent runs fetch only ~1 minute of new candles.
 
@@ -392,20 +289,9 @@ await CheckSignalStopLoss(stoppingToken);
 
 ---
 
-## Database Migration
-
-```bash
-dotnet ef migrations add AddSignalRecordLeverage \
-  --project src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj \
-  --startup-project src/WebAPI/WebAPI.csproj \
-  --context CexDbContext
-```
-
----
-
 ## Related Features
 
-- **FindSignalCommand** — creates `SignalRecord` rows; sets initial `StopLoss` (later overwritten by this feature), `EntryPrice`, `TakeProfit`, and `SignalType`
+- **FindSignalCommand** — creates `SignalRecord` rows; sets `StopLoss` threshold, `EntryPrice`, `TakeProfit`, and `SignalType`
 - **CheckSignalEntry** — detects entry hits; anchors `LastCheckedCandleAt` to `EntryHitAt.OpenTime`, which is exactly where `CheckSignalStopLoss` begins scanning
 - **CheckSignalTakeProfit** (future) — mirrors this feature for take-profit detection using `TakeProfitHitAt`
 
@@ -413,7 +299,6 @@ dotnet ef migrations add AddSignalRecordLeverage \
 
 ## Future
 
-- `CheckSignalTakeProfitCommand` — same architecture; queries `EntryHitAt IS NOT NULL AND TakeProfitHitAt IS NULL`; tracks `TakeProfit` with the running best-observed price
-- Configurable stop-loss margin percentage (currently hardcoded at 70%)
+- `CheckSignalTakeProfitCommand` — same architecture; queries `EntryHitAt IS NOT NULL AND TakeProfitHitAt IS NULL`; compares against stored `TakeProfit` threshold
 - Multi-symbol support (currently hardcoded to `BTCUSDT`)
 - Notification on stop-loss hit via `INotifier` (same pattern as `FindSignalCommand`)

@@ -1,5 +1,6 @@
 using Cex.Application.Signal.Commands;
 using Cex.Application.Signal.Commands.CheckSignalEntry;
+using Cex.Application.Signal.Commands.CheckSignalStopLoss;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 
@@ -22,6 +23,13 @@ namespace WebAPI.HostedServices
             await mediator.Send(new CheckSignalEntryCommand(), stoppingToken);
         }
 
+        private async Task CheckSignalStopLoss(CancellationToken stoppingToken)
+        {
+            using var scope = serviceScopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new CheckSignalStopLossCommand(), stoppingToken);
+        }
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await Task.Factory.StartNew(async () =>
@@ -31,11 +39,12 @@ namespace WebAPI.HostedServices
                 {
                     try
                     {
-                        await CheckSignalEntry(stoppingToken);
 
                         if (DateTime.UtcNow.Minute % 5 == 1)
                         {
                             await FindSignal(IntervalType.FiveMinutes, stoppingToken);
+                            await CheckSignalEntry(stoppingToken);
+                            await CheckSignalStopLoss(stoppingToken);
                         }
 
                         if (DateTime.UtcNow.Minute % 15 == 1)

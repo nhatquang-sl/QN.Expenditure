@@ -58,6 +58,7 @@ services:
       ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
     networks:
       - "aspire"
+
   seq.logs:
     container_name: qex-seq.logs
     restart: unless-stopped
@@ -67,8 +68,8 @@ services:
     environment:
       - ACCEPT_EULA=Y
     ports:
-      - 5341:5341
-      - 8081:80
+      - 5341:5341 # Seq ingestion API (structured log ingestion endpoint)
+      - 8081:80   # Seq web UI (accessible at http://localhost:8081)
     networks:
       - "aspire"
 networks:
