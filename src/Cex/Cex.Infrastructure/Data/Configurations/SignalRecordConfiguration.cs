@@ -19,6 +19,11 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
         builder.Property(x => x.EntryPrice).HasPrecision(18, 8);
         builder.Property(x => x.StopLoss).HasPrecision(18, 8);
         builder.Property(x => x.TakeProfit).HasPrecision(18, 8);
+        builder.Property(x => x.Leverage).HasDefaultValue(10);
+        builder.HasCheckConstraint("CK_SignalRecords_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
+        builder.Property(x => x.MaxProfit).HasPrecision(10, 4).HasDefaultValue(0m);
+        builder.Property(x => x.MaxProfitHitAt).HasPrecision(0);
+        builder.Property(x => x.MaxProfitCheckedAt).HasPrecision(0);
         builder.Property(x => x.DetectedAt).HasPrecision(0);
         builder.Property(x => x.PreviousCandleAt).HasPrecision(0);
         builder.Property(x => x.EntryHitAt).HasPrecision(0);
@@ -30,5 +35,6 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
         // Uniqueness guard: one signal record per symbol + interval + candle time
         builder.HasIndex(x => new { x.Symbol, x.Interval, x.DetectedAt }).IsUnique();
         builder.HasIndex(x => x.LastCheckedCandleAt);
+        builder.HasIndex(x => x.MaxProfitCheckedAt);
     }
 }

@@ -15,6 +15,10 @@ public class SignalRecord
     public decimal EntryPrice { get; set; }
     public decimal StopLoss { get; set; }
     public decimal TakeProfit { get; set; }
+    public int Leverage { get; set; } = 10;
+    public decimal MaxProfit { get; set; } = 0;
+    public DateTime? MaxProfitHitAt { get; set; }
+    public DateTime? MaxProfitCheckedAt { get; set; }
     public DateTime? EntryHitAt { get; set; }
     public DateTime? StopLossHitAt { get; set; }
     public DateTime? TakeProfitHitAt { get; set; }

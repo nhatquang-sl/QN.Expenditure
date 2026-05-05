@@ -1,0 +1,22 @@
+SELECT TOP (1000)
+      [Interval]
+      ,[SignalType]
+      ,[EntryPrice]
+      ,[StopLoss]
+      ,[DetectedAt]
+      ,[EntryHitAt]
+      ,[StopLossHitAt]
+      ,[MaxProfitHitAt]
+      ,[MaxProfit]
+      ,DATEDIFF(MINUTE, [DetectedAt], [EntryHitAt])    AS [EntryHitMinutes]
+      ,DATEDIFF(MINUTE, [DetectedAt], [StopLossHitAt]) AS [StopLossHitMinutes]
+      ,DATEDIFF(MINUTE, [DetectedAt], [MaxProfitHitAt]) AS [MaxProfitHitMinutes]
+  FROM [cex].[dbo].[SignalRecords]
+  WHERE StopLossHitAt IS NOT NULL
+
+
+
+  Update [cex].[dbo].[SignalRecords]
+  SET MaxProfitCheckedAt = EntryHitAt, MaxProfit = 0, MaxProfitHitAt = NULL
+  WHERE EntryHitAt IS NOT NULL
+  

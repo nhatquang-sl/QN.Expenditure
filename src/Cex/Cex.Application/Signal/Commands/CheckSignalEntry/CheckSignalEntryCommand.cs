@@ -66,7 +66,8 @@ public class CheckSignalEntryCommandHandler(
                     if (hit is null) continue;
 
                     signal.EntryHitAt = hit.OpenTime;
-                    signal.LastCheckedCandleAt = hit.OpenTime; // anchor for stop-loss check
+                    signal.LastCheckedCandleAt = hit.OpenTime;  // anchor for stop-loss check
+                    signal.MaxProfitCheckedAt  = hit.OpenTime;  // anchor for max-profit check
                     unhitCount--;
                 }
 
