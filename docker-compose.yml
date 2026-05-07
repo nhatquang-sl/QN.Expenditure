@@ -69,7 +69,7 @@ services:
       - ACCEPT_EULA=Y
     ports:
       - 5341:5341 # Seq ingestion API (structured log ingestion endpoint)
-      - 8081:80   # Seq web UI (accessible at http://localhost:8081)
+      - 5342:80   # Seq web UI (accessible at http://localhost:5342)
     networks:
       - "aspire"
 networks:

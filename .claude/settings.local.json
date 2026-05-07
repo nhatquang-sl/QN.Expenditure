@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(find /Users/quang/workspace/QN.Expenditure/src/Cex/Cex.Application -name *.g.cs -o -name GlobalUsings.cs)",
+      "Bash(dotnet list:*)",
+      "Bash(git config:*)",
+      "Bash(docker compose:*)",
+      "Bash(git clean:*)",
+      "Bash(xargs sed:*)",
+      "Bash(dotnet ef:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(printf '%s' 'src/Cex/Cex.Infrastructure/bin\\\\Debug/')",
+      "Bash(xxd)",
+      "Bash(xargs du:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Read(//Users/quang/.nuget/packages/system.security.cryptography.xml/**)",
+      "Bash(/dev/null find:*)"
+    ]
+  }
+}

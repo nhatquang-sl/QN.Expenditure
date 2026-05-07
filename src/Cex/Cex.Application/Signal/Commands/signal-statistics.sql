@@ -5,6 +5,7 @@ SELECT TOP (1000)
       ,[StopLoss]
       ,[DetectedAt]
       ,[EntryHitAt]
+      ,[MaxProfitCheckedAt]
       ,[StopLossHitAt]
       ,[MaxProfitHitAt]
       ,[MaxProfit]
@@ -12,7 +13,7 @@ SELECT TOP (1000)
       ,DATEDIFF(MINUTE, [DetectedAt], [StopLossHitAt]) AS [StopLossHitMinutes]
       ,DATEDIFF(MINUTE, [DetectedAt], [MaxProfitHitAt]) AS [MaxProfitHitMinutes]
   FROM [cex].[dbo].[SignalRecords]
-  WHERE StopLossHitAt IS NOT NULL
+--   WHERE StopLossHitAt IS NOT NULL
 
 
 
