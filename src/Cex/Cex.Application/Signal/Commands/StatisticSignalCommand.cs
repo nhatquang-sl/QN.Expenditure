@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Cex.Application.Signal.Commands.Rsi;
+using Cex.Application.Signals.Commands.Rsi;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin;
@@ -7,7 +7,7 @@ using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Signal.Commands
+namespace Cex.Application.Signals.Commands
 {
     public class StatisticSignalCommand : IRequest
     {

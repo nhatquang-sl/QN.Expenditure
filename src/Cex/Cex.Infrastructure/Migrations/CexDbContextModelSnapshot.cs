@@ -71,7 +71,7 @@ namespace Cex.Infrastructure.Migrations
                     b.ToTable("ExchangeSettings");
                 });
 
-            modelBuilder.Entity("Cex.Domain.Entities.SignalRecord", b =>
+            modelBuilder.Entity("Cex.Domain.Entities.Signal", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -173,9 +173,9 @@ namespace Cex.Infrastructure.Migrations
                     b.HasIndex("Symbol", "Interval", "DetectedAt")
                         .IsUnique();
 
-                    b.ToTable("SignalRecords", t =>
+                    b.ToTable("Signals", null, t =>
                         {
-                            t.HasCheckConstraint("CK_SignalRecords_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
+                            t.HasCheckConstraint("CK_Signals_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
                         });
                 });
 

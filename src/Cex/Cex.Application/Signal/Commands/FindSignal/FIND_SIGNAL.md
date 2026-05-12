@@ -1,4 +1,4 @@
-# RSI Divergence Signal Record Feature
+# RSI Divergence Signal Feature
 
 ## Overview
 
@@ -36,7 +36,7 @@ The user's proposed properties alongside suggested alternatives:
 
 ## Data Model
 
-### Entity: `SignalRecord` (New)
+### Entity: `Signal` (New)
 
 ```
 Id               int          PK, identity
@@ -92,10 +92,10 @@ Maps to divergence detection:
 
 ### Domain Layer
 
-**New file**: `src/Cex/Cex.Domain/Entities/SignalRecord.cs`
+**New file**: `src/Cex/Cex.Domain/Entities/Signal.cs`
 
 ```csharp
-public class SignalRecord
+public class Signal
 {
     public int Id { get; set; }
     public string Symbol { get; set; } = string.Empty;
@@ -124,12 +124,12 @@ public enum SignalType { Long, Short }
 
 ### Infrastructure Layer
 
-**New file**: `src/Cex/Cex.Infrastructure/Data/Configurations/SignalRecordConfiguration.cs`
+**New file**: `src/Cex/Cex.Infrastructure/Data/Configurations/SignalConfiguration.cs`
 
 ```csharp
-public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
+public class SignalConfiguration : IEntityTypeConfiguration<Signal>
 {
-    public void Configure(EntityTypeBuilder<SignalRecord> builder)
+    public void Configure(EntityTypeBuilder<Signal> builder)
     {
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Interval).HasConversion<string>();
@@ -148,14 +148,14 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
         builder.Property(x => x.CreatedAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
         builder.Property(x => x.LastCheckedCandleAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
 
-        // Uniqueness guard: one signal record per symbol + interval + candle time
+        // Uniqueness guard: one signal per symbol + interval + candle time
         builder.HasIndex(x => new { x.Symbol, x.Interval, x.DetectedAt }).IsUnique();
         builder.HasIndex(x => x.LastCheckedCandleAt);
     }
 }
 ```
 
-**Migration name**: `AddSignalRecord`
+**Migration name**: `AddSignal`
 
 ### Application Layer
 
@@ -164,10 +164,10 @@ No new Command/Query/Handler needed for the initial save — the insert is done 
 **`ICexDbContext`** — add one line:
 
 ```csharp
-DbSet<SignalRecord> SignalRecords { get; }
+DbSet<Signal> Signals { get; }
 ```
 
-**`FindSignalCommandHandler`** — inject `ICexDbContext dbContext`, then after `notifier.Notify(...)` in each case block, build and add a `SignalRecord` and call `SaveChangesAsync`.
+**`FindSignalCommandHandler`** — inject `ICexDbContext dbContext`, then after `notifier.Notify(...)` in each case block, build and add a `Signal` and call `SaveChangesAsync`.
 
 ### Algorithm (updated handler flow)
 
@@ -179,13 +179,13 @@ DbSet<SignalRecord> SignalRecords { get; }
 5. Compute entryPrice, stopLoss, takeProfit per signal type
 6. Check DB for existing record with same Symbol + Interval + DetectedAt → skip if exists
 7. Send Telegram notification (existing behaviour)
-8. Insert SignalRecord to DB
+8. Insert Signal to DB
 9. SaveChangesAsync
 ```
 
 ### API Layer
 
-No new endpoint in this iteration. `SignalRecord` data is for internal use and future analytics endpoints.
+No new endpoint in this iteration. `Signal` data is for internal use and future analytics endpoints.
 
 ---
 
@@ -211,18 +211,18 @@ No new endpoint in this iteration. `SignalRecord` data is for internal use and f
 ### Backend
 
 - [ ] Create `SignalType` enum in `Cex.Domain`
-- [ ] Create `SignalRecord` entity in `Cex.Domain`
-- [ ] Create `SignalRecordConfiguration` EF Core config in `Cex.Infrastructure`
-- [ ] Add `DbSet<SignalRecord> SignalRecords` to `ICexDbContext` and `CexDbContext`
+- [ ] Create `Signal` entity in `Cex.Domain`
+- [ ] Create `SignalConfiguration` EF Core config in `Cex.Infrastructure`
+- [ ] Add `DbSet<Signal> Signals` to `ICexDbContext` and `CexDbContext`
 - [ ] Add `ICexDbContext dbContext` to `FindSignalCommandHandler` constructor
-- [ ] Update `FindSignalCommandHandler` to insert `SignalRecord` after notifying (set `LastCheckedCandleAt = DateTime.UtcNow`)
-- [ ] Add migration: `AddSignalRecord`
+- [ ] Update `FindSignalCommandHandler` to insert `Signal` after notifying (set `LastCheckedCandleAt = DateTime.UtcNow`)
+- [ ] Add migration: `AddSignal`
 - [ ] Confirm TakeProfit formula
 
 ### Testing
 
-- [ ] Unit test: handler saves a `SignalRecord` with correct field values for `Peak` (Short)
-- [ ] Unit test: handler saves a `SignalRecord` with correct field values for `Trough` (Long)
+- [ ] Unit test: handler saves a `Signal` with correct field values for `Peak` (Short)
+- [ ] Unit test: handler saves a `Signal` with correct field values for `Trough` (Long)
 - [ ] Unit test: handler skips saving when `DivergenceType.None`
 - [ ] Integration test: duplicate signal (same Symbol + Interval + DetectedAt) is not double-inserted
 
@@ -239,7 +239,7 @@ No new endpoint in this iteration. `SignalRecord` data is for internal use and f
 ## Database Migration
 
 ```bash
-dotnet ef migrations add AddSignalRecord \
+dotnet ef migrations add AddSignal \
   --project src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj \
   --startup-project src/WebAPI/WebAPI.csproj \
   --context CexDbContext

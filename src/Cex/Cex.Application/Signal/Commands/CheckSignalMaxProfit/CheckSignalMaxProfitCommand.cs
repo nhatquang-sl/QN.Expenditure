@@ -7,7 +7,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Signal.Commands.CheckSignalMaxProfit;
+namespace Cex.Application.Signals.Commands.CheckSignalMaxProfit;
 
 public record CheckSignalMaxProfitCommand : IRequest;
 
@@ -20,7 +20,7 @@ public class CheckSignalMaxProfitCommandHandler(
 {
     public async Task Handle(CheckSignalMaxProfitCommand command, CancellationToken cancellationToken)
     {
-        var candidates = await dbContext.SignalRecords
+        var candidates = await dbContext.Signals
             .Where(s => s.MaxProfitCheckedAt != null &&
                         (s.StopLossHitAt == null ||
                          s.MaxProfitCheckedAt < s.StopLossHitAt))

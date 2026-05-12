@@ -2,7 +2,7 @@ using Lib.Application.Extensions;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 
-namespace Cex.Application.Signal.Commands
+namespace Cex.Application.Signals.Commands
 {
     public record BollingerBandsCommand(List<Kline> Candles) : IRequest<Dictionary<DateTime, BollingerBands>>
     {

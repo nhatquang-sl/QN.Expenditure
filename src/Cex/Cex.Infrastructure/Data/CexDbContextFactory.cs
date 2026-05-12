@@ -11,7 +11,7 @@ namespace Cex.Infrastructure.Data
             const string path = "/Users/quang/Workspace/QN.Expenditure/credentials";
             var config = new ConfigurationBuilder()
                 .AddJsonFile($"{path}/appsettings.json")
-                // .AddJsonFile($"{path}/appsettings.Production.json", optional: true, reloadOnChange: true)
+                .AddJsonFile($"{path}/appsettings.Production.json", optional: true, reloadOnChange: true)
                 .Build();
 
             var connString = config.GetValue<string>("ConnectionStrings:CexConnection");

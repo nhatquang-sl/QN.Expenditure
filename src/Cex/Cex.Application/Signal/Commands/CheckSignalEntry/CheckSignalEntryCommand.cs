@@ -7,7 +7,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Signal.Commands.CheckSignalEntry;
+namespace Cex.Application.Signals.Commands.CheckSignalEntry;
 
 public record CheckSignalEntryCommand : IRequest;
 
@@ -20,7 +20,7 @@ public class CheckSignalEntryCommandHandler(
 {
     public async Task Handle(CheckSignalEntryCommand command, CancellationToken cancellationToken)
     {
-        var candidates = await dbContext.SignalRecords
+        var candidates = await dbContext.Signals
             .Where(s => s.EntryHitAt == null)
             .OrderBy(s => s.LastCheckedCandleAt)
             .Take(100)

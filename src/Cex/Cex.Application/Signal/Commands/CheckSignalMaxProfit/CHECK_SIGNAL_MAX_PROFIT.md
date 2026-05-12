@@ -11,7 +11,7 @@
 
 ## Data Model
 
-### Entity: `SignalRecord` (Existing — modified)
+### Entity: `Signal` (Existing — modified)
 
 Four new columns:
 
@@ -25,7 +25,7 @@ Four new columns:
 Updated entity snippet:
 
 ```csharp
-public class SignalRecord
+public class Signal
 {
     // ... existing fields ...
     public int Leverage { get; set; } = 10;
@@ -62,7 +62,7 @@ public class SignalRecord
 ## Algorithm
 
 ```
-1. Query 100 SignalRecords:
+1. Query 100 Signals:
      WHERE MaxProfitCheckedAt IS NOT NULL
        AND (StopLossHitAt IS NULL
             OR MaxProfitCheckedAt < StopLossHitAt)
@@ -124,7 +124,7 @@ public class SignalRecord
 **Step 1 — Load candidates:**
 
 ```csharp
-var candidates = await dbContext.SignalRecords
+var candidates = await dbContext.Signals
     .Where(s => s.MaxProfitCheckedAt != null &&
                 (s.StopLossHitAt == null ||
                  s.MaxProfitCheckedAt < s.StopLossHitAt))
@@ -208,7 +208,7 @@ await dbContext.SaveChangesAsync(cancellationToken);
 
 ### Domain Layer
 
-**Modified:** `src/Cex/Cex.Domain/Entities/SignalRecord.cs`
+**Modified:** `src/Cex/Cex.Domain/Entities/Signal.cs`
 - Add `public int Leverage { get; set; } = 10;`
 - Add `public decimal MaxProfit { get; set; } = 0;`
 - Add `public DateTime? MaxProfitHitAt { get; set; }`
@@ -216,12 +216,12 @@ await dbContext.SaveChangesAsync(cancellationToken);
 
 ### Infrastructure Layer
 
-**Modified:** `src/Cex/Cex.Infrastructure/Data/Configurations/SignalRecordConfiguration.cs`
+**Modified:** `src/Cex/Cex.Infrastructure/Data/Configurations/SignalConfiguration.cs`
 
 ```csharp
 builder.Property(x => x.Leverage)
     .HasDefaultValue(10);
-builder.HasCheckConstraint("CK_SignalRecords_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
+builder.HasCheckConstraint("CK_Signals_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
 
 builder.Property(x => x.MaxProfit)
     .HasPrecision(10, 4)
@@ -233,7 +233,7 @@ builder.Property(x => x.MaxProfitCheckedAt).HasPrecision(0);
 builder.HasIndex(x => x.MaxProfitCheckedAt);
 ```
 
-**Migration name:** `AddSignalRecordMaxProfit`
+**Migration name:** `AddSignalMaxProfit`
 
 ### Application Layer
 
@@ -263,7 +263,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Signal.Commands.CheckSignalMaxProfit;
+namespace Cex.Application.Signals.Commands.CheckSignalMaxProfit;
 
 public record CheckSignalMaxProfitCommand : IRequest;
 
@@ -305,7 +305,7 @@ await CheckSignalMaxProfit(stoppingToken);
 
 ## Performance Considerations
 
-- **`IX_SignalRecords_MaxProfitCheckedAt`** (new index) — supports `ORDER BY MaxProfitCheckedAt ASC TAKE 100`.
+- **`IX_Signals_MaxProfitCheckedAt`** (new index) — supports `ORDER BY MaxProfitCheckedAt ASC TAKE 100`.
 - **Shared candle stream** — one `GetKlines` call per batch serves all 100 candidates; per-signal filtering is in-memory.
 - **No batch-level skip optimisation** — no `batchHigh`/`batchLow` pre-check is applied. Acceptable given the low expected count of active max-profit candidates; can be added if profiling shows it is needed.
 - **Stopped-out signals terminate naturally** — once `MaxProfitCheckedAt = StopLossHitAt` the signal drops from the query; no extra API calls for completed scans.
@@ -329,12 +329,12 @@ await CheckSignalMaxProfit(stoppingToken);
 ## Implementation Checklist
 
 ### Domain Layer
-- [x] Add `Leverage`, `MaxProfit`, `MaxProfitHitAt`, `MaxProfitCheckedAt` to `SignalRecord`
+- [x] Add `Leverage`, `MaxProfit`, `MaxProfitHitAt`, `MaxProfitCheckedAt` to `Signal`
 
 ### Infrastructure Layer
-- [x] Add `Leverage`, `MaxProfit`, `MaxProfitHitAt`, `MaxProfitCheckedAt` config in `SignalRecordConfiguration`
-- [x] Add `IX_SignalRecords_MaxProfitCheckedAt` index
-- [x] Add migration: `AddSignalRecordMaxProfit`
+- [x] Add `Leverage`, `MaxProfit`, `MaxProfitHitAt`, `MaxProfitCheckedAt` config in `SignalConfiguration`
+- [x] Add `IX_Signals_MaxProfitCheckedAt` index
+- [x] Add migration: `AddSignalMaxProfit`
 
 ### Application Layer
 - [x] Modify `FindSignalCommand.cs`: do NOT set `MaxProfitCheckedAt` — leave it `null` at record creation
@@ -344,7 +344,7 @@ await CheckSignalMaxProfit(stoppingToken);
 ### Hosted Service
 - [x] Add `CheckSignalMaxProfit(CancellationToken)` private method to `FindSignalService`
 - [x] Call `await CheckSignalMaxProfit(stoppingToken)` immediately **after** `await CheckSignalStopLoss(stoppingToken)`
-- [x] Add `using Cex.Application.Signal.Commands.CheckSignalMaxProfit;` import
+- [x] Add `using Cex.Application.Signals.Commands.CheckSignalMaxProfit;` import
 
 ### Testing
 - [ ] Unit: profit formula — Long and Short at leverage values 1, 10, 125
@@ -384,7 +384,7 @@ await CheckSignalMaxProfit(stoppingToken);
 ## Database Migration
 
 ```bash
-dotnet ef migrations add AddSignalRecordMaxProfit \
+dotnet ef migrations add AddSignalMaxProfit \
   --project src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj \
   --startup-project src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj \
   --context CexDbContext
@@ -394,7 +394,7 @@ After the migration is generated, add a backfill step **inside `Up()`** after `A
 
 ```csharp
 // Backfill: set MaxProfitCheckedAt only for already-entered signals.
-migrationBuilder.Sql("UPDATE SignalRecords SET MaxProfitCheckedAt = EntryHitAt WHERE EntryHitAt IS NOT NULL");
+migrationBuilder.Sql("UPDATE Signals SET MaxProfitCheckedAt = EntryHitAt WHERE EntryHitAt IS NOT NULL");
 ```
 
 This ensures existing entered signals get their scan pointer anchored to `EntryHitAt`. Unentered signals remain `null`, consistent with the new lifecycle rule.

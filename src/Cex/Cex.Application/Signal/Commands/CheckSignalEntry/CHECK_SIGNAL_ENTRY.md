@@ -2,11 +2,11 @@
 
 ## Overview
 
-`CheckSignalEntryCommand` runs every minute and checks whether any open signal records (those with `EntryHitAt = NULL`) have had their entry price reached by 1-minute candles. It processes signals in batches of 100 (least-recently-checked first) and tracks `LastCheckedCandleAt` per signal so each run only fetches new candles since the last check — not the entire historical window.
+`CheckSignalEntryCommand` runs every minute and checks whether any open signals (those with `EntryHitAt = NULL`) have had their entry price reached by 1-minute candles. It processes signals in batches of 100 (least-recently-checked first) and tracks `LastCheckedCandleAt` per signal so each run only fetches new candles since the last check — not the entire historical window.
 
 ---
 
-## Entity Change: Add `LastCheckedCandleAt` to `SignalRecord`
+## Entity Change: Add `LastCheckedCandleAt` to `Signal`
 
 ```
 LastCheckedCandleAt  DateTime (datetime2(0))  Set to CreatedAt on insert; never null.
@@ -22,7 +22,7 @@ This is the key field that avoids re-scanning already-checked candles on subsequ
 ## Algorithm
 
 ```
-1. Query the 100 least-recently-checked SignalRecords where EntryHitAt IS NULL,
+1. Query the 100 least-recently-checked Signals where EntryHitAt IS NULL,
    ordered by LastCheckedCandleAt ASC
 2. If no candidates → return early (no KuCoin call)
 3. Find startAt = Min(candidates, s => s.LastCheckedCandleAt)
@@ -61,7 +61,7 @@ This is the key field that avoids re-scanning already-checked candles on subsequ
 **Step 1 — Load 100 least-recently-checked open signals:**
 
 ```csharp
-var candidates = await dbContext.SignalRecords
+var candidates = await dbContext.Signals
     .Where(s => s.EntryHitAt == null)
     .OrderBy(s => s.LastCheckedCandleAt)
     .Take(100)
@@ -154,13 +154,13 @@ foreach (var signal in candidates.Where(s => s.EntryHitAt == null))
 
 ### Domain Layer
 
-- [ ] Add `LastCheckedCandleAt DateTime` to `SignalRecord` entity (non-nullable)
+- [ ] Add `LastCheckedCandleAt DateTime` to `Signal` entity (non-nullable)
 
 ### Infrastructure Layer
 
-- [ ] Add `LastCheckedCandleAt` to `SignalRecordConfiguration` with second-level precision: `HasPrecision(0).HasDefaultValueSql("GETUTCDATE()")` → maps to `datetime2(0)` in SQL Server
-- [ ] Add index on `LastCheckedCandleAt` in `SignalRecordConfiguration` (supports the `ORDER BY LastCheckedCandleAt` query that runs every minute)
-- [ ] Add migration: `AddSignalRecordLastCheckedCandleAt`
+- [ ] Add `LastCheckedCandleAt` to `SignalConfiguration` with second-level precision: `HasPrecision(0).HasDefaultValueSql("GETUTCDATE()")` → maps to `datetime2(0)` in SQL Server
+- [ ] Add index on `LastCheckedCandleAt` in `SignalConfiguration` (supports the `ORDER BY LastCheckedCandleAt` query that runs every minute)
+- [ ] Add migration: `AddSignalLastCheckedCandleAt`
 
 ### Application Layer
 

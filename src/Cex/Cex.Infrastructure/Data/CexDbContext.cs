@@ -17,7 +17,7 @@ namespace Cex.Infrastructure.Data
         public DbSet<SpotGrid> SpotGrids { get; init; }
         public DbSet<SpotGridStep> SpotGridSteps { get; init; }
         public DbSet<TradeHistory> TradeHistories { get; init; }
-        public DbSet<SignalRecord> SignalRecords { get; init; }
+        public DbSet<Signal> Signals { get; init; }
 
         public new Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         {

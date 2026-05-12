@@ -2,7 +2,7 @@ using Cex.Domain.Enums;
 
 namespace Cex.Domain.Entities;
 
-public class SignalRecord
+public class Signal
 {
     public int Id { get; set; }
     public string Symbol { get; set; } = string.Empty;

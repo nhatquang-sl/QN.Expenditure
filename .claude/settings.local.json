@@ -16,7 +16,12 @@
       "Bash(docker build:*)",
       "Bash(docker run:*)",
       "Read(//Users/quang/.nuget/packages/system.security.cryptography.xml/**)",
-      "Bash(/dev/null find:*)"
+      "Bash(/dev/null find:*)",
+      "Bash(curl -s http://localhost:5000/swagger/v1/swagger.json)",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(npm install:*)"
     ]
   }
 }

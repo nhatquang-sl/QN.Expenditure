@@ -2,7 +2,7 @@
 
 ## Overview
 
-`CheckSignalStopLossCommand` runs every minute inside `FindSignalService` and detects when active positions have been stopped out. It queries up to 100 `SignalRecord` rows where `EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL`, fetches 1-minute BTCUSDT candles in batches starting from each signal's `LastCheckedCandleAt` pointer (anchored to `EntryHitAt` by `CheckSignalEntry`), and marks `StopLossHitAt` when the market price crosses the stored `StopLoss` threshold set by `FindSignalCommandHandler`.
+`CheckSignalStopLossCommand` runs every minute inside `FindSignalService` and detects when active positions have been stopped out. It queries up to 100 `Signal` rows where `EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL`, fetches 1-minute BTCUSDT candles in batches starting from each signal's `LastCheckedCandleAt` pointer (anchored to `EntryHitAt` by `CheckSignalEntry`), and marks `StopLossHitAt` when the market price crosses the stored `StopLoss` threshold set by `FindSignalCommandHandler`.
 
 **Module Location**: `src/Cex/Cex.Application/Signal/Commands/CheckSignalStopLoss/`
 **Scope**: BTCUSDT only; all signal intervals
@@ -11,14 +11,14 @@
 
 ## Data Model
 
-### Entity: `SignalRecord` (Existing — no changes)
+### Entity: `Signal` (Existing — no changes)
 
 No new columns. The existing `StopLoss` field already holds the stop-loss threshold price seeded by `FindSignalCommandHandler`:
 - Long: `entryPrice × 0.92` (8% below entry)
 - Short: `entryPrice × 1.08` (8% above entry)
 
 ```csharp
-public class SignalRecord
+public class Signal
 {
     public int Id { get; set; }
     public string Symbol { get; set; } = string.Empty;
@@ -56,7 +56,7 @@ public class SignalRecord
 ## Algorithm
 
 ```
-1. Query 100 SignalRecords:
+1. Query 100 Signals:
      WHERE EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL
      ORDER BY LastCheckedCandleAt ASC
 2. If candidates is empty → return early (no KuCoin call)
@@ -102,7 +102,7 @@ public class SignalRecord
 **Step 1 — Load candidates:**
 
 ```csharp
-var candidates = await dbContext.SignalRecords
+var candidates = await dbContext.Signals
     .Where(s => s.EntryHitAt != null && s.StopLossHitAt == null)
     .OrderBy(s => s.LastCheckedCandleAt)
     .Take(100)
@@ -186,7 +186,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Signal.Commands.CheckSignalStopLoss;
+namespace Cex.Application.Signals.Commands.CheckSignalStopLoss;
 
 public record CheckSignalStopLossCommand : IRequest;
 
@@ -227,7 +227,7 @@ await CheckSignalStopLoss(stoppingToken);
 
 ## Performance Considerations
 
-- **`IX_SignalRecords_LastCheckedCandleAt`** (existing index) — the `ORDER BY LastCheckedCandleAt ASC TAKE 100` candidate query uses an index scan rather than a full table scan.
+- **`IX_Signals_LastCheckedCandleAt`** (existing index) — the `ORDER BY LastCheckedCandleAt ASC TAKE 100` candidate query uses an index scan rather than a full table scan.
 - **Shared candle stream** — a single `GetKlines` call per batch serves all 100 candidates. Each signal filters independently via `OpenTime > signal.LastCheckedCandleAt`.
 - **Early exit when `unhitCount == 0`** — stops fetching batches once every candidate is stopped out, eliminating unnecessary KuCoin API calls.
 - **Batch ceiling ≤ 1500 candles** — `interval.GetEndDate(startAt)` computes the correct end boundary so each fetch covers exactly one window without over-fetching.
@@ -259,7 +259,7 @@ await CheckSignalStopLoss(stoppingToken);
 ### Hosted Service
 - [x] Add `CheckSignalStopLoss(CancellationToken)` private method to `FindSignalService`
 - [x] Call `await CheckSignalStopLoss(stoppingToken)` immediately after `await CheckSignalEntry(stoppingToken)` in `ExecuteAsync`
-- [x] Add `using Cex.Application.Signal.Commands.CheckSignalStopLoss;` import
+- [x] Add `using Cex.Application.Signals.Commands.CheckSignalStopLoss;` import
 
 ### Testing
 - [ ] Unit test: hit detection boundary — Long (low exactly at / one tick above `StopLoss`), Short equivalent
@@ -291,7 +291,7 @@ await CheckSignalStopLoss(stoppingToken);
 
 ## Related Features
 
-- **FindSignalCommand** — creates `SignalRecord` rows; sets `StopLoss` threshold, `EntryPrice`, `TakeProfit`, and `SignalType`
+- **FindSignalCommand** — creates `Signal` rows; sets `StopLoss` threshold, `EntryPrice`, `TakeProfit`, and `SignalType`
 - **CheckSignalEntry** — detects entry hits; anchors `LastCheckedCandleAt` to `EntryHitAt.OpenTime`, which is exactly where `CheckSignalStopLoss` begins scanning
 - **CheckSignalTakeProfit** (future) — mirrors this feature for take-profit detection using `TakeProfitHitAt`
 

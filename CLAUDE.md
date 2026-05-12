@@ -205,17 +205,17 @@ features/
 #### Backend Structure
 ```
 Cex.Application/
-└── Trade/
-    ├── Commands/
-    │   └── SyncTradeHistory/
-    │       ├── SyncTradeHistoryCommand.cs
-    │       ├── SyncTradeHistoryCommandHandler.cs
-    │       └── SyncTradeHistoryCommandValidator.cs
-    └── Queries/
-        └── GetTradeHistory/
-            ├── GetTradeHistoryQuery.cs
-            └── GetTradeHistoryQueryHandler.cs
+└── Signal/
+    └── Commands/
+        └── FindSignal/                  # one subfolder per feature
+            └── FindSignalCommand.cs     # command record + handler class in the same file
 ```
+
+**Rules:**
+- Each command/query lives in its own subfolder named after the feature: `Commands/{FeatureName}/`
+- The command `record` and its handler `class` are colocated in a single file: `{FeatureName}Command.cs`
+- Validators, if present, go in the same subfolder: `{FeatureName}CommandValidator.cs`
+- Feature documentation lives inside the feature subfolder, named in `SCREAMING_SNAKE_CASE` after the folder: `{FeatureName}/{FEATURE_NAME}.md` (e.g. `FindSignal/FIND_SIGNAL.md`, `CheckSignalStopLoss/CHECK_SIGNAL_STOP_LOSS.md`)
 
 ## Code Review Checklist
 

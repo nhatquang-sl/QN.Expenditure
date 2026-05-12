@@ -14,7 +14,7 @@ namespace Cex.Application.Common.Abstractions
         DbSet<SpotGrid> SpotGrids { get; init; }
         DbSet<SpotGridStep> SpotGridSteps { get; init; }
         DbSet<TradeHistory> TradeHistories { get; init; }
-        DbSet<SignalRecord> SignalRecords { get; init; }
+        DbSet<Signal> Signals { get; init; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

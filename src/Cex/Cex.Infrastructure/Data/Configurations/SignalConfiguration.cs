@@ -5,10 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Cex.Infrastructure.Data.Configurations;
 
-public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
+public class SignalConfiguration : IEntityTypeConfiguration<Signal>
 {
-    public void Configure(EntityTypeBuilder<SignalRecord> builder)
+    public void Configure(EntityTypeBuilder<Signal> builder)
     {
+        builder.ToTable("Signals", t =>
+            t.HasCheckConstraint("CK_Signals_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125"));
+
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.SignalType).HasConversion<string>();
@@ -20,7 +23,6 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
         builder.Property(x => x.StopLoss).HasPrecision(18, 8);
         builder.Property(x => x.TakeProfit).HasPrecision(18, 8);
         builder.Property(x => x.Leverage).HasDefaultValue(10);
-        builder.HasCheckConstraint("CK_SignalRecords_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
         builder.Property(x => x.MaxProfit).HasPrecision(10, 4).HasDefaultValue(0m);
         builder.Property(x => x.MaxProfitHitAt).HasPrecision(0);
         builder.Property(x => x.MaxProfitCheckedAt).HasPrecision(0);
@@ -32,7 +34,7 @@ public class SignalRecordConfiguration : IEntityTypeConfiguration<SignalRecord>
         builder.Property(x => x.CreatedAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
         builder.Property(x => x.LastCheckedCandleAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
 
-        // Uniqueness guard: one signal record per symbol + interval + candle time
+        // Uniqueness guard: one signal per symbol + interval + candle time
         builder.HasIndex(x => new { x.Symbol, x.Interval, x.DetectedAt }).IsUnique();
         builder.HasIndex(x => x.LastCheckedCandleAt);
         builder.HasIndex(x => x.MaxProfitCheckedAt);

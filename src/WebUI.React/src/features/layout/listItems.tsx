@@ -6,6 +6,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import PeopleIcon from '@mui/icons-material/People';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 import { Collapse, Icon, List } from '@mui/material';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -39,6 +40,12 @@ export const mainListItems = (
         <ManageHistoryIcon />
       </ListItemIcon>
       <ListItemText primary="Sync Setting" />
+    </ListItemButton>
+    <ListItemButton component={Link} to="signal/records">
+      <ListItemIcon>
+        <ShowChartIcon />
+      </ListItemIcon>
+      <ListItemText primary="Signal" />
     </ListItemButton>
     <ListItemButton>
       <ListItemIcon>

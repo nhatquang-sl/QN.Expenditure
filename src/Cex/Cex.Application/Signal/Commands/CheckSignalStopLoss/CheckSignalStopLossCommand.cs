@@ -7,7 +7,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Cex.Application.Signal.Commands.CheckSignalStopLoss;
+namespace Cex.Application.Signals.Commands.CheckSignalStopLoss;
 
 public record CheckSignalStopLossCommand : IRequest;
 
@@ -20,7 +20,7 @@ public class CheckSignalStopLossCommandHandler(
 {
     public async Task Handle(CheckSignalStopLossCommand command, CancellationToken cancellationToken)
     {
-        var candidates = await dbContext.SignalRecords
+        var candidates = await dbContext.Signals
             .Where(s => s.EntryHitAt != null && s.StopLossHitAt == null)
             .OrderBy(s => s.LastCheckedCandleAt)
             .Take(100)

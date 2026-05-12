@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cex.Infrastructure.Migrations
 {
     [DbContext(typeof(CexDbContext))]
-    [Migration("20260428105659_AddSignalRecordLastCheckedCandleAt")]
-    partial class AddSignalRecordLastCheckedCandleAt
+    [Migration("20260512095100_AddSignal")]
+    partial class AddSignal
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -74,7 +74,7 @@ namespace Cex.Infrastructure.Migrations
                     b.ToTable("ExchangeSettings");
                 });
 
-            modelBuilder.Entity("Cex.Domain.Entities.SignalRecord", b =>
+            modelBuilder.Entity("Cex.Domain.Entities.Signal", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,6 +110,25 @@ namespace Cex.Infrastructure.Migrations
                         .HasPrecision(0)
                         .HasColumnType("datetime2(0)")
                         .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("Leverage")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(10);
+
+                    b.Property<decimal>("MaxProfit")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateTime?>("MaxProfitCheckedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime2(0)");
+
+                    b.Property<DateTime?>("MaxProfitHitAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime2(0)");
 
                     b.Property<DateTime>("PreviousCandleAt")
                         .HasPrecision(0)
@@ -152,10 +171,15 @@ namespace Cex.Infrastructure.Migrations
 
                     b.HasIndex("LastCheckedCandleAt");
 
+                    b.HasIndex("MaxProfitCheckedAt");
+
                     b.HasIndex("Symbol", "Interval", "DetectedAt")
                         .IsUnique();
 
-                    b.ToTable("SignalRecords");
+                    b.ToTable("Signals", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Signals_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
+                        });
                 });
 
             modelBuilder.Entity("Cex.Domain.Entities.SpotGrid", b =>

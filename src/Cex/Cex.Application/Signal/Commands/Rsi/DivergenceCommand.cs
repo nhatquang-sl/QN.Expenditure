@@ -1,7 +1,7 @@
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 
-namespace Cex.Application.Signal.Commands.Rsi
+namespace Cex.Application.Signals.Commands.Rsi
 {
     public enum DivergenceType
     {
