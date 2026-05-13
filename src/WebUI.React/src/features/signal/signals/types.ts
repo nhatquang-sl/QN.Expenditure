@@ -3,7 +3,7 @@ export interface SignalDto {
   symbol: string;
   interval: string;
   signalType: string;
-  detectedAt: string;
+  detectedAt: number;
   rsiValue: number;
   previousRsiValue: number;
   entryPrice: number;
@@ -11,11 +11,11 @@ export interface SignalDto {
   takeProfit: number;
   leverage: number;
   maxProfit: number;
-  maxProfitHitAt: string | null;
-  entryHitAt: string | null;
-  stopLossHitAt: string | null;
-  takeProfitHitAt: string | null;
-  createdAt: string;
+  maxProfitHitAt: number | null;
+  entryHitAt: number | null;
+  stopLossHitAt: number | null;
+  takeProfitHitAt: number | null;
+  createdAt: number;
 }
 
 export interface PaginatedList<T> {

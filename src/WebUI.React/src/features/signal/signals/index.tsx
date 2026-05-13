@@ -15,6 +15,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
@@ -36,21 +37,25 @@ const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
   hour12: false,
 };
 
+const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_FROM = () => dayjs().subtract(1, 'month').startOf('month');
+const DEFAULT_TO = () => dayjs().endOf('day');
+
 export default function Signals() {
   const dispatch = useDispatch();
-  const [from, setFrom] = useState<Dayjs>(dayjs().subtract(30, 'day').startOf('day'));
-  const [to, setTo] = useState<Dayjs>(dayjs().endOf('day'));
-  const [interval, setInterval] = useState('');
+  const [from, setFrom] = useState<Dayjs>(DEFAULT_FROM);
+  const [to, setTo] = useState<Dayjs>(DEFAULT_TO);
+  const [interval, setIntervalFilter] = useState('');
   const [signalType, setSignalType] = useState('');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_PAGE_SIZE);
   const [committed, setCommitted] = useState({
-    from: dayjs().subtract(30, 'day').startOf('day').toISOString(),
-    to: dayjs().endOf('day').toISOString(),
+    from: DEFAULT_FROM().toISOString(),
+    to: DEFAULT_TO().toISOString(),
     interval: '',
     signalType: '',
     pageNumber: 1,
-    pageSize: 20,
+    pageSize: DEFAULT_PAGE_SIZE,
   });
 
   useEffect(() => {
@@ -72,9 +77,9 @@ export default function Signals() {
   };
 
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <Grid id="signals" container sx={{ height: '100%' }}>
+      <Grid item xs={12} sx={{ height: '100%' }}>
+        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', position: 'relative', height: '100%' }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center' }}>
             <DatePicker
               label="From"
@@ -93,7 +98,7 @@ export default function Signals() {
               <Select
                 value={interval}
                 label="Interval"
-                onChange={(e) => setInterval(e.target.value)}
+                onChange={(e) => setIntervalFilter(e.target.value)}
               >
                 <MenuItem value="">
                   <em>All</em>
@@ -133,7 +138,7 @@ export default function Signals() {
             </Typography>
           )}
 
-          <TableContainer>
+          <TableContainer sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             <Table stickyHeader size="small" aria-label="signals table">
               <TableHead>
                 <TableRow>
@@ -142,82 +147,104 @@ export default function Signals() {
                   <TableCell align="center">Interval</TableCell>
                   <TableCell align="right">Entry Price</TableCell>
                   <TableCell align="right">Stop Loss</TableCell>
-                  <TableCell align="right">Take Profit</TableCell>
-                  <TableCell align="center">Leverage</TableCell>
                   <TableCell align="right">Max Profit %</TableCell>
+                  <TableCell align="right">Max Profit Hit</TableCell>
                   <TableCell align="center">Entry Hit</TableCell>
                   <TableCell align="center">SL Hit</TableCell>
                   <TableCell align="center">TP Hit</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
+                {isLoading && !data && (
+                  <TableRow>
+                    <TableCell colSpan={10} align="center">
+                      <Typography variant="body2" color="textSecondary" sx={{ py: 4 }}>
+                        Loading...
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
                 {data?.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={11} align="center">
+                    <TableCell colSpan={10} align="center">
                       <Typography variant="body2" color="textSecondary" sx={{ py: 4 }}>
                         No signals found for the selected filters.
                       </Typography>
                     </TableCell>
                   </TableRow>
                 )}
-                {data?.items.map((row) => (
-                  <TableRow hover key={row.id}>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      {new Date(row.detectedAt).toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={row.signalType.toUpperCase()}
-                        color={row.signalType.toUpperCase() === 'LONG' ? 'success' : 'error'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="center">{row.interval}</TableCell>
-                    <TableCell align="right">{row.entryPrice.toFixed(2)}</TableCell>
-                    <TableCell align="right">{row.stopLoss.toFixed(2)}</TableCell>
-                    <TableCell align="right">{row.takeProfit.toFixed(2)}</TableCell>
-                    <TableCell align="center">{row.leverage}x</TableCell>
-                    <TableCell align="right">
-                      {row.maxProfit > 0 ? (
-                        <Typography variant="body2" color="success.main">
-                          +{(row.maxProfit * 100).toFixed(2)}%
-                        </Typography>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      {row.entryHitAt ? (
-                        <Typography variant="caption" color="success.main">
-                          {new Date(row.entryHitAt).toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
-                        </Typography>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      {row.stopLossHitAt ? (
-                        <Typography variant="caption" color="error.main">
-                          {new Date(row.stopLossHitAt).toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
-                        </Typography>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      {row.takeProfitHitAt ? (
-                        <Typography variant="caption" color="primary.main">
-                          {new Date(row.takeProfitHitAt).toLocaleString(
-                            'en-US',
-                            DATE_FORMAT_OPTIONS
-                          )}
-                        </Typography>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {data?.items.map((row) => {
+                  const type = row.signalType.toUpperCase();
+                  const maxProfitHitDate = row.maxProfitHitAt ? new Date(row.maxProfitHitAt) : null;
+                  const entryHitDate = row.entryHitAt ? new Date(row.entryHitAt) : null;
+                  const stopLossHitDate = row.stopLossHitAt ? new Date(row.stopLossHitAt) : null;
+                  const takeProfitHitDate = row.takeProfitHitAt ? new Date(row.takeProfitHitAt) : null;
+
+                  return (
+                    <TableRow hover key={row.id}>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        {new Date(row.detectedAt).toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          label={`${type} ${row.leverage}x`}
+                          color={type === 'LONG' ? 'success' : 'error'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">{row.interval}</TableCell>
+                      <TableCell align="right">{row.entryPrice.toFixed(2)}</TableCell>
+                      <TableCell align="right">{row.stopLoss.toFixed(2)}</TableCell>
+                      <TableCell align="right">
+                        {row.maxProfit > 0 ? (
+                          <Typography variant="body2" color="success.main">
+                            +{row.maxProfit.toFixed(2)}%
+                          </Typography>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {maxProfitHitDate && entryHitDate ? (
+                          <Tooltip title={maxProfitHitDate.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}>
+                            <Typography variant="body2" color="success.main" sx={{ cursor: 'default' }}>
+                              {((maxProfitHitDate.getTime() - entryHitDate.getTime()) / 3600000).toFixed(1)}h
+                            </Typography>
+                          </Tooltip>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        {entryHitDate ? (
+                          <Typography variant="caption" color="success.main">
+                            {entryHitDate.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
+                          </Typography>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        {stopLossHitDate ? (
+                          <Typography variant="caption" color="error.main">
+                            {stopLossHitDate.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
+                          </Typography>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        {takeProfitHitDate ? (
+                          <Typography variant="caption" color="primary.main">
+                            {takeProfitHitDate.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
+                          </Typography>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -227,7 +254,7 @@ export default function Signals() {
             component="div"
             count={data?.totalCount ?? 0}
             rowsPerPage={rowsPerPage}
-            page={page}
+            page={Math.min(page, Math.max(0, Math.ceil((data?.totalCount ?? 0) / rowsPerPage) - 1))}
             onPageChange={(_event, newPage) => {
               setPage(newPage);
               setCommitted((prev) => ({ ...prev, pageNumber: newPage + 1 }));

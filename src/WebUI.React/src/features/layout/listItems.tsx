@@ -41,7 +41,7 @@ export const mainListItems = (
       </ListItemIcon>
       <ListItemText primary="Sync Setting" />
     </ListItemButton>
-    <ListItemButton component={Link} to="signal/records">
+    <ListItemButton component={Link} to="signals">
       <ListItemIcon>
         <ShowChartIcon />
       </ListItemIcon>

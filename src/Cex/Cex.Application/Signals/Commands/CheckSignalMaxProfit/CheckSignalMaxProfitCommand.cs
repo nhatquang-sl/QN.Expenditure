@@ -21,17 +21,18 @@ public class CheckSignalMaxProfitCommandHandler(
     public async Task Handle(CheckSignalMaxProfitCommand command, CancellationToken cancellationToken)
     {
         var candidates = await dbContext.Signals
-            .Where(s => s.MaxProfitCheckedAt != null &&
+            .Where(s => s.EntryHitAt != null &&
                         (s.StopLossHitAt == null ||
-                         s.MaxProfitCheckedAt < s.StopLossHitAt))
-            .OrderBy(s => s.MaxProfitCheckedAt)
+                         (s.MaxProfitCheckedAt ?? s.EntryHitAt) < s.StopLossHitAt))
+            .OrderBy(s => s.MaxProfitCheckedAt ?? s.EntryHitAt)
             .Take(100)
             .ToListAsync(cancellationToken);
 
+        logTrace.LogInformation("Total signals", candidates.Count);
         if (candidates.Count == 0) return;
 
         const IntervalType interval = IntervalType.OneMinute;
-        var startAt = candidates.Min(s => s.MaxProfitCheckedAt!.Value);
+        var startAt = candidates.Min(s => s.MaxProfitCheckedAt ?? s.EntryHitAt!.Value);
         var now = DateTime.UtcNow;
         DateTime? lastBatchOpenTime = null;
 
@@ -54,7 +55,7 @@ public class CheckSignalMaxProfitCommandHandler(
                     // GetKlines returns candles sorted ascending by OpenTime.
                     // relevantCandles inherits that order; no defensive sort is applied.
                     var relevantCandles = batch
-                        .Where(c => c.OpenTime > signal.MaxProfitCheckedAt!.Value &&
+                        .Where(c => c.OpenTime > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt!.Value) &&
                                     (scanEnd == null || c.OpenTime <= scanEnd))
                         .ToList();
 
@@ -65,11 +66,11 @@ public class CheckSignalMaxProfitCommandHandler(
                         // signal.Leverage is int; multiplying decimal by int promotes int to decimal — no truncation.
                         var profitPct = signal.SignalType == SignalType.Long
                             ? (c.HighestPrice - signal.EntryPrice) / signal.EntryPrice * 100m * signal.Leverage
-                            : (signal.EntryPrice - c.LowestPrice)  / signal.EntryPrice * 100m * signal.Leverage;
+                            : (signal.EntryPrice - c.LowestPrice) / signal.EntryPrice * 100m * signal.Leverage;
 
                         if (profitPct > signal.MaxProfit)
                         {
-                            signal.MaxProfit      = profitPct;
+                            signal.MaxProfit = profitPct;
                             signal.MaxProfitHitAt = c.OpenTime;
                         }
                     }
@@ -77,7 +78,7 @@ public class CheckSignalMaxProfitCommandHandler(
                     // relevantCandles is sorted ascending; [^1] is the latest candle in the range.
                     // Its OpenTime is always ≤ scanEnd because of the Where filter above.
                     var newPointer = relevantCandles[^1].OpenTime;
-                    if (newPointer > signal.MaxProfitCheckedAt!.Value)
+                    if (newPointer > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt!.Value))
                         signal.MaxProfitCheckedAt = newPointer;
                 }
             }

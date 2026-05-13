@@ -46,10 +46,10 @@ public class Signal
 3. **`MaxProfitHitAt` remains null when `MaxProfit` stays at 0** — if no candle in the entire scan window produces `profitPct > 0` (price never moved above entry for Long / below entry for Short), `MaxProfitHitAt` is never set and remains null even after the scan is fully complete. `MaxProfit = 0` with `MaxProfitHitAt = null` means the position was never in profit.
 
 4. **Scan window**:
-   - Open position (`StopLossHitAt IS NULL`): scans from `MaxProfitCheckedAt` → now; re-runs every minute indefinitely.
-   - Stopped-out position (`StopLossHitAt IS NOT NULL`): scans from `MaxProfitCheckedAt` → `StopLossHitAt`; complete when `MaxProfitCheckedAt >= StopLossHitAt`.
+   - Open position (`StopLossHitAt IS NULL`): scans from `MaxProfitCheckedAt ?? EntryHitAt` → now; re-runs every minute indefinitely.
+   - Stopped-out position (`StopLossHitAt IS NOT NULL`): scans from `MaxProfitCheckedAt ?? EntryHitAt` → `StopLossHitAt`; complete when `(MaxProfitCheckedAt ?? EntryHitAt) >= StopLossHitAt`.
 
-5. **Pointer initialisation** — `MaxProfitCheckedAt` is `null` at record creation and remains `null` until entry is detected. `CheckSignalEntry` sets it to `hit.OpenTime` (= `EntryHitAt`) when entry is detected, anchoring the max-profit scan to the same point as the stop-loss scan.
+5. **Pointer initialisation** — `MaxProfitCheckedAt` is `null` at record creation. Normally `CheckSignalEntry` sets it to `hit.OpenTime` (= `EntryHitAt`) when entry is detected. If a signal has `EntryHitAt` set but `MaxProfitCheckedAt` is still `null` (e.g. seeded rows, backfill gaps), the handler falls back to `EntryHitAt` in all pointer reads, ensuring correct behaviour without requiring a DB migration backfill.
 
 6. **Pointer monotonicity** — `MaxProfitCheckedAt` never moves backward.
 
@@ -63,14 +63,14 @@ public class Signal
 
 ```
 1. Query 100 Signals:
-     WHERE MaxProfitCheckedAt IS NOT NULL
+     WHERE EntryHitAt IS NOT NULL
        AND (StopLossHitAt IS NULL
-            OR MaxProfitCheckedAt < StopLossHitAt)
-     ORDER BY MaxProfitCheckedAt ASC
+            OR (MaxProfitCheckedAt ?? EntryHitAt) < StopLossHitAt)
+     ORDER BY (MaxProfitCheckedAt ?? EntryHitAt) ASC
 
 2. If candidates empty → return early
 
-3. startAt = Min(candidates, s => s.MaxProfitCheckedAt)
+3. startAt = Min(candidates, s => s.MaxProfitCheckedAt ?? s.EntryHitAt)
    now     = DateTime.UtcNow
    lastBatchOpenTime = null
 
@@ -82,7 +82,7 @@ public class Signal
       startAt           = lastBatchOpenTime + 1 min
 
    d. for each signal in candidates:
-        checkFrom = signal.MaxProfitCheckedAt
+        checkFrom = signal.MaxProfitCheckedAt ?? signal.EntryHitAt   ← null-coalesced
         scanEnd   = signal.StopLossHitAt    (null → no upper bound)
 
         relevantCandles = batch
@@ -103,7 +103,7 @@ public class Signal
         newPointer = relevantCandles[^1].OpenTime
                      ← last element is chronologically latest because list is sorted ascending;
                        always ≤ scanEnd due to the Where filter
-        if newPointer > signal.MaxProfitCheckedAt!.Value:
+        if newPointer > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt):
           signal.MaxProfitCheckedAt = newPointer
 
 5. if lastBatchOpenTime is null → return (no DB write — no batch fetched)
@@ -125,10 +125,10 @@ public class Signal
 
 ```csharp
 var candidates = await dbContext.Signals
-    .Where(s => s.MaxProfitCheckedAt != null &&
+    .Where(s => s.EntryHitAt != null &&
                 (s.StopLossHitAt == null ||
-                 s.MaxProfitCheckedAt < s.StopLossHitAt))
-    .OrderBy(s => s.MaxProfitCheckedAt)
+                 (s.MaxProfitCheckedAt ?? s.EntryHitAt) < s.StopLossHitAt))
+    .OrderBy(s => s.MaxProfitCheckedAt ?? s.EntryHitAt)
     .Take(100)
     .ToListAsync(cancellationToken);
 
@@ -139,7 +139,7 @@ if (candidates.Count == 0) return;
 
 ```csharp
 const IntervalType interval = IntervalType.OneMinute;
-var startAt = candidates.Min(s => s.MaxProfitCheckedAt!.Value);
+var startAt = candidates.Min(s => s.MaxProfitCheckedAt ?? s.EntryHitAt!.Value);
 var now = DateTime.UtcNow;
 DateTime? lastBatchOpenTime = null;
 
@@ -162,7 +162,7 @@ try
             // GetKlines returns candles sorted ascending by OpenTime.
             // relevantCandles inherits that order; no defensive sort is applied.
             var relevantCandles = batch
-                .Where(c => c.OpenTime > signal.MaxProfitCheckedAt!.Value &&
+                .Where(c => c.OpenTime > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt!.Value) &&
                             (scanEnd == null || c.OpenTime <= scanEnd))
                 .ToList();
 
@@ -185,7 +185,7 @@ try
             // relevantCandles is sorted ascending; [^1] is the latest candle in the range.
             // Its OpenTime is always ≤ scanEnd because of the Where filter above.
             var newPointer = relevantCandles[^1].OpenTime;
-            if (newPointer > signal.MaxProfitCheckedAt)
+            if (newPointer > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt!.Value))
                 signal.MaxProfitCheckedAt = newPointer;
         }
     }
@@ -369,7 +369,7 @@ await CheckSignalMaxProfit(stoppingToken);
 
 - **`Leverage` type safety** — `signal.Leverage` is `int`; multiplying a `decimal` expression by an `int` promotes the `int` to `decimal` — no integer truncation.
 
-- **`MaxProfitCheckedAt` lifecycle** — `null` at record creation; set to `hit.OpenTime` (= `EntryHitAt`) by `CheckSignalEntry` when entry is detected; advanced by `CheckSignalMaxProfit` each run thereafter. A `null` value means entry has not yet been hit.
+- **`MaxProfitCheckedAt` lifecycle** — `null` at record creation; normally set to `hit.OpenTime` (= `EntryHitAt`) by `CheckSignalEntry` when entry is detected; advanced by `CheckSignalMaxProfit` each run thereafter. If `MaxProfitCheckedAt` is still `null` when `CheckSignalMaxProfit` runs (e.g. seeded or backfilled rows), all four pointer-read sites fall back to `EntryHitAt` via null-coalescing (`?? EntryHitAt`). A `null` value combined with `EntryHitAt IS NULL` means entry has not yet been hit and the signal is excluded from the candidate query entirely.
 
 - **First-run fetch volume** — on the first run for a signal, `MaxProfitCheckedAt` equals `EntryHitAt` (just set by `CheckSignalEntry`), which may be hours or days in the past. That run fetches many candle batches; subsequent runs fetch only ~1 minute of new candles.
 

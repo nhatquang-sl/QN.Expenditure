@@ -119,7 +119,7 @@ const router = createBrowserRouter([
         element: <TradeHistory />,
       },
       {
-        path: 'signal/records',
+        path: 'signals',
         element: <Signals />,
       },
       // {

@@ -34,7 +34,7 @@ public record SignalDto
     public string Symbol { get; init; } = string.Empty;
     public string Interval { get; init; } = string.Empty;
     public string SignalType { get; init; } = string.Empty;
-    public DateTime DetectedAt { get; init; }
+    public long DetectedAt { get; init; }
     public decimal RsiValue { get; init; }
     public decimal PreviousRsiValue { get; init; }
     public decimal EntryPrice { get; init; }
@@ -42,13 +42,15 @@ public record SignalDto
     public decimal TakeProfit { get; init; }
     public int Leverage { get; init; }
     public decimal MaxProfit { get; init; }
-    public DateTime? MaxProfitHitAt { get; init; }
-    public DateTime? EntryHitAt { get; init; }
-    public DateTime? StopLossHitAt { get; init; }
-    public DateTime? TakeProfitHitAt { get; init; }
-    public DateTime CreatedAt { get; init; }
+    public long? MaxProfitHitAt { get; init; }
+    public long? EntryHitAt { get; init; }
+    public long? StopLossHitAt { get; init; }
+    public long? TakeProfitHitAt { get; init; }
+    public long CreatedAt { get; init; }
 }
 ```
+
+> All `DateTime` fields are serialized as **Unix timestamp milliseconds** (`long`) using the `ToUnixTimestampMilliseconds()` extension from `Lib.Application.Extensions`.
 
 ### Business Rules
 
@@ -78,22 +80,37 @@ if (request.SignalType.HasValue)
 query = query.OrderByDescending(s => s.DetectedAt);
 ```
 
+DateTime-to-timestamp conversion is performed in-memory after the DB fetch (EF Core cannot translate `ToUnixTimestampMilliseconds()` to SQL):
+
+```csharp
+var raw = await query
+    .OrderByDescending(s => s.DetectedAt)
+    .Skip((request.PageNumber - 1) * request.PageSize)
+    .Take(request.PageSize)
+    .Select(s => new { /* all columns */ })
+    .ToListAsync(cancellationToken);
+
+var items = raw.Select(s => new SignalDto
+{
+    DetectedAt = s.DetectedAt.ToUnixTimestampMilliseconds(),
+    // ...
+}).ToList();
+```
+
 ---
 
 ## Backend Architecture
 
 ### Application Layer
 
-**New files in `Cex.Application/Signal/Queries/GetSignals/`:**
+**Files in `Cex.Application/Signal/Queries/GetSignals/`:**
 
-#### `GetSignalsQuery.cs` (query record + handler)
+#### `GetSignalsQuery.cs` (query record only)
 
 ```csharp
-using Cex.Application.Common.Abstractions;
 using Cex.Domain.Enums;
 using Lib.Application.Models;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Cex.Application.Signals.Queries.GetSignals;
 
@@ -104,6 +121,18 @@ public record GetSignalsQuery(
     SignalType? SignalType = null,
     int PageNumber = 1,
     int PageSize = 20) : IRequest<PaginatedList<SignalDto>>;
+```
+
+#### `GetSignalsQueryHandler.cs`
+
+```csharp
+using Cex.Application.Common.Abstractions;
+using Lib.Application.Extensions;
+using Lib.Application.Models;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace Cex.Application.Signals.Queries.GetSignals;
 
 public class GetSignalsQueryHandler(ICexDbContext dbContext)
     : IRequestHandler<GetSignalsQuery, PaginatedList<SignalDto>>
@@ -124,31 +153,39 @@ public class GetSignalsQueryHandler(ICexDbContext dbContext)
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var items = await query
+        var raw = await query
             .OrderByDescending(s => s.DetectedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(s => new SignalDto
+            .Select(s => new
             {
-                Id = s.Id,
-                Symbol = s.Symbol,
-                Interval = s.Interval,
-                SignalType = s.SignalType.ToString(),
-                DetectedAt = s.DetectedAt,
-                RsiValue = s.RsiValue,
-                PreviousRsiValue = s.PreviousRsiValue,
-                EntryPrice = s.EntryPrice,
-                StopLoss = s.StopLoss,
-                TakeProfit = s.TakeProfit,
-                Leverage = s.Leverage,
-                MaxProfit = s.MaxProfit,
-                MaxProfitHitAt = s.MaxProfitHitAt,
-                EntryHitAt = s.EntryHitAt,
-                StopLossHitAt = s.StopLossHitAt,
-                TakeProfitHitAt = s.TakeProfitHitAt,
-                CreatedAt = s.CreatedAt,
+                s.Id, s.Symbol, s.Interval, s.SignalType, s.DetectedAt,
+                s.RsiValue, s.PreviousRsiValue, s.EntryPrice, s.StopLoss,
+                s.TakeProfit, s.Leverage, s.MaxProfit, s.MaxProfitHitAt,
+                s.EntryHitAt, s.StopLossHitAt, s.TakeProfitHitAt, s.CreatedAt,
             })
             .ToListAsync(cancellationToken);
+
+        var items = raw.Select(s => new SignalDto
+        {
+            Id = s.Id,
+            Symbol = s.Symbol,
+            Interval = s.Interval,
+            SignalType = s.SignalType.ToString(),
+            DetectedAt = s.DetectedAt.ToUnixTimestampMilliseconds(),
+            RsiValue = s.RsiValue,
+            PreviousRsiValue = s.PreviousRsiValue,
+            EntryPrice = s.EntryPrice,
+            StopLoss = s.StopLoss,
+            TakeProfit = s.TakeProfit,
+            Leverage = s.Leverage,
+            MaxProfit = s.MaxProfit,
+            MaxProfitHitAt = s.MaxProfitHitAt?.ToUnixTimestampMilliseconds(),
+            EntryHitAt = s.EntryHitAt?.ToUnixTimestampMilliseconds(),
+            StopLossHitAt = s.StopLossHitAt?.ToUnixTimestampMilliseconds(),
+            TakeProfitHitAt = s.TakeProfitHitAt?.ToUnixTimestampMilliseconds(),
+            CreatedAt = s.CreatedAt.ToUnixTimestampMilliseconds(),
+        }).ToList();
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
 
@@ -210,7 +247,7 @@ As defined in the DTOs section above.
 
 ### API Layer
 
-**New file: `src/WebAPI/Controllers/SignalController.cs`**
+**File: `src/WebAPI/Controllers/SignalsController.cs`**
 
 ```csharp
 using Cex.Application.Signals.Queries.GetSignals;
@@ -223,14 +260,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace WebAPI.Controllers;
 
 [Authorize]
-[Route("api/signal")]
+[Route("api/signals")]
 [ApiController]
-public class SignalController(ISender sender) : ControllerBase
+public class SignalsController(ISender sender) : ControllerBase
 {
     /// <summary>
     /// Retrieves paginated signals filtered by date range, interval, and signal type.
     /// </summary>
-    [HttpGet("records")]
+    [HttpGet]
     public Task<PaginatedList<SignalDto>> GetSignals(
         [FromQuery] DateTime from,
         [FromQuery] DateTime to,
@@ -246,7 +283,7 @@ public class SignalController(ISender sender) : ControllerBase
 
 | Method | Route | Request | Response |
 |---|---|---|---|
-| GET | `/api/signal/records?from=...&to=...` | `from` (required), `to` (required), `interval` (optional), `signalType` (optional), `pageNumber` (default 1), `pageSize` (default 20) | `PaginatedList<SignalDto>` |
+| GET | `/api/signals?from=...&to=...` | `from` (required), `to` (required), `interval` (optional), `signalType` (optional), `pageNumber` (default 1), `pageSize` (default 20) | `PaginatedList<SignalDto>` |
 
 ---
 
@@ -255,6 +292,7 @@ public class SignalController(ISender sender) : ControllerBase
 - **Existing index**: `IX_Signals_Symbol_Interval_DetectedAt` (unique) partially covers the query when `Interval` is provided.
 - **Consider adding**: A non-clustered index on `DetectedAt DESC` to optimize date-range-only queries without interval filter. Evaluate after observing query plans with production data volumes.
 - **`.AsNoTracking()`**: Used to avoid change-tracker overhead on read-only queries.
+- **Two-step fetch**: Raw DB projection to anonymous type, then in-memory mapping to `SignalDto`. Required because `ToUnixTimestampMilliseconds()` cannot be translated to SQL by EF Core.
 
 ---
 
@@ -273,13 +311,14 @@ public class SignalController(ISender sender) : ControllerBase
 ## Implementation Checklist
 
 ### Application Layer
-- [ ] Create folder `src/Cex/Cex.Application/Signal/Queries/GetSignals/`
-- [ ] Create `SignalDto.cs`
-- [ ] Create `GetSignalsQuery.cs` (query record + handler)
-- [ ] Create `GetSignalsQueryValidator.cs`
+- [x] Create folder `src/Cex/Cex.Application/Signal/Queries/GetSignals/`
+- [x] Create `SignalDto.cs`
+- [x] Create `GetSignalsQuery.cs` (query record)
+- [x] Create `GetSignalsQueryHandler.cs` (handler)
+- [x] Create `GetSignalsQueryValidator.cs`
 
 ### API Layer
-- [ ] Create `src/WebAPI/Controllers/SignalController.cs`
+- [x] Create `src/WebAPI/Controllers/SignalsController.cs`
 
 ### Frontend
 - [ ] Regenerate TypeScript API client: `npm run generate-api-client`
@@ -300,6 +339,8 @@ public class SignalController(ISender sender) : ControllerBase
 - **`Interval` is a plain string**, not an enum in the domain model. The validator enforces known values to prevent misuse, but the handler compares strings directly.
 - **No user-scoping**: Unlike `TradeHistory`, signals are system-wide (no `UserId` column). The `[Authorize]` attribute ensures only authenticated users can access the endpoint, but results are not filtered per user.
 - **`SignalType` in the DTO is a string** (via `.ToString()`) for frontend consumption, avoiding enum serialization issues.
+- **All timestamps in the DTO are Unix milliseconds (`long`)** to simplify frontend date handling and avoid timezone serialization issues.
+- **Handler is in a separate file** (`GetSignalsQueryHandler.cs`) from the query record (`GetSignalsQuery.cs`).
 
 ---
 
