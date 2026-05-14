@@ -6,6 +6,7 @@ import addBollingerBands from './handlers/add-bollinger-bands';
 import addCandlesticks from './handlers/add-candlesticks';
 import addVolume from './handlers/add-volume';
 import getCandlesticks from './handlers/get-candlesticks';
+import Kline from './dtos/kline';
 import { defaultChartLayout } from './utils/constants';
 import { TZ_OFFSET_SECONDS } from './utils';
 
@@ -85,7 +86,7 @@ function Chart(props: ChartProps) {
     if (mainCrosshairHandler.current) mc.unsubscribeCrosshairMove(mainCrosshairHandler.current);
     if (rsiCrosshairHandler.current) rc.unsubscribeCrosshairMove(rsiCrosshairHandler.current);
 
-    let klines;
+    let klines: Kline[];
     try {
       klines = await getCandlesticks(pair, interval, startTime, endTime);
     } catch (err) {
