@@ -49,24 +49,21 @@ export default function SignalChartDialog({
 }: SignalChartDialogProps) {
   const intervalMs = BINANCE_INTERVAL_MS[interval] ?? 60_000;
   const startTime = signal.detectedAt - 400 * intervalMs;
-  const endTime = signal.detectedAt + 10 * intervalMs;
+  const endTime = signal.entryHitAt ?? signal.createdAt;
 
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      fullWidth
-      maxWidth="xl"
-      PaperProps={{ sx: { height: '90vh' } }}
-    >
+    <Dialog open onClose={onClose} fullWidth maxWidth="xl" PaperProps={{ sx: { height: '90vh' } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography variant="h6" component="span" sx={{ flex: 1 }}>
-          {signal.symbol} · {new Date(signal.detectedAt).toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
+          {signal.symbol} ·{' '}
+          {new Date(signal.detectedAt).toLocaleString('en-US', DATE_FORMAT_OPTIONS)}
         </Typography>
         <FormControl size="small" sx={{ minWidth: 80 }}>
           <Select value={interval} onChange={(e) => onIntervalChange(e.target.value)}>
             {BINANCE_INTERVALS.map((iv) => (
-              <MenuItem key={iv} value={iv}>{iv}</MenuItem>
+              <MenuItem key={iv} value={iv}>
+                {iv}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -75,12 +72,7 @@ export default function SignalChartDialog({
         </IconButton>
       </DialogTitle>
       <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
-        <Chart
-          pair={signal.symbol}
-          interval={interval}
-          startTime={startTime}
-          endTime={endTime}
-        />
+        <Chart pair={signal.symbol} interval={interval} startTime={startTime} endTime={endTime} />
       </DialogContent>
     </Dialog>
   );
