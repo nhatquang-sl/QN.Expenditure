@@ -120,35 +120,14 @@ namespace Auth.Infrastructure.Identity
             return "Thank you for confirming your email change.";
         }
 
-        public async Task<UserProfileDto> LoginAsync(string email, string password, bool rememberMe)
+        public async Task<UserProfileDto> LoginAsync(string email, string password)
         {
+            var user = await _userManager.FindByEmailAsync(email)
+                ?? throw new BadRequestException("Email or Password incorrect.");
+
             // This doesn't count login failures towards account lockout
             // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            var result = await _signInManager.PasswordSignInAsync(email, password, rememberMe, false);
-            if (result.Succeeded || result.IsNotAllowed)
-            {
-                _logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", MethodBase.GetCurrentMethod()));
-                //_logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", new { email }, MethodBase.GetCurrentMethod()));
-                var user = await _userManager.FindByEmailAsync(email);
-                _logTrace.AddProperty("UserId", user?.Id ?? "");
-
-                return user == null
-                    ? throw new NotFoundException($"{email} is not found!")
-                    : new UserProfileDto
-                    {
-                        Id = user.Id,
-                        Email = email,
-                        FirstName = user.FirstName,
-                        LastName = user.LastName,
-                        EmailConfirmed = user.EmailConfirmed
-                    };
-            }
-
-            if (result.RequiresTwoFactor)
-            {
-                // return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = request.RememberMe });
-                throw new BadRequestException("Requires Two Factor.");
-            }
+            var result = await _signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: false);
 
             if (result.IsLockedOut)
             {
@@ -156,8 +135,28 @@ namespace Auth.Infrastructure.Identity
                 throw new BadRequestException("User account locked out.");
             }
 
-            _logTrace.Log(new LogEntry(LogLevel.Error, "Invalid login attempt.", MethodBase.GetCurrentMethod()));
-            throw new BadRequestException("Email or Password incorrect.");
+            if (result.RequiresTwoFactor)
+            {
+                throw new BadRequestException("Requires Two Factor.");
+            }
+
+            if (!result.Succeeded && !result.IsNotAllowed)
+            {
+                _logTrace.Log(new LogEntry(LogLevel.Error, "Invalid login attempt.", MethodBase.GetCurrentMethod()));
+                throw new BadRequestException("Email or Password incorrect.");
+            }
+
+            _logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", MethodBase.GetCurrentMethod()));
+            _logTrace.AddProperty("UserId", user.Id);
+
+            return new UserProfileDto
+            {
+                Id = user.Id,
+                Email = email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                EmailConfirmed = user.EmailConfirmed
+            };
         }
 
         public async Task<string> ChangePassword(string userId, ChangePasswordCommand request)

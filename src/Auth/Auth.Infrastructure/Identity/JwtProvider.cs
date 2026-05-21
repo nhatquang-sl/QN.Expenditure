@@ -14,11 +14,14 @@ namespace Auth.Infrastructure.Identity
 
         public static int AccessTokenExpiresMinutes => 5;
         public static int RefreshTokenExpiresMinutes => 5 * 60;
+        public static int RefreshTokenExpiresDaysRemembered => 30;
 
-        public (string accessToken, string refreshToken, DateTime accessTokenExpires, DateTime refreshTokenExpires) GenerateTokens(UserProfileDto userProfile)
+        public (string accessToken, string refreshToken, DateTime accessTokenExpires, DateTime refreshTokenExpires) GenerateTokens(UserProfileDto userProfile, bool rememberMe)
         {
             var accessTokenExpires = DateTime.UtcNow.AddMinutes(AccessTokenExpiresMinutes);
-            var refreshTokenExpires = DateTime.UtcNow.AddMinutes(RefreshTokenExpiresMinutes);
+            var refreshTokenExpires = rememberMe
+                ? DateTime.UtcNow.AddDays(RefreshTokenExpiresDaysRemembered)
+                : DateTime.UtcNow.AddMinutes(RefreshTokenExpiresMinutes);
 
             var accessToken = GenerateToken(userProfile, _jwtConfig.AccessTokenSecretKey, accessTokenExpires, refreshTokenExpires);
             var refreshToken = GenerateToken(userProfile, _jwtConfig.RefreshTokenSecretKey, refreshTokenExpires, null);

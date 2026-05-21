@@ -26,10 +26,10 @@ namespace Auth.Application.Account.Commands.Login
         public async Task<UserAuthDto> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
             var userProfile =
-                await identityService.LoginAsync(request.Email, request.Password, request.RememberMe);
+                await identityService.LoginAsync(request.Email, request.Password);
 
             var (accessToken, refreshToken, accessTokenExpires, refreshTokenExpires) =
-                jwtService.GenerateTokens(userProfile);
+                jwtService.GenerateTokens(userProfile, request.RememberMe);
 
             var userAuth = mapper.Map<UserAuthDto>(userProfile);
             userAuth.AccessToken = accessToken;
