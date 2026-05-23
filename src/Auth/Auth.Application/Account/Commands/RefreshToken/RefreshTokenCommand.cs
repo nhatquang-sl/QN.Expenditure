@@ -31,9 +31,9 @@ namespace Auth.Application.Account.Commands.RefreshToken
                 .FirstOrDefaultAsync(x => x.RefreshToken == request.RefreshToken, cancellationToken)
                 ?? throw new BadRequestException("Refresh token not found.");
 
-            // Issue new tokens
+            // Issue new tokens, preserving the original session's remember-me state
             var (accessToken, refreshToken, accessTokenExpires, refreshTokenExpires) =
-                jwtProvider.GenerateTokens(userProfile);
+                jwtProvider.GenerateTokens(userProfile, loginHistory.RememberMe);
 
             // Rotate: replace old record with new one
             dbContext.UserLoginHistories.Remove(loginHistory);
@@ -42,6 +42,7 @@ namespace Auth.Application.Account.Commands.RefreshToken
                 UserId = userProfile.Id,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
+                RememberMe = loginHistory.RememberMe,
                 IpAddress = request.IpAddress,
                 UserAgent = request.UserAgent,
                 CreatedAt = DateTime.UtcNow

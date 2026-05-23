@@ -42,6 +42,7 @@ namespace Auth.Application.Account.Commands.Login
                 UserId = userProfile.Id,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
+                RememberMe = request.RememberMe,
                 IpAddress = request.IpAddress,
                 UserAgent = request.UserAgent,
                 CreatedAt = DateTime.UtcNow

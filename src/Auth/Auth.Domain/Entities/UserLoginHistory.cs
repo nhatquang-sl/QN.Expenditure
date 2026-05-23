@@ -8,6 +8,7 @@
         public string? UserAgent { get; set; }
         public string AccessToken { get; set; }
         public string RefreshToken { get; set; }
+        public bool RememberMe { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }
