@@ -21,7 +21,8 @@
       "Bash(npx tsc:*)",
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(./node_modules/.bin/tsc --noEmit)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(find /Users/quang/workspace/QN.Expenditure/src -name *AuthController* -o -name *auth*controller*)"
     ]
   }
 }

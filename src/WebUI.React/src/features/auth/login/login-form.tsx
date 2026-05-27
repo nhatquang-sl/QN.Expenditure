@@ -112,9 +112,16 @@ function LoginForm() {
             />
           )}
         />
-        <FormControlLabel
-          control={<Checkbox value="remember" color="primary" />}
-          label="Remember me"
+        <Controller
+          control={control}
+          name="rememberMe"
+          defaultValue={false}
+          render={({ field }) => (
+            <FormControlLabel
+              control={<Checkbox {...field} checked={field.value} color="primary" />}
+              label="Remember me"
+            />
+          )}
         />
 
         <LoadingButton
