@@ -64,6 +64,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           file: 'src/WebAPI/Dockerfile'
+          provenance: false
           build-args: |
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
       - name: 🙏[ui]Build and push Docker image
@@ -73,6 +74,7 @@ jobs:
           push: true
           tags: ${{ steps.metaUI.outputs.tags }}
           file: 'src/WebUI.React/Dockerfile'
+          provenance: false
       - name: 🚀Deploy Docker to VPS
         run: |
           echo "${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}"
