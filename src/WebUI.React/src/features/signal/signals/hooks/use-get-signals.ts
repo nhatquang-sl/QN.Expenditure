@@ -10,6 +10,8 @@ interface Params {
   signalType?: string;
   pageNumber: number;
   pageSize: number;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export function useGetSignals(params: Params) {
@@ -23,9 +25,12 @@ export function useGetSignals(params: Params) {
       if (params.signalType) url.searchParams.set('signalType', params.signalType);
       url.searchParams.set('pageNumber', String(params.pageNumber));
       url.searchParams.set('pageSize', String(params.pageSize));
+      if (params.sortBy) url.searchParams.set('sortBy', params.sortBy);
+      if (params.sortOrder) url.searchParams.set('sortOrder', params.sortOrder);
 
       const response = await instance.get<PaginatedList<SignalDto>>(url.toString());
       return response.data;
     },
+    staleTime: 30_000,
   });
 }

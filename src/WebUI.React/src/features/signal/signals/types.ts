@@ -16,6 +16,9 @@ export interface SignalDto {
   stopLossHitAt: number | null;
   takeProfitHitAt: number | null;
   createdAt: number;
+  entryHitAfterMinutes: number;
+  maxProfitHitAfterMinutes: number;
+  stopLossHitAfterMinutes: number;
 }
 
 export interface PaginatedList<T> {

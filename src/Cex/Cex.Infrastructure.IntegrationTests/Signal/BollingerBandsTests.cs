@@ -1,4 +1,4 @@
-using Cex.Application.Signal.Commands;
+using Cex.Application.Signals.Commands;
 using MediatR;
 using Shouldly;
 

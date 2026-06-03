@@ -7,6 +7,9 @@ public class GetSignalsQueryValidator : AbstractValidator<GetSignalsQuery>
     private static readonly HashSet<string> ValidIntervals =
         ["1min", "5min", "15min", "30min", "1hour", "4hour", "1day"];
 
+    private static readonly HashSet<string> ValidSortByValues =
+        ["createdAt", "entryHitAfterMinutes", "maxProfitHitAfterMinutes", "stopLossHitAfterMinutes"];
+
     public GetSignalsQueryValidator()
     {
         RuleFor(x => x.From)
@@ -32,5 +35,16 @@ public class GetSignalsQueryValidator : AbstractValidator<GetSignalsQuery>
 
         RuleFor(x => x.PageSize)
             .InclusiveBetween(1, 100).WithMessage("PageSize must be between 1 and 100");
+
+        RuleFor(x => x.SortBy)
+            .Must(s => ValidSortByValues.Contains(s!))
+            .When(x => !string.IsNullOrEmpty(x.SortBy))
+            .WithMessage("SortBy must be one of: createdAt, entryHitAfterMinutes, maxProfitHitAfterMinutes, stopLossHitAfterMinutes");
+
+        RuleFor(x => x.SortOrder)
+            .Must(s => s!.Equals("asc", StringComparison.OrdinalIgnoreCase)
+                    || s.Equals("desc", StringComparison.OrdinalIgnoreCase))
+            .When(x => !string.IsNullOrEmpty(x.SortOrder))
+            .WithMessage("SortOrder must be 'asc' or 'desc'");
     }
 }

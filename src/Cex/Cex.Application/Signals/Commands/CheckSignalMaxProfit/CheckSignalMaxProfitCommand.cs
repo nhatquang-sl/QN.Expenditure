@@ -72,6 +72,7 @@ public class CheckSignalMaxProfitCommandHandler(
                         {
                             signal.MaxProfit = profitPct;
                             signal.MaxProfitHitAt = c.OpenTime;
+                            signal.MaxProfitHitAfterMinutes = (int)(c.OpenTime - signal.DetectedAt).TotalMinutes;
                         }
                     }
 

@@ -33,10 +33,16 @@ public class SignalConfiguration : IEntityTypeConfiguration<Signal>
         builder.Property(x => x.TakeProfitHitAt).HasPrecision(0);
         builder.Property(x => x.CreatedAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
         builder.Property(x => x.LastCheckedCandleAt).HasPrecision(0).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(x => x.EntryHitAfterMinutes).HasDefaultValue(-1);
+        builder.Property(x => x.MaxProfitHitAfterMinutes).HasDefaultValue(-1);
+        builder.Property(x => x.StopLossHitAfterMinutes).HasDefaultValue(-1);
 
         // Uniqueness guard: one signal per symbol + interval + candle time
         builder.HasIndex(x => new { x.Symbol, x.Interval, x.DetectedAt }).IsUnique();
         builder.HasIndex(x => x.LastCheckedCandleAt);
         builder.HasIndex(x => x.MaxProfitCheckedAt);
+        builder.HasIndex(x => x.EntryHitAfterMinutes);
+        builder.HasIndex(x => x.MaxProfitHitAfterMinutes);
+        builder.HasIndex(x => x.StopLossHitAfterMinutes);
     }
 }

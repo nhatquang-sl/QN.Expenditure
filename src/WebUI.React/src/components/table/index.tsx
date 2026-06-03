@@ -7,12 +7,22 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   Typography,
   TablePagination,
 } from '@mui/material';
 
 export default function TableData(props: TableDataProps) {
-  const { id, columns, data, isLoading, count, page, rowsPerPage } = props;
+  const { id, columns, data, isLoading, count, page, rowsPerPage, sortBy, sortOrder, onSortChange } = props;
+
+  const handleHeaderClick = (colId: string) => {
+    if (!onSortChange) return;
+    if (sortBy === colId) {
+      sortOrder === 'asc' ? onSortChange(colId, 'desc') : onSortChange('', 'desc');
+    } else {
+      onSortChange(colId, 'asc');
+    }
+  };
 
   return (
     <>
@@ -22,7 +32,18 @@ export default function TableData(props: TableDataProps) {
             <TableRow>
               {columns.map((col) => (
                 <TableCell key={col.id} align={col.align}>
-                  {col.label}
+                  {col.sortable ? (
+                    <TableSortLabel
+                      active={sortBy === col.id}
+                      direction={sortBy === col.id ? (sortOrder ?? 'asc') : 'asc'}
+                      onClick={() => handleHeaderClick(col.id)}
+                      sx={{ '& .MuiTableSortLabel-icon': { opacity: sortBy === col.id ? 1 : 0.3 } }}
+                    >
+                      {col.label}
+                    </TableSortLabel>
+                  ) : (
+                    col.label
+                  )}
                 </TableCell>
               ))}
             </TableRow>
@@ -47,7 +68,7 @@ export default function TableData(props: TableDataProps) {
               </TableRow>
             )}
             {data?.map((row, rowIndex) => (
-              <TableRow key={rowIndex}>
+              <TableRow key={String(row['id'] ?? rowIndex)}>
                 {columns.map((col) => (
                   <TableCell key={col.id} align={col.align}>
                     {row[col.id] as React.ReactNode}

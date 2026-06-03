@@ -21,7 +21,9 @@ public class SignalsController(ISender sender) : ControllerBase
     /// <param name="signalType">Optional signal type filter (Long or Short)</param>
     /// <param name="pageNumber">Page number (1-based, default: 1)</param>
     /// <param name="pageSize">Page size (default: 20, max: 100)</param>
-    /// <returns>Paginated list of signals sorted by DetectedAt descending</returns>
+    /// <param name="sortBy">Sort field: createdAt (default), entryHitAfterMinutes, maxProfitHitAfterMinutes, stopLossHitAfterMinutes</param>
+    /// <param name="sortOrder">Sort direction: asc or desc (default: desc)</param>
+    /// <returns>Paginated list of signals with entryHitAfterMinutes, maxProfitHitAfterMinutes, and stopLossHitAfterMinutes persisted fields</returns>
     [HttpGet]
     public Task<PaginatedList<SignalDto>> GetSignals(
         [FromQuery] DateTime from,
@@ -29,6 +31,8 @@ public class SignalsController(ISender sender) : ControllerBase
         [FromQuery] string? interval = null,
         [FromQuery] SignalType? signalType = null,
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20)
-        => sender.Send(new GetSignalsQuery(from, to, interval, signalType, pageNumber, pageSize));
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortOrder = null)
+        => sender.Send(new GetSignalsQuery(from, to, interval, signalType, pageNumber, pageSize, sortBy, sortOrder));
 }

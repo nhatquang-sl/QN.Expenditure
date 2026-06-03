@@ -45,24 +45,26 @@ const COLUMNS: Column[] = [
   { id: 'entryPrice', label: 'Entry Price', align: 'right' },
   { id: 'stopLoss', label: 'Stop Loss', align: 'right' },
   { id: 'maxProfit', label: 'Max Profit %', align: 'right' },
-  { id: 'maxProfitHit', label: 'Max Profit Hit', align: 'right' },
-  { id: 'entryHit', label: 'Entry Hit', align: 'center' },
-  { id: 'createdAt', label: 'Created At' },
-  { id: 'slHit', label: 'SL Hit', align: 'center' },
+  { id: 'maxProfitHitAfterMinutes', label: 'Max Profit Hit', align: 'right', sortable: true },
+  { id: 'entryHitAfterMinutes', label: 'Entry Hit', align: 'center', sortable: true },
+  { id: 'createdAt', label: 'Created At', sortable: true },
+  { id: 'stopLossHitAfterMinutes', label: 'SL Hit', align: 'center', sortable: true },
 ];
 
 export default function Signals() {
   const dispatch = useDispatch();
   const [selectedSignal, setSelectedSignal] = useState<SignalDto | null>(null);
   const [modalInterval, setModalInterval] = useState('');
-  const [signalQuery, setSignalQuery] = useState({
+  const [signalQuery, setSignalQuery] = useState(() => ({
     from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString(),
     to: new Date().toISOString(),
     interval: '',
     signalType: '',
+    sortBy: 'createdAt',
+    sortOrder: 'desc' as 'asc' | 'desc',
     pageNumber: 1,
     pageSize: DEFAULT_PAGE_SIZE,
-  });
+  }));
 
   useEffect(() => {
     dispatch(setTitle('Signals'));
@@ -90,9 +92,20 @@ export default function Signals() {
       to: params.to,
       interval: params.interval,
       signalType: params.signalType,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
       pageNumber: 1,
       pageSize: DEFAULT_PAGE_SIZE,
     });
+  };
+
+  const handleSortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
+    setSignalQuery((prev) => ({
+      ...prev,
+      sortBy: sortBy || 'createdAt',
+      sortOrder: sortBy ? sortOrder : 'desc',
+      pageNumber: 1,
+    }));
   };
 
   const rows = useMemo(
@@ -131,20 +144,20 @@ export default function Signals() {
             ) : (
               '—'
             ),
-          maxProfitHit:
-            maxProfitHitDate && entryHitDate ? (
+          maxProfitHitAfterMinutes:
+            item.maxProfitHitAfterMinutes >= 0 && maxProfitHitDate ? (
               <Tooltip title={maxProfitHitDate.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}>
                 <Typography variant="body2" color="success.main" sx={{ cursor: 'default' }}>
-                  {formatDuration(maxProfitHitDate.getTime() - entryHitDate.getTime())}
+                  {formatDuration(item.maxProfitHitAfterMinutes * 60_000)}
                 </Typography>
               </Tooltip>
             ) : (
               '—'
             ),
-          entryHit: entryHitDate ? (
+          entryHitAfterMinutes: item.entryHitAfterMinutes >= 0 && entryHitDate ? (
             <Tooltip title={entryHitDate.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}>
               <Typography variant="body2" color="success.main" sx={{ cursor: 'default' }}>
-                {formatDuration(entryHitDate.getTime() - detectedAtDate.getTime())}
+                {formatDuration(item.entryHitAfterMinutes * 60_000)}
               </Typography>
             </Tooltip>
           ) : (
@@ -157,10 +170,10 @@ export default function Signals() {
               </Typography>
             </Tooltip>
           ),
-          slHit: stopLossHitDate ? (
+          stopLossHitAfterMinutes: item.stopLossHitAfterMinutes >= 0 && stopLossHitDate ? (
             <Tooltip title={stopLossHitDate.toLocaleString('en-US', DATE_FORMAT_OPTIONS)}>
               <Typography variant="body2" color="error.main" sx={{ cursor: 'default' }}>
-                {formatDuration(stopLossHitDate.getTime() - detectedAtDate.getTime())}
+                {formatDuration(item.stopLossHitAfterMinutes * 60_000)}
               </Typography>
             </Tooltip>
           ) : (
@@ -194,6 +207,9 @@ export default function Signals() {
             rowsPerPage={signalQuery.pageSize}
             onPageChange={handlePageChange}
             data={rows}
+            sortBy={signalQuery.sortBy}
+            sortOrder={signalQuery.sortOrder}
+            onSortChange={handleSortChange}
           />
 
           <BackdropLoading loading={isLoading} />

@@ -56,7 +56,8 @@ public class CheckSignalStopLossCommandHandler(
 
                     if (hit is null) continue;
 
-                    signal.StopLossHitAt       = hit.OpenTime;
+                    signal.StopLossHitAt = hit.OpenTime;
+                    signal.StopLossHitAfterMinutes = (int)(hit.OpenTime - signal.DetectedAt).TotalMinutes;
                     signal.LastCheckedCandleAt = hit.OpenTime;
                     unhitCount--;
                 }

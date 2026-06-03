@@ -2,6 +2,7 @@ export type Column = {
   id: string;
   label: string;
   align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
+  sortable?: boolean;
 };
 
 export type TableDataProps = {
@@ -13,4 +14,7 @@ export type TableDataProps = {
   page: number;
   rowsPerPage: number;
   onPageChange?: (page: number, size: number) => void;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 };

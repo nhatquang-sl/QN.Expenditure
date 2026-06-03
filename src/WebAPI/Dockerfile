@@ -20,11 +20,14 @@ EXPOSE 5000
 # Build stage: SDK image to restore and build
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
+# Skip online CRL/OCSP revocation checks — required when a package signing cert is revoked
+ENV NUGET_CERT_REVOCATION_MODE=offline
 WORKDIR /src
 
 # Copy project files and restore as distinct layers
 COPY ["src/WebAPI/WebAPI.csproj", "src/WebAPI/"]
 COPY ["Directory.Packages.props", "./"]
+COPY ["NuGet.Config", "./"]
 COPY ["src/Aspire/ServiceDefaults/ServiceDefaults.csproj", "src/Aspire/ServiceDefaults/"]
 COPY ["src/Auth/Auth.Application/Auth.Application.csproj", "src/Auth/Auth.Application/"]
 COPY ["src/Auth/Auth.Domain/Auth.Domain.csproj", "src/Auth/Auth.Domain/"]

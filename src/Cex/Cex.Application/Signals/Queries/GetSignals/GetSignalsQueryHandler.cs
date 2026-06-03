@@ -13,7 +13,9 @@ public record GetSignalsQuery(
     string? Interval = null,
     SignalType? SignalType = null,
     int PageNumber = 1,
-    int PageSize = 20) : IRequest<PaginatedList<SignalDto>>;
+    int PageSize = 20,
+    string? SortBy = null,
+    string? SortOrder = null) : IRequest<PaginatedList<SignalDto>>;
 
 public class GetSignalsQueryHandler(ICexDbContext dbContext)
     : IRequestHandler<GetSignalsQuery, PaginatedList<SignalDto>>
@@ -34,8 +36,25 @@ public class GetSignalsQueryHandler(ICexDbContext dbContext)
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var raw = await query
-            .OrderByDescending(s => s.DetectedAt)
+        var descending = !string.Equals(request.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
+
+        var orderedQuery = request.SortBy switch
+        {
+            "entryHitAfterMinutes" => descending
+                ? query.OrderByDescending(s => s.EntryHitAfterMinutes)
+                : query.OrderBy(s => s.EntryHitAfterMinutes),
+            "maxProfitHitAfterMinutes" => descending
+                ? query.OrderByDescending(s => s.MaxProfitHitAfterMinutes)
+                : query.OrderBy(s => s.MaxProfitHitAfterMinutes),
+            "stopLossHitAfterMinutes" => descending
+                ? query.OrderByDescending(s => s.StopLossHitAfterMinutes)
+                : query.OrderBy(s => s.StopLossHitAfterMinutes),
+            _ => descending
+                ? query.OrderByDescending(s => s.CreatedAt)
+                : query.OrderBy(s => s.CreatedAt),
+        };
+
+        var raw = await orderedQuery
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(s => new
@@ -57,6 +76,9 @@ public class GetSignalsQueryHandler(ICexDbContext dbContext)
                 s.StopLossHitAt,
                 s.TakeProfitHitAt,
                 s.CreatedAt,
+                s.EntryHitAfterMinutes,
+                s.MaxProfitHitAfterMinutes,
+                s.StopLossHitAfterMinutes,
             })
             .ToListAsync(cancellationToken);
 
@@ -79,6 +101,9 @@ public class GetSignalsQueryHandler(ICexDbContext dbContext)
             StopLossHitAt = s.StopLossHitAt?.ToUnixTimestampMilliseconds(),
             TakeProfitHitAt = s.TakeProfitHitAt?.ToUnixTimestampMilliseconds(),
             CreatedAt = s.CreatedAt.ToUnixTimestampMilliseconds(),
+            EntryHitAfterMinutes = s.EntryHitAfterMinutes,
+            MaxProfitHitAfterMinutes = s.MaxProfitHitAfterMinutes,
+            StopLossHitAfterMinutes = s.StopLossHitAfterMinutes,
         }).ToList();
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);

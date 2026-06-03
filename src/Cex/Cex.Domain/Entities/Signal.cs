@@ -24,4 +24,7 @@ public class Signal
     public DateTime? TakeProfitHitAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime LastCheckedCandleAt { get; set; }
+    public int EntryHitAfterMinutes { get; set; } = -1;
+    public int MaxProfitHitAfterMinutes { get; set; } = -1;
+    public int StopLossHitAfterMinutes { get; set; } = -1;
 }

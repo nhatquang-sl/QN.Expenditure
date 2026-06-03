@@ -19,4 +19,7 @@ public record SignalDto
     public long? StopLossHitAt { get; init; }
     public long? TakeProfitHitAt { get; init; }
     public long CreatedAt { get; init; }
+    public int EntryHitAfterMinutes { get; init; }
+    public int MaxProfitHitAfterMinutes { get; init; }
+    public int StopLossHitAfterMinutes { get; init; }
 }
