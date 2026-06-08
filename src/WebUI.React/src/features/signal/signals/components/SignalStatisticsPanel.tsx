@@ -1,5 +1,5 @@
 import { Grid, Paper, Skeleton, Typography } from '@mui/material';
-import { SignalStatisticInfo } from '../types';
+import { SignalStatisticInfo, SignalStatistics } from '../types';
 import { useGetSignalStatistics } from '../hooks/use-get-signal-statistics';
 
 interface PeriodCardProps {
@@ -64,7 +64,7 @@ interface SignalStatisticsPanelProps {
   signalType: string;
 }
 
-const PERIODS: { key: keyof import('../types').SignalStatistics; label: string }[] = [
+const PERIODS: { key: keyof SignalStatistics; label: string }[] = [
   { key: 'today', label: 'Today' },
   { key: 'yesterday', label: 'Yesterday' },
   { key: 'thisWeek', label: 'This Week' },
