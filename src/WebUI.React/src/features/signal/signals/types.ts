@@ -30,3 +30,21 @@ export interface PaginatedList<T> {
 
 export const INTERVALS = ['1min', '5min', '15min', '30min', '1hour', '4hour', '1day'] as const;
 export const SIGNAL_TYPES = ['Long', 'Short'] as const;
+
+export interface SignalStatisticInfo {
+  totalSignals: number;
+  totalEntries: number;
+  totalMaxProfitHits: number;
+  totalStopLossHits: number;
+  avgEntryPrice: number;
+  avgMaxProfit: number;
+}
+
+export interface SignalStatistics {
+  today: SignalStatisticInfo;
+  yesterday: SignalStatisticInfo;
+  thisWeek: SignalStatisticInfo;
+  lastWeek: SignalStatisticInfo;
+  thisMonth: SignalStatisticInfo;
+  lastMonth: SignalStatisticInfo;
+}

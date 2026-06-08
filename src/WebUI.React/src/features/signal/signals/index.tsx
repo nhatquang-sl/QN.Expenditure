@@ -7,6 +7,7 @@ import { useGetSignals } from './hooks/use-get-signals';
 import { SignalDto } from './types';
 import SignalChartDialog from './components/signal-chart-dialog';
 import SignalSearchBar from './components/signal-search-bar';
+import SignalStatisticsPanel from './components/SignalStatisticsPanel';
 import { Column } from 'components/table/types';
 import TableData from 'components/table';
 
@@ -198,6 +199,11 @@ export default function Signals() {
           }}
         >
           <SignalSearchBar onSearch={handleSearch} />
+
+          <SignalStatisticsPanel
+            interval={signalQuery.interval}
+            signalType={signalQuery.signalType}
+          />
 
           <TableData
             isLoading={isLoading}

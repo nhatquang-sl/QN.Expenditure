@@ -1,4 +1,5 @@
 using Cex.Application.Signals.Queries.GetSignals;
+using Cex.Application.Signals.Queries.GetStatistics;
 using Cex.Domain.Enums;
 using Lib.Application.Models;
 using MediatR;
@@ -24,6 +25,18 @@ public class SignalsController(ISender sender) : ControllerBase
     /// <param name="sortBy">Sort field: createdAt (default), entryHitAfterMinutes, maxProfitHitAfterMinutes, stopLossHitAfterMinutes</param>
     /// <param name="sortOrder">Sort direction: asc or desc (default: desc)</param>
     /// <returns>Paginated list of signals with entryHitAfterMinutes, maxProfitHitAfterMinutes, and stopLossHitAfterMinutes persisted fields</returns>
+    /// <summary>
+    /// Returns pre-aggregated signal statistics for six fixed UTC time periods:
+    /// Today, Yesterday, ThisWeek, LastWeek, ThisMonth, LastMonth.
+    /// </summary>
+    /// <param name="interval">Optional interval filter (e.g., 1min, 5min, 15min, 30min, 1hour, 4hour, 1day)</param>
+    /// <param name="signalType">Optional signal type filter (Long or Short)</param>
+    [HttpGet("statistics")]
+    public Task<SignalStatistics> GetStatistics(
+        [FromQuery] string? interval = null,
+        [FromQuery] SignalType? signalType = null)
+        => sender.Send(new GetSignalsStatisticsQuery(interval, signalType));
+
     [HttpGet]
     public Task<PaginatedList<SignalDto>> GetSignals(
         [FromQuery] DateTime from,
