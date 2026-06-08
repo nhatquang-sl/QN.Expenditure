@@ -1,4 +1,4 @@
-import { Box, Grid, Paper, Skeleton, Typography } from '@mui/material';
+import { Grid, Paper, Skeleton, Typography } from '@mui/material';
 import { SignalStatisticInfo } from '../types';
 import { useGetSignalStatistics } from '../hooks/use-get-signal-statistics';
 
@@ -78,21 +78,25 @@ export default function SignalStatisticsPanel({ interval, signalType }: SignalSt
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 1, mb: 2 }}>
+      <Grid container spacing={1} sx={{ mb: 2 }}>
         {PERIODS.map(({ key }) => (
-          <Skeleton key={key} variant="rectangular" height={140} />
+          <Grid key={key} item xs={4}>
+            <Skeleton variant="rectangular" height={140} />
+          </Grid>
         ))}
-      </Box>
+      </Grid>
     );
   }
 
   if (!data) return null;
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 1, mb: 2 }}>
+    <Grid container spacing={1} sx={{ mb: 2 }}>
       {PERIODS.map(({ key, label }) => (
-        <PeriodCard key={key} label={label} info={data[key]} />
+        <Grid key={key} item xs={4}>
+          <PeriodCard label={label} info={data[key]} />
+        </Grid>
       ))}
-    </Box>
+    </Grid>
   );
 }
