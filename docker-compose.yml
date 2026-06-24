@@ -63,17 +63,6 @@ services:
     #    ports:
     #      - "6379:6379"
 
-  # aspire.dashboard:
-  #   container_name: qex-aspire.dashboard
-  #   restart: unless-stopped
-  #   image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
-  #   ports:
-  #     - '18888:18888'
-  #     - '18890:18890' # OTLP/HTTP listening on
-  #     - '18889:18889' # OTLP/gRPC listening on
-  #   environment:
-  #     ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
-
   seq.logs:
     container_name: qex-seq.logs
     restart: unless-stopped
