@@ -1,3 +1,12 @@
+name: qex
+networks:
+  default:
+    name: qex
+    external: false # Docker Compose owns the lifecycle of this network: it creates it on up and removes it on down.
+
+volumes:
+  qex-certs: # Shared TLS certificate volume — qex.api generates the cert; qex.ui reads it
+
 services:
   qex.api:
     container_name: qex-api
@@ -8,12 +17,21 @@ services:
     environment:
       ASPNETCORE_HTTP_PORTS: 5000
       ASPNETCORE_ENVIRONMENT: Development
-      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://aspire.dashboard:18889'
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://host.docker.internal:8200'
+      OTEL_EXPORTER_OTLP_HEADERS: 'Authorization=Bearer%20supersecrettoken'
+      OTEL_TRACES_EXPORTER: 'otlp'
+      OTEL_METRICS_EXPORTER: 'otlp'
+      OTEL_LOGS_EXPORTER: 'otlp'
+      OTEL_RESOURCE_ATTRIBUTES: 'service.name=qexapi,service.version=0.0.1,deployment.environment=deployment'
       OTEL_SERVICE_NAME: 'qexapi'
+      ASPNETCORE_HTTPS_PORTS: 5001
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /certs/localhost.pem
+      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: /certs/localhost-key.pem
     ports:
       - '54321:5000'
-    networks:
-      - "aspire"
+      - '54322:5001'
+    volumes:
+      - qex-certs:/certs
     healthcheck:
       disable: true
 
@@ -24,11 +42,12 @@ services:
       context: .
       dockerfile: src/WebUI.React/Dockerfile
       args:
-        VITE_API_ENDPOINT: 'http://localhost:54321'
+        VITE_API_ENDPOINT: 'https://localhost:54322'
     ports:
-      - '5174:80'
-    networks:
-      - "aspire"
+      - '5175:80'
+      - '5174:443'
+    volumes:
+      - qex-certs:/etc/nginx/certs:ro
     depends_on:
       - qex.api
 
@@ -43,21 +62,17 @@ services:
     #      REDIS_PASSWORD: "${REDIS_CACHE_PASSWORD}"
     #    ports:
     #      - "6379:6379"
-    # networks:
-    #   - "aspire"
 
-  aspire.dashboard:
-    container_name: qex-aspire.dashboard
-    restart: unless-stopped
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
-    ports:
-      - '18888:18888'
-      - '18890:18890' # OTLP/HTTP listening on
-      - '18889:18889' # OTLP/gRPC listening on
-    environment:
-      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
-    networks:
-      - "aspire"
+  # aspire.dashboard:
+  #   container_name: qex-aspire.dashboard
+  #   restart: unless-stopped
+  #   image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+  #   ports:
+  #     - '18888:18888'
+  #     - '18890:18890' # OTLP/HTTP listening on
+  #     - '18889:18889' # OTLP/gRPC listening on
+  #   environment:
+  #     ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
 
   seq.logs:
     container_name: qex-seq.logs
@@ -70,8 +85,3 @@ services:
     ports:
       - 5341:5341 # Seq ingestion API (structured log ingestion endpoint)
       - 5342:80   # Seq web UI (accessible at http://localhost:5342)
-    networks:
-      - "aspire"
-networks:
-  aspire:
-    driver: "bridge"

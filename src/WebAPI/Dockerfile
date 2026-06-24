@@ -11,11 +11,13 @@
 # Base stage: runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl openssl && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /certs && chown app:app /certs
 USER app
 WORKDIR /app
 
 EXPOSE 5000
+EXPOSE 5001
 
 # Build stage: SDK image to restore and build
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
@@ -59,5 +61,7 @@ WORKDIR /app
 ENV Application__Version=${VERSION}
 COPY --from=publish /app/publish .
 RUN mkdir -p /home/app/.aspnet/DataProtection-Keys && chown -R app:app /home/app/.aspnet/DataProtection-Keys
+COPY --chown=app:app src/WebAPI/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 # Run the app
-ENTRYPOINT ["dotnet", "WebAPI.dll"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,10 +63,17 @@ namespace ServiceDefaults
                 .WithTracing(tracing =>
                 {
                     tracing.AddSource(builder.Environment.ApplicationName)
-                        .AddAspNetCoreInstrumentation()
+                        .AddAspNetCoreInstrumentation(opts => { opts.RecordException = true; })
                         // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                         //.AddGrpcClientInstrumentation()
-                        .AddHttpClientInstrumentation();
+                        .AddHttpClientInstrumentation(opts => { opts.RecordException = true; })
+                        .AddProcessor(new FilterActivityProcessor(new HashSet<string>
+                        {
+                            "Experimental.System.Net.Http.Connections.ConnectionSetup",
+                            "Experimental.System.Net.Http.Connections.WaitForConnection",
+                            "Experimental.System.Net.Sockets.Connect",
+                            "Experimental.System.Net.Security.TlsHandshake"
+                        }));
                 });
 
             builder.AddOpenTelemetryExporters();
@@ -120,6 +128,17 @@ namespace ServiceDefaults
             }
 
             return app;
+        }
+
+        private sealed class FilterActivityProcessor(IReadOnlySet<string> filteredSources) : BaseProcessor<Activity>
+        {
+            public override void OnStart(Activity activity)
+            {
+                if (filteredSources.Contains(activity.Source.Name))
+                {
+                    activity.IsAllDataRequested = false;
+                }
+            }
         }
     }
 }

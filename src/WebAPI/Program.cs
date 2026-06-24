@@ -6,8 +6,10 @@ using Lib.Notifications;
 using Microsoft.Extensions.Caching.Hybrid;
 using NSwag;
 using NSwag.Generation.Processors.Security;
+using OpenTelemetry.Trace;
 using Serilog;
 using ServiceDefaults;
+using WebAPI.Controllers;
 using WebAPI.HostedServices;
 using WebAPI.Middleware;
 using WebAPI.Services;
@@ -71,8 +73,13 @@ builder.Services.AddSingleton<HttpContextEnricher>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddControllers();
 
-// builder.Services.AddHostedService<SpotGridService>();
-builder.Services.AddHostedService<FindSignalService>();
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddSource(nameof(SignalsController))
+    );
+
+// builder.Services.AddTracedHostedService<SpotGridService>();
+builder.Services.AddTracedHostedService<FindSignalService>();
 // builder.Services.AddHostedService<SyncTradeHistoryService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 

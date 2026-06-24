@@ -23,9 +23,10 @@ FROM nginx:alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
 
-RUN printf 'server {\n    listen 80;\n    root /usr/share/nginx/html;\n    index index.html;\n\n    location / {\n        try_files $uri $uri/ /index.html;\n    }\n}\n' > /etc/nginx/conf.d/default.conf
+RUN printf 'server {\n    listen 80;\n    return 301 https://$host:5175$request_uri;\n}\n\nserver {\n    listen 443 ssl;\n    ssl_certificate     /etc/nginx/certs/localhost.pem;\n    ssl_certificate_key /etc/nginx/certs/localhost-key.pem;\n\n    root /usr/share/nginx/html;\n    index index.html;\n\n    location / {\n        try_files $uri $uri/ /index.html;\n    }\n}\n' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
+EXPOSE 443
 
 CMD ["nginx", "-g", "daemon off;"]
 

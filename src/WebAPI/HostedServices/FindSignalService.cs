@@ -8,35 +8,39 @@ using MediatR;
 namespace WebAPI.HostedServices;
 
 public class FindSignalService(IServiceScopeFactory serviceScopeFactory, ILogger<FindSignalService> logger)
-    : BackgroundService
+    : TracedBackgroundService
 {
-    private async Task FindSignal(IntervalType intervalType, CancellationToken stoppingToken)
-    {
-        using var scope = serviceScopeFactory.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        await mediator.Send(new FindSignalCommand(intervalType), stoppingToken);
-    }
+    private Task FindSignal(IntervalType intervalType, CancellationToken stoppingToken) =>
+        RunTracedAsync($"FindSignal/{intervalType}", async ct =>
+        {
+            using var scope = serviceScopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new FindSignalCommand(intervalType), ct);
+        }, stoppingToken);
 
-    private async Task CheckSignalEntry(CancellationToken stoppingToken)
-    {
-        using var scope = serviceScopeFactory.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        await mediator.Send(new CheckSignalEntryCommand(), stoppingToken);
-    }
+    private Task CheckSignalEntry(CancellationToken stoppingToken) =>
+        RunTracedAsync("CheckSignalEntry", async ct =>
+        {
+            using var scope = serviceScopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new CheckSignalEntryCommand(), ct);
+        }, stoppingToken);
 
-    private async Task CheckSignalStopLoss(CancellationToken stoppingToken)
-    {
-        using var scope = serviceScopeFactory.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        await mediator.Send(new CheckSignalStopLossCommand(), stoppingToken);
-    }
+    private Task CheckSignalStopLoss(CancellationToken stoppingToken) =>
+        RunTracedAsync("CheckSignalStopLoss", async ct =>
+        {
+            using var scope = serviceScopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new CheckSignalStopLossCommand(), ct);
+        }, stoppingToken);
 
-    private async Task CheckSignalMaxProfit(CancellationToken stoppingToken)
-    {
-        using var scope = serviceScopeFactory.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        await mediator.Send(new CheckSignalMaxProfitCommand(), stoppingToken);
-    }
+    private Task CheckSignalMaxProfit(CancellationToken stoppingToken) =>
+        RunTracedAsync("CheckSignalMaxProfit", async ct =>
+        {
+            using var scope = serviceScopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new CheckSignalMaxProfitCommand(), ct);
+        }, stoppingToken);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
