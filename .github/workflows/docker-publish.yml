@@ -139,8 +139,9 @@ jobs:
           # Seq log server
           SEQ_FIRSTRUN_ADMINPASSWORD=${{ secrets.SEQ_ADMIN_PASSWORD }}
 
-          # Aspire Dashboard
-          ASPIRE_DASHBOARD_TOKEN=${{ secrets.ASPIRE_DASHBOARD_TOKEN }}
+          # OpenTelemetry / Elastic APM
+          OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_EXPORTER_OTLP_HEADERS=${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
           EOF
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps

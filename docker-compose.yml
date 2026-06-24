@@ -14,15 +14,15 @@ services:
     build:
       context: .
       dockerfile: src/WebAPI/Dockerfile
+    env_file:
+      - credentials/qex/.env
     environment:
       ASPNETCORE_HTTP_PORTS: 5000
       ASPNETCORE_ENVIRONMENT: Development
-      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://host.docker.internal:8200'
-      OTEL_EXPORTER_OTLP_HEADERS: 'Authorization=Bearer%20supersecrettoken'
       OTEL_TRACES_EXPORTER: 'otlp'
       OTEL_METRICS_EXPORTER: 'otlp'
       OTEL_LOGS_EXPORTER: 'otlp'
-      OTEL_RESOURCE_ATTRIBUTES: 'service.name=qexapi,service.version=0.0.1,deployment.environment=deployment'
+      OTEL_RESOURCE_ATTRIBUTES: 'service.version=0.0.1,deployment.environment=deployment'
       OTEL_SERVICE_NAME: 'qexapi'
       ASPNETCORE_HTTPS_PORTS: 5001
       ASPNETCORE_Kestrel__Certificates__Default__Path: /certs/localhost.pem
