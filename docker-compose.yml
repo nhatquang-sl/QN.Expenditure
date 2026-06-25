@@ -10,6 +10,7 @@ volumes:
 services:
   qex.api:
     container_name: qex-api
+    hostname: qex-api
     restart: unless-stopped
     build:
       context: .
@@ -37,6 +38,7 @@ services:
 
   qex.ui:
     container_name: qex-ui
+    hostname: qex-ui
     restart: unless-stopped
     build:
       context: .
@@ -65,6 +67,7 @@ services:
 
   seq.logs:
     container_name: qex-seq.logs
+    hostname: qex-seq-logs
     restart: unless-stopped
     image: datalust/seq:latest
     env_file:
