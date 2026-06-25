@@ -9,7 +9,6 @@
     <PackageVersion Include="Aspire.Hosting.Redis" Version="13.4.0" />
     <PackageVersion Include="Aspire.StackExchange.Redis.DistributedCaching" Version="13.4.0" />
     <PackageVersion Include="Aspire.StackExchange.Redis.OutputCaching" Version="13.4.0" />
-    <PackageVersion Include="AutoMapper" Version="16.1.1" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Mailjet.Api" Version="4.0.0" />

@@ -1,4 +1,3 @@
-﻿using AutoMapper;
 using Cex.Application.Common.Abstractions;
 using Lib.Application.Logging;
 using Lib.ExternalServices.Bnb;
@@ -13,11 +12,10 @@ namespace Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders
     }
 
     public class SyncSpotOrdersCommandHandler(
-        IMapper mapper,
         ILogTrace logTrace,
         ICexDbContext dbContext,
         IBnbService bndService)
-        : SyncSpotOrders(mapper, logTrace, bndService, dbContext)
+        : SyncSpotOrders(logTrace, bndService, dbContext)
             , IRequestHandler<SyncAllSpotOrdersCommand>
     {
         public async Task Handle(SyncAllSpotOrdersCommand request, CancellationToken cancellationToken)

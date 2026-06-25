@@ -1,6 +1,5 @@
-﻿using Auth.Application.Account.Commands.Register;
+using Auth.Application.Account.Commands.Register;
 using Auth.Infrastructure.Identity;
-using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +28,6 @@ namespace Auth.Infrastructure.Data
         AuthDbContext context,
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
-        IMapper mapper,
         IConfiguration configuration)
     {
         public async Task InitializeAsync()
@@ -73,7 +71,13 @@ namespace Auth.Infrastructure.Data
             var administrator = configuration.GetSection("Administrator").Get<RegisterCommand>();
             if (administrator != null && userManager.Users.All(u => u.UserName != administrator.Email))
             {
-                var user = mapper.Map<ApplicationUser>(administrator);
+                var user = new ApplicationUser
+                {
+                    Email = administrator.Email,
+                    UserName = administrator.Email,
+                    FirstName = administrator.FirstName,
+                    LastName = administrator.LastName
+                };
                 user.EmailConfirmed = true;
                 await userManager.CreateAsync(user, administrator.Password);
                 if (!string.IsNullOrWhiteSpace(administratorRole.Name))
@@ -85,21 +89,15 @@ namespace Auth.Infrastructure.Data
             var defaultUser = configuration.GetSection("DefaultUser").Get<RegisterCommand>();
             if (defaultUser != null && userManager.Users.All(u => u.UserName != defaultUser.Email))
             {
-                var user = mapper.Map<ApplicationUser>(defaultUser);
+                var user = new ApplicationUser
+                {
+                    Email = defaultUser.Email,
+                    UserName = defaultUser.Email,
+                    FirstName = defaultUser.FirstName,
+                    LastName = defaultUser.LastName
+                };
                 user.EmailConfirmed = true;
                 var result = await userManager.CreateAsync(user, defaultUser.Password);
-
-                // var bnbSetting = _configuration.GetSection("BnbSetting").Get<BnbSettingDto>();
-                // if (bnbSetting != null)
-                // {
-                //     _context.BnbSettings.Add(new Domain.Entities.BnbSetting
-                //     {
-                //         UserId = user.Id,
-                //         ApiKey = bnbSetting.ApiKey,
-                //         SecretKey = bnbSetting.SecretKey
-                //     });
-                //     _context.SaveChanges();
-                // }
             }
         }
     }

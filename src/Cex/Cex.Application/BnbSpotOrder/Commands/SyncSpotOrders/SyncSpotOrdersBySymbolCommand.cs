@@ -1,4 +1,3 @@
-﻿using AutoMapper;
 using Cex.Application.BnbSpotOrder.DTOs;
 using Cex.Application.Common.Abstractions;
 using Lib.Application.Abstractions;
@@ -15,13 +14,11 @@ namespace Application.BnbSpotOrder.Commands.SyncSpotOrders
     }
 
     public class SyncSpotOrdersBySymbolCommandHandler(
-        IMapper mapper,
         ILogTrace logTrace,
         ICurrentUser currentUser,
         ICexDbContext dbContext,
         IBnbService bndService)
-        : Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders.SyncSpotOrders(mapper, logTrace, bndService,
-                dbContext)
+        : Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders.SyncSpotOrders(logTrace, bndService, dbContext)
             , IRequestHandler<SyncSpotOrdersBySymbolCommand, SpotOrderSyncSettingDto>
     {
         private readonly ICurrentUser _currentUser = currentUser;

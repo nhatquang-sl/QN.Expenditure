@@ -1,4 +1,3 @@
-﻿using AutoMapper;
 using Cex.Application.BnbSpotOrder.DTOs;
 using Cex.Application.Common.Abstractions;
 using Lib.Application.Abstractions;
@@ -11,27 +10,23 @@ namespace Cex.Application.BnbSpotOrder.Commands.UpdateSyncSetting
 {
     public record UpdateSyncSettingCommand(string Symbol, long LastSyncAt) : IRequest<SpotOrderSyncSettingDto>;
 
-    public class UpdateSyncSettingCommandHandler(IMapper mapper, ICurrentUser currentUser, ICexDbContext dbContext)
+    public class UpdateSyncSettingCommandHandler(ICurrentUser currentUser, ICexDbContext dbContext)
         : IRequestHandler<UpdateSyncSettingCommand, SpotOrderSyncSettingDto>
     {
-        private readonly ICurrentUser _currentUser = currentUser;
-        private readonly ICexDbContext _dbContext = dbContext;
-        private readonly IMapper _mapper = mapper;
-
         public async Task<SpotOrderSyncSettingDto> Handle(UpdateSyncSettingCommand request,
             CancellationToken cancellationToken)
         {
             var entity =
-                await _dbContext.SpotOrderSyncSettings.FirstOrDefaultAsync(
-                    x => x.Symbol == request.Symbol && x.UserId == _currentUser.Id, cancellationToken)
+                await dbContext.SpotOrderSyncSettings.FirstOrDefaultAsync(
+                    x => x.Symbol == request.Symbol && x.UserId == currentUser.Id, cancellationToken)
                 ?? throw new NotFoundException($"{request.Symbol} is not found.");
 
             entity.LastSyncAt = request.LastSyncAt.ToDateTimeFromMilliseconds();
 
-            _dbContext.SpotOrderSyncSettings.Update(entity);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            dbContext.SpotOrderSyncSettings.Update(entity);
+            await dbContext.SaveChangesAsync(cancellationToken);
 
-            return _mapper.Map<SpotOrderSyncSettingDto>(entity) ?? new SpotOrderSyncSettingDto();
+            return SpotOrderSyncSettingDto.From(entity);
         }
     }
 }

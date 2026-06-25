@@ -51,10 +51,6 @@ namespace Auth.Infrastructure
             services.AddTransient<IIdentityService, IdentityService>();
             services.AddTransient<IJwtProvider, JwtProvider>();
             services.AddScoped<AuthDbContextInitializer>();
-            services.AddAutoMapper(cfg =>
-            {
-                cfg.AddMaps(typeof(MappingProfile));
-            });
 
             return services;
         }

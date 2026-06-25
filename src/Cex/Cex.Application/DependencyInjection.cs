@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Cex.Application.Common.Mappings;
 using FluentValidation;
 using Lib.Application;
 using Lib.Application.Behaviors;
@@ -33,7 +32,6 @@ namespace Cex.Application
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
                 cfg.NotificationPublisher = new TaskWhenAllPublisher();
             });
-            services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MappingProfile)));
 
             return services;
         }

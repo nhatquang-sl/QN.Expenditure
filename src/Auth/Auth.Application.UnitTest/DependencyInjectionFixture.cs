@@ -1,4 +1,5 @@
 using Auth.Application.Common.Abstractions;
+using Lib.Application.Abstractions;
 using Lib.Application.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,9 +14,11 @@ namespace Auth.Application.UnitTest
         protected DependencyInjectionFixture()
         {
             var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging();
             serviceCollection.AddAuthApplicationServices(new Mock<IConfiguration>().Object);
             serviceCollection.AddScoped(p => new Mock<ILogTrace>().Object);
             serviceCollection.AddTransient(p => new Mock<IIdentityService>().Object);
+            serviceCollection.AddTransient(p => new Mock<INotifier>().Object);
             var serviceProvider = serviceCollection.BuildServiceProvider();
             _scope = serviceProvider.CreateScope();
         }

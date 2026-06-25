@@ -1,4 +1,3 @@
-﻿using AutoMapper;
 using Cex.Application.Common.Abstractions;
 using Cex.Application.Grid.DTOs;
 using Cex.Application.Grid.Shared.Extensions;
@@ -21,23 +20,30 @@ namespace Cex.Application.Grid.Commands.CreateSpotGrid
     {
     }
 
-    public class CreateSpotGridCommandHandler(IMapper mapper, ICurrentUser currentUser, ICexDbContext cexDbContext)
+    public class CreateSpotGridCommandHandler(ICurrentUser currentUser, ICexDbContext cexDbContext)
         : IRequestHandler<CreateSpotGridCommand, SpotGridDto>
     {
-        private const decimal InitialPercent = 0.25m;
-
         public async Task<SpotGridDto> Handle(CreateSpotGridCommand command, CancellationToken cancellationToken)
         {
-            var entity = mapper.Map<SpotGrid>(command);
-            entity.UserId = currentUser.Id;
-            entity.Status = SpotGridStatus.NEW;
-            entity.CreatedAt = entity.UpdatedAt = DateTime.UtcNow;
-            entity.TriggerPrice = command.TriggerPrice;
-            entity.GridMode = command.GridMode;
-            entity.Investment = command.Investment;
-            entity.BaseBalance = 0;
-            entity.QuoteBalance = command.Investment;
-            entity.Profit = 0;
+            var entity = new SpotGrid
+            {
+                UserId = currentUser.Id,
+                Symbol = command.Symbol,
+                LowerPrice = command.LowerPrice,
+                UpperPrice = command.UpperPrice,
+                TriggerPrice = command.TriggerPrice,
+                NumberOfGrids = command.NumberOfGrids,
+                GridMode = command.GridMode,
+                Investment = command.Investment,
+                TakeProfit = command.TakeProfit,
+                StopLoss = command.StopLoss,
+                Status = SpotGridStatus.NEW,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                BaseBalance = 0,
+                QuoteBalance = command.Investment,
+                Profit = 0
+            };
 
             entity.AddNormalSteps();
             entity.AddOrUpdateInitialStep();
@@ -47,7 +53,7 @@ namespace Cex.Application.Grid.Commands.CreateSpotGrid
             cexDbContext.SpotGrids.Add(entity);
             await cexDbContext.SaveChangesAsync(cancellationToken);
 
-            return mapper.Map<SpotGridDto>(entity) ?? new SpotGridDto();
+            return SpotGridDto.From(entity);
         }
     }
 }
