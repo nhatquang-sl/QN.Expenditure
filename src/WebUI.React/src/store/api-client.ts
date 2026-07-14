@@ -19,7 +19,7 @@ export class AuthClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -784,7 +784,7 @@ export class BnbSettingClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -898,7 +898,7 @@ export class BnbSpotClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -1310,7 +1310,7 @@ export class CandlesClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -1385,7 +1385,7 @@ export class ExchangeSettingsClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -1562,7 +1562,7 @@ export class HybridCacheClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -1732,7 +1732,7 @@ export class MeetClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -1790,6 +1790,144 @@ export class MeetClient {
     }
 }
 
+export class SignalsClient {
+    protected instance: AxiosInstance;
+    protected baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, instance?: AxiosInstance) {
+
+        this.instance = instance || axios.create();
+
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
+
+    }
+
+    getStatistics(interval: string | null | undefined, signalType: SignalType | null | undefined, cancelToken?: CancelToken): Promise<SignalStatistics> {
+        let url_ = this.baseUrl + "/api/signals/statistics?";
+        if (interval !== undefined && interval !== null)
+            url_ += "interval=" + encodeURIComponent("" + interval) + "&";
+        if (signalType !== undefined && signalType !== null)
+            url_ += "signalType=" + encodeURIComponent("" + signalType) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetStatistics(_response);
+        });
+    }
+
+    protected processGetStatistics(response: AxiosResponse): Promise<SignalStatistics> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = SignalStatistics.fromJS(resultData200);
+            return Promise.resolve<SignalStatistics>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<SignalStatistics>(null as any);
+    }
+
+    getSignals(from: Date | undefined, to: Date | undefined, interval: string | null | undefined, signalType: SignalType | null | undefined, pageNumber: number | undefined, pageSize: number | undefined, sortBy: string | null | undefined, sortOrder: string | null | undefined, cancelToken?: CancelToken): Promise<PaginatedListOfSignalDto> {
+        let url_ = this.baseUrl + "/api/signals?";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent(from ? "" + from.toISOString() : "") + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent(to ? "" + to.toISOString() : "") + "&";
+        if (interval !== undefined && interval !== null)
+            url_ += "interval=" + encodeURIComponent("" + interval) + "&";
+        if (signalType !== undefined && signalType !== null)
+            url_ += "signalType=" + encodeURIComponent("" + signalType) + "&";
+        if (pageNumber === null)
+            throw new globalThis.Error("The parameter 'pageNumber' cannot be null.");
+        else if (pageNumber !== undefined)
+            url_ += "pageNumber=" + encodeURIComponent("" + pageNumber) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sortBy !== undefined && sortBy !== null)
+            url_ += "sortBy=" + encodeURIComponent("" + sortBy) + "&";
+        if (sortOrder !== undefined && sortOrder !== null)
+            url_ += "sortOrder=" + encodeURIComponent("" + sortOrder) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: AxiosRequestConfig = {
+            method: "GET",
+            url: url_,
+            headers: {
+                "Accept": "application/json"
+            },
+            cancelToken
+        };
+
+        return this.instance.request(options_).catch((_error: any) => {
+            if (isAxiosError(_error) && _error.response) {
+                return _error.response;
+            } else {
+                throw _error;
+            }
+        }).then((_response: AxiosResponse) => {
+            return this.processGetSignals(_response);
+        });
+    }
+
+    protected processGetSignals(response: AxiosResponse): Promise<PaginatedListOfSignalDto> {
+        const status = response.status;
+        let _headers: any = {};
+        if (response.headers && typeof response.headers === "object") {
+            for (const k in response.headers) {
+                if (response.headers.hasOwnProperty(k)) {
+                    _headers[k] = response.headers[k];
+                }
+            }
+        }
+        if (status === 200) {
+            const _responseText = response.data;
+            let result200: any = null;
+            let resultData200  = _responseText;
+            result200 = PaginatedListOfSignalDto.fromJS(resultData200);
+            return Promise.resolve<PaginatedListOfSignalDto>(result200);
+
+        } else if (status !== 200 && status !== 204) {
+            const _responseText = response.data;
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+        }
+        return Promise.resolve<PaginatedListOfSignalDto>(null as any);
+    }
+}
+
 export class SpotGridClient {
     protected instance: AxiosInstance;
     protected baseUrl: string;
@@ -1799,7 +1937,7 @@ export class SpotGridClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -2182,7 +2320,7 @@ export class SyncSettingsClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -2359,7 +2497,7 @@ export class TradeClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -2534,7 +2672,7 @@ export class ValuesClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -2601,7 +2739,7 @@ export class WeatherForecastClient {
 
         this.instance = instance || axios.create();
 
-        this.baseUrl = baseUrl ?? "http://localhost:5000";
+        this.baseUrl = baseUrl ?? "http://localhost:54321";
 
     }
 
@@ -3082,6 +3220,7 @@ export class UserLoginHistory {
     userAgent!: string | undefined;
     accessToken!: string;
     refreshToken!: string;
+    rememberMe!: boolean;
     createdAt!: Date;
 
     init(_data?: any) {
@@ -3092,6 +3231,7 @@ export class UserLoginHistory {
             this.userAgent = _data["userAgent"];
             this.accessToken = _data["accessToken"];
             this.refreshToken = _data["refreshToken"];
+            this.rememberMe = _data["rememberMe"];
             this.createdAt = _data["createdAt"] ? new Date(_data["createdAt"].toString()) : undefined as any;
         }
     }
@@ -3111,6 +3251,7 @@ export class UserLoginHistory {
         data["userAgent"] = this.userAgent;
         data["accessToken"] = this.accessToken;
         data["refreshToken"] = this.refreshToken;
+        data["rememberMe"] = this.rememberMe;
         data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : undefined as any;
         return data;
     }
@@ -3433,12 +3574,13 @@ export class Kline {
 }
 
 export enum IntervalType {
-    FiveMinutes = 0,
-    FifteenMinutes = 1,
-    ThirtyMinutes = 2,
-    OneHour = 3,
-    FourHours = 4,
-    OneDay = 5,
+    OneMinute = 0,
+    FiveMinutes = 1,
+    FifteenMinutes = 2,
+    ThirtyMinutes = 3,
+    OneHour = 4,
+    FourHours = 5,
+    OneDay = 6,
 }
 
 export class ExchangeSettingDto {
@@ -3509,6 +3651,207 @@ export class UpsertExchangeSettingCommand {
         data["apiKey"] = this.apiKey;
         data["secret"] = this.secret;
         data["passphrase"] = this.passphrase;
+        return data;
+    }
+}
+
+export class SignalStatistics {
+    today!: SignalStatisticInfo;
+    yesterday!: SignalStatisticInfo;
+    thisWeek!: SignalStatisticInfo;
+    lastWeek!: SignalStatisticInfo;
+    thisMonth!: SignalStatisticInfo;
+    lastMonth!: SignalStatisticInfo;
+
+    init(_data?: any) {
+        if (_data) {
+            this.today = _data["today"] ? SignalStatisticInfo.fromJS(_data["today"]) : undefined as any;
+            this.yesterday = _data["yesterday"] ? SignalStatisticInfo.fromJS(_data["yesterday"]) : undefined as any;
+            this.thisWeek = _data["thisWeek"] ? SignalStatisticInfo.fromJS(_data["thisWeek"]) : undefined as any;
+            this.lastWeek = _data["lastWeek"] ? SignalStatisticInfo.fromJS(_data["lastWeek"]) : undefined as any;
+            this.thisMonth = _data["thisMonth"] ? SignalStatisticInfo.fromJS(_data["thisMonth"]) : undefined as any;
+            this.lastMonth = _data["lastMonth"] ? SignalStatisticInfo.fromJS(_data["lastMonth"]) : undefined as any;
+        }
+    }
+
+    static fromJS(data: any): SignalStatistics {
+        data = typeof data === 'object' ? data : {};
+        let result = new SignalStatistics();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["today"] = this.today ? this.today.toJSON() : undefined as any;
+        data["yesterday"] = this.yesterday ? this.yesterday.toJSON() : undefined as any;
+        data["thisWeek"] = this.thisWeek ? this.thisWeek.toJSON() : undefined as any;
+        data["lastWeek"] = this.lastWeek ? this.lastWeek.toJSON() : undefined as any;
+        data["thisMonth"] = this.thisMonth ? this.thisMonth.toJSON() : undefined as any;
+        data["lastMonth"] = this.lastMonth ? this.lastMonth.toJSON() : undefined as any;
+        return data;
+    }
+}
+
+export class SignalStatisticInfo {
+    totalSignals!: number;
+    totalEntries!: number;
+    totalMaxProfitHits!: number;
+    totalStopLossHits!: number;
+    avgEntryPrice!: number;
+    avgMaxProfit!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            this.totalSignals = _data["totalSignals"];
+            this.totalEntries = _data["totalEntries"];
+            this.totalMaxProfitHits = _data["totalMaxProfitHits"];
+            this.totalStopLossHits = _data["totalStopLossHits"];
+            this.avgEntryPrice = _data["avgEntryPrice"];
+            this.avgMaxProfit = _data["avgMaxProfit"];
+        }
+    }
+
+    static fromJS(data: any): SignalStatisticInfo {
+        data = typeof data === 'object' ? data : {};
+        let result = new SignalStatisticInfo();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["totalSignals"] = this.totalSignals;
+        data["totalEntries"] = this.totalEntries;
+        data["totalMaxProfitHits"] = this.totalMaxProfitHits;
+        data["totalStopLossHits"] = this.totalStopLossHits;
+        data["avgEntryPrice"] = this.avgEntryPrice;
+        data["avgMaxProfit"] = this.avgMaxProfit;
+        return data;
+    }
+}
+
+export enum SignalType {
+    Long = 0,
+    Short = 1,
+}
+
+export class PaginatedListOfSignalDto {
+    items!: SignalDto[];
+    pageNumber!: number;
+    totalPages!: number;
+    totalCount!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            if (Array.isArray(_data["items"])) {
+                this.items = [] as any;
+                for (let item of _data["items"])
+                    this.items!.push(SignalDto.fromJS(item));
+            }
+            this.pageNumber = _data["pageNumber"];
+            this.totalPages = _data["totalPages"];
+            this.totalCount = _data["totalCount"];
+        }
+    }
+
+    static fromJS(data: any): PaginatedListOfSignalDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new PaginatedListOfSignalDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (Array.isArray(this.items)) {
+            data["items"] = [];
+            for (let item of this.items)
+                data["items"].push(item ? item.toJSON() : undefined as any);
+        }
+        data["pageNumber"] = this.pageNumber;
+        data["totalPages"] = this.totalPages;
+        data["totalCount"] = this.totalCount;
+        return data;
+    }
+}
+
+export class SignalDto {
+    id!: number;
+    symbol!: string;
+    interval!: string;
+    signalType!: string;
+    detectedAt!: number;
+    rsiValue!: number;
+    previousRsiValue!: number;
+    entryPrice!: number;
+    stopLoss!: number;
+    takeProfit!: number;
+    leverage!: number;
+    maxProfit!: number;
+    maxProfitHitAt!: number | undefined;
+    entryHitAt!: number | undefined;
+    stopLossHitAt!: number | undefined;
+    takeProfitHitAt!: number | undefined;
+    createdAt!: number;
+    entryHitAfterMinutes!: number;
+    maxProfitHitAfterMinutes!: number;
+    stopLossHitAfterMinutes!: number;
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.symbol = _data["symbol"];
+            this.interval = _data["interval"];
+            this.signalType = _data["signalType"];
+            this.detectedAt = _data["detectedAt"];
+            this.rsiValue = _data["rsiValue"];
+            this.previousRsiValue = _data["previousRsiValue"];
+            this.entryPrice = _data["entryPrice"];
+            this.stopLoss = _data["stopLoss"];
+            this.takeProfit = _data["takeProfit"];
+            this.leverage = _data["leverage"];
+            this.maxProfit = _data["maxProfit"];
+            this.maxProfitHitAt = _data["maxProfitHitAt"];
+            this.entryHitAt = _data["entryHitAt"];
+            this.stopLossHitAt = _data["stopLossHitAt"];
+            this.takeProfitHitAt = _data["takeProfitHitAt"];
+            this.createdAt = _data["createdAt"];
+            this.entryHitAfterMinutes = _data["entryHitAfterMinutes"];
+            this.maxProfitHitAfterMinutes = _data["maxProfitHitAfterMinutes"];
+            this.stopLossHitAfterMinutes = _data["stopLossHitAfterMinutes"];
+        }
+    }
+
+    static fromJS(data: any): SignalDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SignalDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["symbol"] = this.symbol;
+        data["interval"] = this.interval;
+        data["signalType"] = this.signalType;
+        data["detectedAt"] = this.detectedAt;
+        data["rsiValue"] = this.rsiValue;
+        data["previousRsiValue"] = this.previousRsiValue;
+        data["entryPrice"] = this.entryPrice;
+        data["stopLoss"] = this.stopLoss;
+        data["takeProfit"] = this.takeProfit;
+        data["leverage"] = this.leverage;
+        data["maxProfit"] = this.maxProfit;
+        data["maxProfitHitAt"] = this.maxProfitHitAt;
+        data["entryHitAt"] = this.entryHitAt;
+        data["stopLossHitAt"] = this.stopLossHitAt;
+        data["takeProfitHitAt"] = this.takeProfitHitAt;
+        data["createdAt"] = this.createdAt;
+        data["entryHitAfterMinutes"] = this.entryHitAfterMinutes;
+        data["maxProfitHitAfterMinutes"] = this.maxProfitHitAfterMinutes;
+        data["stopLossHitAfterMinutes"] = this.stopLossHitAfterMinutes;
         return data;
     }
 }
