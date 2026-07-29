@@ -4,6 +4,7 @@ using Cex.Application.Signals.Commands.CheckSignalMaxProfit;
 using Cex.Application.Signals.Commands.CheckSignalStopLoss;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
+using System.Diagnostics;
 
 namespace WebAPI.HostedServices;
 
@@ -88,6 +89,7 @@ public class FindSignalService(IServiceScopeFactory serviceScopeFactory, ILogger
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Exception {serviceName}", GetType().Name);
+                    Activity.Current?.AddException(ex);
                 }
 
                 await Task.Delay(60 * 1000, stoppingToken);
