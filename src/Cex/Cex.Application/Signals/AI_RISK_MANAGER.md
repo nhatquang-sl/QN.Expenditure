@@ -22,13 +22,13 @@ The Signal module algorithmically detects RSI divergence patterns but provides n
 ```
 FindSignalCommand
   → save Signal to DB
-  → ISignalEventPublisher.PublishSignalDetectedAsync(signal)
+  → IEventBus.PublishAsync(new FoundSignalEvent(signal))
   → [existing Telegram alert — unchanged]
 
-RabbitMQ (durable queue: signal-detected)
+RabbitMQ (durable queue: found-signal-event)
   ↓
 
-SignalDetectedConsumer : IConsumer<SignalDetectedEvent>
+FoundSignalEventConsumer : IConsumer<FoundSignalEvent>
   → EvaluateSignalRiskCommand(SignalId, SignalType, Interval, EntryPrice, ...)
   → mediator.Send(command)
 
@@ -56,10 +56,10 @@ EvaluateSignalRiskCommand
 |---|---|
 | `src/Cex/Cex.Domain/Entities/SignalAiEvaluation.cs` | New entity: one-to-one with Signal |
 | `src/Cex/Cex.Infrastructure/Data/Configurations/SignalAiEvaluationConfiguration.cs` | EF config: UNIQUE(SignalId), FK, precision |
-| `src/Cex/Cex.Application/Common/Abstractions/ISignalEventPublisher.cs` | Interface: `PublishSignalDetectedAsync(Signal, ct)` |
-| `src/WebAPI/Messaging/SignalDetectedEvent.cs` | MassTransit message contract — carries all signal fields |
-| `src/WebAPI/Messaging/SignalDetectedConsumer.cs` | `IConsumer<SignalDetectedEvent>` → maps to command → MediatR |
-| `src/WebAPI/Messaging/RabbitMqSignalEventPublisher.cs` | `ISignalEventPublisher` impl using MassTransit `IPublishEndpoint` |
+| `src/Libs/Lib.Application/Abstractions/IEventBus.cs` | Interface: `PublishAsync<T>(T message, ct)` — transport-agnostic event bus |
+| `src/Libs/Lib.EventBus/RabbitMqEventBus.cs` | `IEventBus` impl wrapping MassTransit `IPublishEndpoint`; swallows publish errors so the caller is never blocked |
+| `src/Cex/Cex.Application/Signals/Commands/FindSignal/FoundSignalEvent.cs` | MassTransit message contract — class with primary constructor `(Signal signal)`; carries all signal fields |
+| `src/Cex/Cex.Application/Signals/Commands/FindSignal/FoundSignalEventConsumer.cs` | `IConsumer<FoundSignalEvent>` → maps to `EvaluateSignalRiskCommand` → MediatR |
 | `src/Libs/Lib.ExternalServices/Anthropic/AnthropicConfig.cs` | Config: `ApiKey`, `Model`, `MaxTokens` |
 | `src/Libs/Lib.ExternalServices/Anthropic/IAnthropicService.cs` | Interface: `SendMessagesWithToolAsync` |
 | `src/Libs/Lib.ExternalServices/Anthropic/AnthropicService.cs` | Typed `HttpClient` — Anthropic Messages API |
@@ -78,9 +78,10 @@ EvaluateSignalRiskCommand
 | `src/Cex/Cex.Domain/Entities/Signal.cs` | Add `SignalAiEvaluation? AiEvaluation` nav property |
 | `src/Cex/Cex.Infrastructure/Data/Configurations/SignalConfiguration.cs` | Add `HasOne` nav config |
 | `src/Cex/Cex.Infrastructure/Data/CexDbContext.cs` | Add `DbSet<SignalAiEvaluation>` |
-| `src/Cex/Cex.Application/Signals/Commands/FindSignal/FindSignalCommand.cs` | Inject `ISignalEventPublisher`; return `Signal?` from save; publish event |
+| `src/Cex/Cex.Application/Signals/Commands/FindSignal/FindSignalCommand.cs` | Inject `IEventBus`; publish `FoundSignalEvent` after successful save |
 | `src/Libs/Lib.ExternalServices/DependencyInjection.cs` | Register `IAnthropicService` + `IMarketDataService` typed `HttpClient`s |
-| `src/WebAPI/Program.cs` | MassTransit + RabbitMQ DI; register `ISignalEventPublisher` → `RabbitMqSignalEventPublisher` |
+| `src/Libs/Lib.EventBus/DependencyInjection.cs` | `AddLibEventBusServices` — configures MassTransit + RabbitMQ; accepts `Action<IBusRegistrationConfigurator>` delegate for consumer registration |
+| `src/WebAPI/Program.cs` | Calls `AddLibEventBusServices` with delegate that registers `FoundSignalEventConsumer` |
 | `docker-compose.yml` | Add `rabbitmq:4-management` service |
 | `credentials/appsettings.json` | Add `Anthropic` + `RabbitMq` config sections |
 | `src/Cex/Cex.Application/Signals/Queries/GetSignals/SignalDto.cs` | +6 AI fields (flattened from join) |
@@ -158,55 +159,38 @@ public DbSet<SignalAiEvaluation> SignalAiEvaluations => Set<SignalAiEvaluation>(
 
 ---
 
-## Step 3 — Application: ISignalEventPublisher
+## Step 3 — Application: IEventBus + RabbitMqEventBus
 
-**`src/Cex/Cex.Application/Common/Abstractions/ISignalEventPublisher.cs`**:
+**`src/Libs/Lib.Application/Abstractions/IEventBus.cs`** — already implemented:
 ```csharp
-namespace Cex.Application.Common.Abstractions;
+namespace Lib.Application.Abstractions;
 
-public interface ISignalEventPublisher
+public interface IEventBus
 {
-    Task PublishSignalDetectedAsync(Signal signal, CancellationToken cancellationToken);
+    Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class;
 }
 ```
+
+**`src/Libs/Lib.EventBus/RabbitMqEventBus.cs`** — already implemented; wraps MassTransit `IPublishEndpoint` and swallows publish errors so the caller (`FindSignalCommand`) is never blocked by a messaging failure.
 
 ---
 
 ## Step 4 — Application: Modify FindSignalCommand
 
-**`FindSignalCommand.cs`** — inject `ISignalEventPublisher`; change `SaveSignalIfNewAsync` to return `Signal?`; publish after save:
+**`FindSignalCommand.cs`** — already injects `IEventBus`; publishes `FoundSignalEvent` inside `SaveSignalIfNewAsync` after a successful `SaveChangesAsync` (EF Core sets `signal.Id` before the publish call):
 
 ```csharp
 public class FindSignalCommandHandler(
     /* existing injections */
-    ISignalEventPublisher signalEventPublisher)   // ← NEW
+    IEventBus eventBus)
     : IRequestHandler<FindSignalCommand>
 ```
 
-`SaveSignalIfNewAsync` returns the saved entity:
+Inside `SaveSignalIfNewAsync`, after `SaveChangesAsync`:
 ```csharp
-private async Task<Signal?> SaveSignalIfNewAsync(..., CancellationToken cancellationToken)
-{
-    try
-    {
-        var signal = new Signal { /* existing fields */ };
-        await dbContext.Signals.AddAsync(signal, cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return signal;   // EF Core sets Id after save
-    }
-    catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate key") == true)
-    {
-        logTrace.LogError("SaveSignalIfNewAsync()", ex);
-        return null;
-    }
-}
-```
-
-In each `case DivergenceType.Peak/Trough` after the existing Telegram call:
-```csharp
-var signal = await SaveSignalIfNewAsync(...);
-if (signal is not null)
-    await signalEventPublisher.PublishSignalDetectedAsync(signal, cancellationToken);
+await dbContext.SaveChangesAsync(cancellationToken);
+// signal.Id is set here by EF Core
+await eventBus.PublishAsync(new FoundSignalEvent(signal), cancellationToken);
 ```
 
 ---
@@ -553,43 +537,44 @@ Key factors:
 
 ---
 
-## Step 8 — WebAPI: RabbitMQ + MassTransit
+## Step 8 — Lib.EventBus + Application: MassTransit Wiring
 
-**`src/WebAPI/Messaging/SignalDetectedEvent.cs`** — carries all signal fields for self-contained evaluation:
+**`src/Cex/Cex.Application/Signals/Commands/FindSignal/FoundSignalEvent.cs`** — already implemented; class (not record) with primary constructor taking `Signal`:
 ```csharp
-namespace WebAPI.Messaging;
+namespace Cex.Application.Signals.Commands.FindSignal;
 
-public record SignalDetectedEvent
+public class FoundSignalEvent(Signal signal)
 {
-    public int SignalId { get; init; }
-    public string SignalType { get; init; } = string.Empty;  // "Long" | "Short"
-    public string Interval { get; init; } = string.Empty;
-    public DateTime DetectedAt { get; init; }
-    public decimal RsiValue { get; init; }
-    public decimal PreviousRsiValue { get; init; }
-    public decimal EntryPrice { get; init; }
-    public decimal StopLoss { get; init; }
-    public decimal TakeProfit { get; init; }
-    public int Leverage { get; init; }
-    public DateTime CreatedAt { get; init; }
+    public int SignalId { get; set; } = signal.Id;
+    public string Symbol { get; set; } = signal.Symbol;
+    public string Interval { get; set; } = signal.Interval;
+    public SignalType SignalType { get; set; } = signal.SignalType;
+    public DateTime DetectedAt { get; set; } = signal.DetectedAt;
+    public DateTime PreviousCandleAt { get; set; } = signal.PreviousCandleAt;
+    public decimal RsiValue { get; set; } = signal.RsiValue;
+    public decimal PreviousRsiValue { get; set; } = signal.PreviousRsiValue;
+    public decimal EntryPrice { get; set; } = signal.EntryPrice;
+    public decimal StopLoss { get; set; } = signal.StopLoss;
+    public decimal TakeProfit { get; set; } = signal.TakeProfit;
+    public int Leverage { get; set; } = signal.Leverage;
 }
 ```
 
-**`src/WebAPI/Messaging/SignalDetectedConsumer.cs`**:
+**`src/Cex/Cex.Application/Signals/Commands/FindSignal/FoundSignalEventConsumer.cs`** — already scaffolded; needs `EvaluateSignalRiskCommand` dispatch added:
 ```csharp
-namespace WebAPI.Messaging;
+namespace Cex.Application.Signals.Commands.FindSignal;
 
-public class SignalDetectedConsumer(IServiceScopeFactory scopeFactory)
-    : IConsumer<SignalDetectedEvent>
+public class FoundSignalEventConsumer(IServiceScopeFactory scopeFactory)
+    : IConsumer<FoundSignalEvent>
 {
-    public async Task Consume(ConsumeContext<SignalDetectedEvent> context)
+    public async Task Consume(ConsumeContext<FoundSignalEvent> context)
     {
         var msg = context.Message;
         using var scope = scopeFactory.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         await mediator.Send(new EvaluateSignalRiskCommand(
             SignalId:         msg.SignalId,
-            SignalType:       msg.SignalType,
+            SignalType:       msg.SignalType.ToString(),
             Interval:         msg.Interval,
             DetectedAt:       msg.DetectedAt,
             RsiValue:         msg.RsiValue,
@@ -597,57 +582,29 @@ public class SignalDetectedConsumer(IServiceScopeFactory scopeFactory)
             EntryPrice:       msg.EntryPrice,
             StopLoss:         msg.StopLoss,
             TakeProfit:       msg.TakeProfit,
-            Leverage:         msg.Leverage,
-            CreatedAt:        msg.CreatedAt),
+            Leverage:         msg.Leverage),
             context.CancellationToken);
     }
 }
 ```
 
-**`src/WebAPI/Messaging/RabbitMqSignalEventPublisher.cs`**:
+**`src/Libs/Lib.EventBus/DependencyInjection.cs`** — already implemented; `AddLibEventBusServices` owns the single `AddMassTransit` call and accepts a delegate for consumer registration:
 ```csharp
-namespace WebAPI.Messaging;
-
-public class RabbitMqSignalEventPublisher(IPublishEndpoint publishEndpoint)
-    : ISignalEventPublisher
+services.AddLibEventBusServices(configuration, busConfig =>
 {
-    public Task PublishSignalDetectedAsync(Signal signal, CancellationToken cancellationToken) =>
-        publishEndpoint.Publish(new SignalDetectedEvent
-        {
-            SignalId         = signal.Id,
-            SignalType       = signal.SignalType.ToString(),
-            Interval         = signal.Interval,
-            DetectedAt       = signal.DetectedAt,
-            RsiValue         = signal.RsiValue,
-            PreviousRsiValue = signal.PreviousRsiValue,
-            EntryPrice       = signal.EntryPrice,
-            StopLoss         = signal.StopLoss,
-            TakeProfit       = signal.TakeProfit,
-            Leverage         = signal.Leverage,
-            CreatedAt        = signal.CreatedAt,
-        }, cancellationToken);
-}
+    busConfig.AddConsumer<FoundSignalEventConsumer>();
+});
 ```
 
-**`docker-compose.yml`** — add RabbitMQ service:
-```yaml
-rabbitmq:
-  image: rabbitmq:4-management
-  hostname: rabbitmq
-  ports:
-    - "5672:5672"
-    - "15672:15672"
-  environment:
-    RABBITMQ_DEFAULT_USER: guest
-    RABBITMQ_DEFAULT_PASS: guest
-  healthcheck:
-    test: ["CMD", "rabbitmq-diagnostics", "ping"]
-    interval: 10s
-    timeout: 5s
-    retries: 5
+**`src/WebAPI/Program.cs`** — already wired; passes consumer delegate to `AddLibEventBusServices`:
+```csharp
+builder.Services.AddLibEventBusServices(builder.Configuration, busConfig =>
+{
+    busConfig.AddConsumer<FoundSignalEventConsumer>();
+});
 ```
 
-Add `depends_on: { rabbitmq: { condition: service_healthy } }` to `qex.api`.
+**`docker-compose.yml`** and **`credentials/qex/docker-compose.yml`** — RabbitMQ service already added with healthcheck; `qex.api` already has `depends_on: rabbitmq: condition: service_healthy`.
 
 **`credentials/appsettings.json`** — add:
 ```json
@@ -657,33 +614,10 @@ Add `depends_on: { rabbitmq: { condition: service_healthy } }` to `qex.api`.
   "MaxTokens": 1024
 },
 "RabbitMq": {
-  "Host": "rabbitmq",
+  "Host": "amqp://qex-rabbitmq:5672",
   "Username": "guest",
   "Password": "guest"
 }
-```
-
-**`src/WebAPI/Program.cs`** — add (NuGet: `MassTransit`, `MassTransit.RabbitMQ` in `WebAPI.csproj`):
-```csharp
-builder.Services.AddMassTransit(x =>
-{
-    x.AddConsumer<SignalDetectedConsumer>();
-    x.UsingRabbitMq((ctx, cfg) =>
-    {
-        var r = builder.Configuration.GetSection("RabbitMq");
-        cfg.Host(r["Host"], h =>
-        {
-            h.Username(r["Username"]!);
-            h.Password(r["Password"]!);
-        });
-        cfg.UseMessageRetry(r => r.Intervals(
-            TimeSpan.FromSeconds(5),
-            TimeSpan.FromSeconds(30),
-            TimeSpan.FromMinutes(2)));
-        cfg.ConfigureEndpoints(ctx);
-    });
-});
-builder.Services.AddScoped<ISignalEventPublisher, RabbitMqSignalEventPublisher>();
 ```
 
 ---
@@ -780,7 +714,7 @@ aiRisk: (
 
 ## Verification
 
-1. **Infrastructure**: `docker compose up -d rabbitmq` — management UI at `http://localhost:15672`; `signal-detected` queue appears after first publish
+1. **Infrastructure**: `docker compose up -d rabbitmq` — management UI at `http://localhost:15672`; `found-signal-event` queue appears after first publish
 2. **Migration**: `dotnet ef migrations add AddSignalAiEvaluation && dotnet ef database update` — verify new `SignalAiEvaluations` table with UNIQUE index on `SignalId`; `Signals` table unchanged
 3. **Market data**: Call `IMarketDataService` directly in a unit test with symbol `BTCUSDT` — verify `TimeframeSummary.Trend` is one of the three valid values; confirm Binance rate limits are not hit (6 parallel calls per evaluation is well within the 2,400 req/min limit)
 4. **Build**: `dotnet build` — zero errors; `IAnthropicService`, `IMarketDataService`, and `ISignalEventPublisher` resolve via DI
