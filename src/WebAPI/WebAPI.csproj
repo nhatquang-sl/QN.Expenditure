@@ -13,6 +13,7 @@
         <ProjectReference Include="..\Aspire\ServiceDefaults\ServiceDefaults.csproj"/>
         <ProjectReference Include="..\Auth\Auth.Infrastructure\Auth.Infrastructure.csproj"/>
         <ProjectReference Include="..\Cex\Cex.Infrastructure\Cex.Infrastructure.csproj"/>
+        <ProjectReference Include="..\Libs\Lib.EventBus\Lib.EventBus.csproj"/>
         <ProjectReference Include="..\Libs\Lib.Notifications\Lib.Notifications.csproj"/>
     </ItemGroup>
 

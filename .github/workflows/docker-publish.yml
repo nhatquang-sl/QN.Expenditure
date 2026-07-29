@@ -107,20 +107,20 @@ jobs:
           submodules: true
       - name: 🚀Deploy Docker to VPS
         run: |
-          echo "$IMAGE_TAGS" 
+          echo "$IMAGE_TAGS"
           mkdir -p $HOME/.ssh
           echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
           chmod 600 $HOME/.ssh/ssh.key
-          SOURCE_COMPOSE="credentials/qex/docker-compose.yml"
+          SOURCE_DIR="credentials/qex"
           TARGET_DIR="workspace/qex"
 
-          if [ ! -f "$SOURCE_COMPOSE" ]; then
-            echo "Source compose file not found in GitHub runner: $SOURCE_COMPOSE"
+          if [ ! -d "$SOURCE_DIR" ]; then
+            echo "Source directory not found: $SOURCE_DIR"
             exit 1
           fi
 
           ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR"
-          scp -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -P ${{ secrets.VPS_PORT }} "$SOURCE_COMPOSE" ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/docker-compose.yml
+          scp -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -P ${{ secrets.VPS_PORT }} -r "$SOURCE_DIR"/. ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/
 
           ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
             set -euo pipefail
@@ -130,19 +130,8 @@ jobs:
 
             cd "$TARGET_DIR"
             ls -la
-            cat > .env <<EOF
-          # Container image name for webapi
-          WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${IMAGE_TAGS}
-
-          UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${IMAGE_TAGS}
-
-          # Seq log server
-          SEQ_FIRSTRUN_ADMINPASSWORD=${{ secrets.SEQ_ADMIN_PASSWORD }}
-
-          # OpenTelemetry / Elastic APM
-          OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
-          OTEL_EXPORTER_OTLP_HEADERS=${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
-          EOF
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps
+            echo "WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${IMAGE_TAGS}" >> .env
+            echo "UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${IMAGE_TAGS}" >> .env
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps
           ENDSSH

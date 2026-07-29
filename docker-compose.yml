@@ -33,6 +33,9 @@ services:
       - '54322:5001'
     volumes:
       - qex-certs:/certs
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       disable: true
 
@@ -64,6 +67,22 @@ services:
     #      REDIS_PASSWORD: "${REDIS_CACHE_PASSWORD}"
     #    ports:
     #      - "6379:6379"
+
+  rabbitmq:
+    container_name: qex-rabbitmq
+    hostname: qex-rabbitmq
+    restart: unless-stopped
+    image: rabbitmq:4-management
+    env_file:
+      - credentials/qex/.env
+    ports:
+      - '5672:5672'   # AMQP
+      - '15672:15672' # Management UI
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   seq.logs:
     container_name: qex-seq.logs

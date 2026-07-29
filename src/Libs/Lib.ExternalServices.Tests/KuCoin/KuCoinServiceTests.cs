@@ -6,7 +6,7 @@ namespace Lib.ExternalServices.Tests.KuCoin
 {
     public class KuCoinServiceTests : DependencyInjectionFixture
     {
-        [Fact]
+        [Fact(Skip = "Integration test - run manually")]
         public async Task PlaceOrder_GetOrders_CancelOrder()
         {
             var config = GetService<IOptions<KuCoinConfig>>();

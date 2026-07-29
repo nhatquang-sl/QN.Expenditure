@@ -1,12 +1,13 @@
 using System.Reflection;
 using Auth.Infrastructure;
+using Cex.Application.Signals.Commands.FindSignal;
 using Cex.Infrastructure;
 using Lib.Application.Abstractions;
+using Lib.EventBus;
 using Lib.Notifications;
 using Microsoft.Extensions.Caching.Hybrid;
 using NSwag;
 using NSwag.Generation.Processors.Security;
-using OpenTelemetry.Trace;
 using Serilog;
 using ServiceDefaults;
 using WebAPI.Controllers;
@@ -66,6 +67,8 @@ builder.Host.UseSerilog((context, services, loggerConfig) =>
 // builder.Services.AddTransient(_ =>
 //     new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
 builder.Services.AddTelegramNotifier(builder.Configuration);
+builder.Services.AddLibEventBusServices(builder.Configuration,
+    busConfig => { busConfig.AddConsumer<FoundSignalEventConsumer>(); });
 builder.Services.AddAuthInfrastructureServices(builder.Configuration);
 builder.Services.AddCexInfrastructureServices(builder.Configuration);
 

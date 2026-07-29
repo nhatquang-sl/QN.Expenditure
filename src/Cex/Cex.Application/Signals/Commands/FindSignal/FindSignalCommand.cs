@@ -22,7 +22,8 @@ public class FindSignalCommandHandler(
     ISender sender,
     INotifier notifier,
     ILogTrace logTrace,
-    ICexDbContext dbContext)
+    ICexDbContext dbContext,
+    IEventBus eventBus)
     : IRequestHandler<FindSignalCommand>
 {
     public async Task Handle(FindSignalCommand command, CancellationToken cancellationToken)
@@ -38,43 +39,43 @@ public class FindSignalCommandHandler(
         switch (div.Type)
         {
             case DivergenceType.Peak:
-                {
-                    var dCandle = candles.First(x => x.OpenTime == div.Time);
-                    var preCandle = candles.First(x => x.OpenTime == div.PreviousTime);
-                    var entryPrice = candles[^1].ClosePrice;
-                    var stopLoss = entryPrice * 1.08m;
-                    var takeProfit = entryPrice * 0.92m;
+            {
+                var dCandle = candles.First(x => x.OpenTime == div.Time);
+                var preCandle = candles.First(x => x.OpenTime == div.PreviousTime);
+                var entryPrice = candles[^1].ClosePrice;
+                var stopLoss = entryPrice * 1.08m;
+                var takeProfit = entryPrice * 0.92m;
 
-                    var msg = new StringBuilder($"[{command.Type.GetDescription()}] RSI <b>Short</b> detected:\n");
-                    msg.AppendLine($"[{divTime}]: <b>{div.Rsi} - {dCandle.HighestPrice}</b>");
-                    msg.AppendLine($"[{divPreTime}]: <b>{rsiValues[div.PreviousTime]} - {preCandle.HighestPrice}</b>");
-                    msg.AppendLine($"Entry price: <b>{entryPrice}</b>");
-                    msg.AppendLine($"Liquidation 8x10: <b>{stopLoss.FixedNumber(2)}</b>");
-                    await notifier.Notify(msg.ToString(), cancellationToken);
+                var msg = new StringBuilder($"[{command.Type.GetDescription()}] RSI <b>Short</b> detected:\n");
+                msg.AppendLine($"[{divTime}]: <b>{div.Rsi} - {dCandle.HighestPrice}</b>");
+                msg.AppendLine($"[{divPreTime}]: <b>{rsiValues[div.PreviousTime]} - {preCandle.HighestPrice}</b>");
+                msg.AppendLine($"Entry price: <b>{entryPrice}</b>");
+                msg.AppendLine($"Liquidation 8x10: <b>{stopLoss.FixedNumber(2)}</b>");
+                await notifier.Notify(msg.ToString(), cancellationToken);
 
-                    await SaveSignalIfNewAsync(command, div, SignalType.Short, entryPrice, stopLoss, takeProfit,
-                        rsiValues[div.PreviousTime], cancellationToken);
-                    break;
-                }
+                await SaveSignalIfNewAsync(command, div, SignalType.Short, entryPrice, stopLoss, takeProfit,
+                    rsiValues[div.PreviousTime], cancellationToken);
+                break;
+            }
             case DivergenceType.Trough:
-                {
-                    var dCandle = candles.First(x => x.OpenTime == div.Time);
-                    var preCandle = candles.First(x => x.OpenTime == div.PreviousTime);
-                    var entryPrice = candles[^1].OpenPrice;
-                    var stopLoss = entryPrice * 0.92m;
-                    var takeProfit = entryPrice * 1.08m;
+            {
+                var dCandle = candles.First(x => x.OpenTime == div.Time);
+                var preCandle = candles.First(x => x.OpenTime == div.PreviousTime);
+                var entryPrice = candles[^1].OpenPrice;
+                var stopLoss = entryPrice * 0.92m;
+                var takeProfit = entryPrice * 1.08m;
 
-                    var msg = new StringBuilder($"[{command.Type.GetDescription()}] RSI <b>Long</b> detected:\n");
-                    msg.AppendLine($"[{divTime}]: <b>{div.Rsi} - {dCandle.LowestPrice}</b>");
-                    msg.AppendLine($"[{divPreTime}]: <b>{rsiValues[div.PreviousTime]} - {preCandle.LowestPrice}</b>");
-                    msg.AppendLine($"Entry price: <b>{entryPrice}</b>");
-                    msg.AppendLine($"Liquidation 8x10: <b>{stopLoss.FixedNumber(2)}</b>");
-                    await notifier.Notify(msg.ToString(), cancellationToken);
+                var msg = new StringBuilder($"[{command.Type.GetDescription()}] RSI <b>Long</b> detected:\n");
+                msg.AppendLine($"[{divTime}]: <b>{div.Rsi} - {dCandle.LowestPrice}</b>");
+                msg.AppendLine($"[{divPreTime}]: <b>{rsiValues[div.PreviousTime]} - {preCandle.LowestPrice}</b>");
+                msg.AppendLine($"Entry price: <b>{entryPrice}</b>");
+                msg.AppendLine($"Liquidation 8x10: <b>{stopLoss.FixedNumber(2)}</b>");
+                await notifier.Notify(msg.ToString(), cancellationToken);
 
-                    await SaveSignalIfNewAsync(command, div, SignalType.Long, entryPrice, stopLoss, takeProfit,
-                        rsiValues[div.PreviousTime], cancellationToken);
-                    break;
-                }
+                await SaveSignalIfNewAsync(command, div, SignalType.Long, entryPrice, stopLoss, takeProfit,
+                    rsiValues[div.PreviousTime], cancellationToken);
+                break;
+            }
             case DivergenceType.None:
             default:
                 return;
@@ -94,8 +95,7 @@ public class FindSignalCommandHandler(
         try
         {
             var interval = command.Type.GetDescription();
-
-            await dbContext.Signals.AddAsync(new Signal
+            var signal = new Signal
             {
                 Symbol = "BTCUSDT",
                 Interval = interval,
@@ -107,10 +107,14 @@ public class FindSignalCommandHandler(
                 EntryPrice = entryPrice,
                 StopLoss = stopLoss,
                 TakeProfit = takeProfit,
-                LastCheckedCandleAt = DateTime.UtcNow,
-            }, cancellationToken);
+                LastCheckedCandleAt = DateTime.UtcNow
+            };
+            await dbContext.Signals.AddAsync(signal, cancellationToken);
 
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            // wait for SaveChange to have the Signal Id
+            await eventBus.PublishAsync(new FoundSignalEvent(signal), cancellationToken);
         }
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate key") == true)
         {

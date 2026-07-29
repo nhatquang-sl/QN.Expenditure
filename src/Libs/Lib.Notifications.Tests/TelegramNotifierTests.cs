@@ -12,15 +12,15 @@ namespace Lib.Notifications.Tests
             _notifier = GetService<INotifier>();
         }
 
-        [Fact]
-        public async void NotifyInfo_Success()
+        [Fact(Skip = "Integration test - run manually")]
+        public async Task NotifyInfo_Success()
         {
             await _notifier.NotifyInfo("test message", "desc");
             await _notifier.NotifyInfo("desc", new { firstName = "John", lastName = "Doe" });
         }
 
-        [Fact]
-        public async void NotifyError_Success()
+        [Fact(Skip = "Integration test - run manually")]
+        public async Task NotifyError_Success()
         {
             try
             {
