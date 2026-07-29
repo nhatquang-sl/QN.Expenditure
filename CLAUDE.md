@@ -114,6 +114,7 @@ export default function TradeHistory() {
 - **Queries**: Suffix with `Query` (e.g., `GetExchangeSettingsQuery`)
 - **Handlers**: Suffix with `Handler`
 - **Validators**: Suffix with `Validator`
+- **Id fields**: Always use `Id`, never `ID` — applies to properties, variables, parameters, and documentation (e.g., `userId`, `entity.Id`, `struct { Id string }`).
 
 #### 3. DateTime Precision in EF Core
 - All `DateTime` and `DateTime?` properties **must** be stored with second-level precision using `HasPrecision(0)` → maps to `datetime2(0)` in SQL Server
