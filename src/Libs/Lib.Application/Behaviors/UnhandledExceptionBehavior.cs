@@ -37,7 +37,7 @@ namespace Lib.Application.Behaviors
             }
             finally
             {
-                if (request.GetType().Name.Equals(logTrace.GetProperty("RequestName").ToString()))
+                if (request.GetType().Name.Equals(logTrace.GetProperty("RequestName")?.ToString()))
                     logTrace.Flush();
             }
         }

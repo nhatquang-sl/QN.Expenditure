@@ -34,7 +34,8 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
+**/[Bb]in/
+**/bin\\Debug/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
@@ -233,6 +234,8 @@ _pkginfo.txt
 # Visual Studio cache files
 # files ending in .cache can be ignored
 *.[Cc]ache
+# Language Server cache files
+*.lscache
 # but keep track of directories ending in .cache
 !?*.[Cc]ache/
 
@@ -410,4 +413,5 @@ FodyWeavers.xsd
 .idea/
 
 # Claude Code local settings
-.claude/settings.local.json
+# .claude/settings.local.json
+.env

@@ -1,9 +1,8 @@
-﻿using Cex.Application.Common.Mappings;
 using Cex.Domain.Entities;
 
 namespace Cex.Application.Grid.DTOs
 {
-    public class SpotGridDto : IMapFrom<SpotGrid>
+    public class SpotGridDto
     {
         public long Id { get; set; }
         public string UserId { get; set; }
@@ -24,5 +23,27 @@ namespace Cex.Application.Grid.DTOs
         public DateTime UpdatedAt { get; set; }
 
         public List<SpotGridStepDto> GridSteps { get; set; } = [];
+
+        public static SpotGridDto From(SpotGrid entity) => new()
+        {
+            Id = entity.Id,
+            UserId = entity.UserId,
+            Symbol = entity.Symbol,
+            LowerPrice = entity.LowerPrice,
+            UpperPrice = entity.UpperPrice,
+            TriggerPrice = entity.TriggerPrice,
+            NumberOfGrids = entity.NumberOfGrids,
+            GridMode = entity.GridMode,
+            Investment = entity.Investment,
+            BaseBalance = entity.BaseBalance,
+            QuoteBalance = entity.QuoteBalance,
+            Profit = entity.Profit,
+            TakeProfit = entity.TakeProfit,
+            StopLoss = entity.StopLoss,
+            Status = entity.Status,
+            CreatedAt = entity.CreatedAt,
+            UpdatedAt = entity.UpdatedAt,
+            GridSteps = entity.GridSteps.Select(SpotGridStepDto.From).ToList()
+        };
     }
 }

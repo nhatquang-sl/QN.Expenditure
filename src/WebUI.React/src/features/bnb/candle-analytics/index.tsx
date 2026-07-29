@@ -1,115 +1,114 @@
-import {
-  Grid,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material';
+import { Grid, Paper, Stack, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { candlesClient } from 'store';
 import { IntervalType, Kline } from 'store/api-client';
 import { round2Dec } from 'store/constants';
+import MonthCalendar from './components/MonthCalendar';
+import { ColorScale, DayCell, MonthGroup } from './types';
 
-type CellData = {
-  openTime: Date;
-  percentage: number;
-};
-const today = new Date();
+// Monday = 0, ..., Sunday = 6
+function mondayIndex(date: Date): number {
+  const day = date.getDay(); // 0=Sun
+  return day === 0 ? 6 : day - 1;
+}
+
+function buildMonthGroups(candles: Kline[]): {
+  monthGroups: MonthGroup[];
+  greenScale: ColorScale;
+  redScale: ColorScale;
+} {
+  const greenPercentages: number[] = [];
+  const redPercentages: number[] = [];
+  const monthMap = new Map<string, DayCell[]>();
+
+  for (const candle of candles) {
+    const date = new Date(candle.openTime);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const key = `${year}-${String(month).padStart(2, '0')}`;
+
+    const pct = round2Dec(((candle.highestPrice - candle.lowestPrice) / candle.openPrice) * 100);
+    const direction: DayCell['direction'] =
+      candle.closePrice > candle.openPrice ? 'up' : candle.closePrice < candle.openPrice ? 'down' : 'flat';
+
+    if (direction === 'up') greenPercentages.push(pct);
+    else if (direction === 'down') redPercentages.push(pct);
+
+    if (!monthMap.has(key)) monthMap.set(key, []);
+    monthMap.get(key)!.push({ date, percentage: pct, direction });
+  }
+
+  const greenMin = Math.min(...greenPercentages);
+  const greenMax = Math.max(...greenPercentages);
+  const redMin = Math.min(...redPercentages);
+  const redMax = Math.max(...redPercentages);
+
+  const greenScale: ColorScale = { min: greenMin, bucketSize: (greenMax - greenMin) / 10 };
+  const redScale: ColorScale = { min: redMin, bucketSize: (redMax - redMin) / 10 };
+
+  const monthGroups: MonthGroup[] = [];
+
+  for (const [key, days] of [...monthMap.entries()].toSorted().toReversed()) {
+    const [yearStr, monthStr] = key.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+
+    days.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    const leading = mondayIndex(days[0].date);
+    const cells: (DayCell | null)[] = [...Array(leading).fill(null), ...days];
+    const remainder = cells.length % 7;
+    if (remainder !== 0) cells.push(...Array(7 - remainder).fill(null));
+
+    monthGroups.push({ year, month, cells });
+  }
+
+  return { monthGroups, greenScale, redScale };
+}
+
 export default function CandleAnalytics() {
-  const [month] = useState(today.getMonth() - 1);
-  const [year] = useState(today.getFullYear());
-  console.log({ month, year });
   const { data, isPending } = useQuery({
-    queryKey: ['2fa'],
+    queryKey: ['candle-analytics-btcusdt'],
     queryFn: () => candlesClient.get('BTCUSDT', IntervalType.OneDay),
   });
 
-  const rows: CellData[][] = [[]];
-  data
-    ?.filter((candle: Kline) => {
-      const openTime = candle.openTime.getTime();
-      const pre = new Date(year, month - 1, 1).getTime();
-      const next = new Date(year, month + 2, 1).getTime();
+  const { monthGroups, greenScale, redScale } = useMemo(() => {
+    if (!data || data.length === 0) {
+      return {
+        monthGroups: [],
+        greenScale: { min: 0, bucketSize: 1 },
+        redScale: { min: 0, bucketSize: 1 },
+      };
+    }
+    return buildMonthGroups(data);
+  }, [data]);
 
-      return pre <= openTime && openTime < next;
-    })
-    ?.forEach((candle: Kline, index: number) => {
-      const openTime = new Date(candle.openTime);
-      console.log(index, openTime.getDay(), openTime.getMonth(), openTime);
-      if (index === 0) {
-        for (let i = 0; i < openTime.getDay() - 1; i++) {
-          rows[rows.length - 1].push({
-            openTime: new Date(openTime.getFullYear(), openTime.getMonth(), openTime.getDate() - i),
-          } as CellData); // Fill empty cells for days before the first candle
-        }
-      }
-      if (rows[rows.length - 1].length === 7) {
-        rows.push([]);
-      } else {
-        // row.push(candle.closePrice-candle.openPrice > 0 ? '🟢' : '🔴');
-        const diff = candle.closePrice - candle.openPrice;
-        const percentage = round2Dec((diff / candle.openPrice) * 100);
-        rows[rows.length - 1].push({
-          openTime: openTime,
-          percentage: percentage,
-        } as CellData);
-      }
-    });
-  console.log('Candle Analytics Data:', data, isPending);
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
         <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
           <Typography component="h2" variant="h6" color="primary" gutterBottom>
-            Candle Analytics
+            Candle Analytics — BTCUSDT
           </Typography>
         </Paper>
       </Grid>
+      {isPending && (
+        <Grid item xs={12}>
+          <Typography>Loading...</Typography>
+        </Grid>
+      )}
       <Grid item xs={12}>
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} aria-label="simple table">
-            <TableHead>
-              <TableRow>
-                <TableCell>Monday</TableCell>
-                <TableCell>Tuesday</TableCell>
-                <TableCell>Wednesday</TableCell>
-                <TableCell>Thursday</TableCell>
-                <TableCell>Friday</TableCell>
-                <TableCell>Saturday</TableCell>
-                <TableCell>Sunday</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row, index) => (
-                <TableRow key={index}>
-                  {row.map((cell, cellIndex) => (
-                    <TableCell
-                      key={cellIndex}
-                      sx={{
-                        textAlign: 'center',
-                        backgroundColor:
-                          cell.percentage > 0
-                            ? '#c8e6c9' // light green
-                            : cell.percentage < 0
-                            ? '#ffcdd2' // light red
-                            : '#fff', // white
-                      }}
-                    >
-                      {cell.openTime.getDate()}/{cell.openTime.getMonth() + 1}
-                      <br />
-                      {cell.percentage}%
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Stack direction="row" gap={0} flexWrap="wrap" sx={{  justifyContent: "space-around" }}>
+          {monthGroups.map((group) => (
+            <Stack
+              key={`${group.year}-${group.month}`}
+              sx={{  flexShrink: 0}}
+            >
+              <MonthCalendar group={group} greenScale={greenScale} redScale={redScale} />
+            </Stack>
+          ))}
+        </Stack>
       </Grid>
     </Grid>
   );

@@ -12,6 +12,17 @@ namespace Auth.Application.Account.DTOs
         public bool EmailConfirmed { get; set; }
         public long AccessTokenExpires { get; set; }
         public long RefreshTokenExpires { get; set; }
+
+        public static UserProfileDto From(ICurrentUser user) => new()
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            EmailConfirmed = user.EmailConfirmed,
+            AccessTokenExpires = user.AccessTokenExpires,
+            RefreshTokenExpires = user.RefreshTokenExpires
+        };
     }
 
     public class UserAuthDto : UserProfileDto

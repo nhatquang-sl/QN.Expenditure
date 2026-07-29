@@ -5,7 +5,7 @@ namespace WebAPI.HostedServices
 {
     public class SyncTradeHistoryService(
         IServiceScopeFactory serviceScopeFactory,
-        ILogger<SyncTradeHistoryService> logger) : BackgroundService
+        ILogger<SyncTradeHistoryService> logger) : TracedBackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -16,10 +16,12 @@ namespace WebAPI.HostedServices
                 {
                     try
                     {
-                        using var scope = serviceScopeFactory.CreateScope();
-                        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-
-                        await mediator.Send(new SyncTradeHistoryCommand(), stoppingToken);
+                        await RunTracedAsync("SyncTradeHistory", async ct =>
+                        {
+                            using var scope = serviceScopeFactory.CreateScope();
+                            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                            await mediator.Send(new SyncTradeHistoryCommand(), ct);
+                        }, stoppingToken);
                     }
                     catch (Exception ex)
                     {

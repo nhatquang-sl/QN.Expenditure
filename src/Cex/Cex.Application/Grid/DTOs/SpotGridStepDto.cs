@@ -1,11 +1,9 @@
-using AutoMapper;
-using Cex.Application.Common.Mappings;
 using Cex.Domain.Entities;
 using Lib.Application.Extensions;
 
 namespace Cex.Application.Grid.DTOs
 {
-    public class SpotGridStepDto : IMapFrom<SpotGridStep>
+    public class SpotGridStepDto
     {
         public long Id { get; set; }
         public decimal BuyPrice { get; set; }
@@ -14,10 +12,14 @@ namespace Cex.Application.Grid.DTOs
         public string? OrderId { get; set; }
         public string Status { get; set; }
 
-        public void Mapping(Profile profile)
+        public static SpotGridStepDto From(SpotGridStep entity) => new()
         {
-            profile.CreateMap<SpotGridStep, SpotGridStepDto>()
-                .ForMember(x => x.Status, opt => opt.MapFrom(x => x.Status.GetDescription()));
-        }
+            Id = entity.Id,
+            BuyPrice = entity.BuyPrice,
+            SellPrice = entity.SellPrice,
+            Qty = entity.Qty,
+            OrderId = entity.OrderId,
+            Status = entity.Status.GetDescription()
+        };
     }
 }

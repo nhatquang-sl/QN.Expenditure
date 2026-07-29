@@ -5,7 +5,7 @@ using Serilog;
 
 namespace WebAPI.HostedServices
 {
-    public class SyncSpotOrdersService(IConfiguration configuration) : BackgroundService
+    public class SyncSpotOrdersService(IConfiguration configuration) : TracedBackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -23,10 +23,12 @@ namespace WebAPI.HostedServices
                 {
                     try
                     {
-                        using var scope = serviceProvider.CreateScope();
-                        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-
-                        await mediator.Send(new SyncAllSpotOrdersCommand(), stoppingToken);
+                        await RunTracedAsync("SyncAllSpotOrders", async ct =>
+                        {
+                            using var scope = serviceProvider.CreateScope();
+                            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                            await mediator.Send(new SyncAllSpotOrdersCommand(), ct);
+                        }, stoppingToken);
                     }
                     catch (Exception ex)
                     {

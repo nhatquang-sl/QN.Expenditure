@@ -6,6 +6,7 @@ export const LoginDataSchema = z.object({
     .email()
     .trim()
     .max(255, { message: 'Email has reached a maximum of 255 characters.' }),
+  rememberMe: z.boolean().default(false),
   password: z
     .string()
     .trim()

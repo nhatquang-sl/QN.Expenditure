@@ -19,6 +19,7 @@
   <Folder Name="/Libs/">
     <Project Path="src/Libs/Lib.Application.Tests/Lib.Application.Tests.csproj" />
     <Project Path="src/Libs/Lib.Application/Lib.Application.csproj" />
+    <Project Path="src/Libs/Lib.EventBus/Lib.EventBus.csproj" />
     <Project Path="src/Libs/Lib.ExternalServices.Tests/Lib.ExternalServices.Tests.csproj" />
     <Project Path="src/Libs/Lib.ExternalServices/Lib.ExternalServices.csproj" />
     <Project Path="src/Libs/Lib.Notifications.Tests/Lib.Notifications.Tests.csproj" />

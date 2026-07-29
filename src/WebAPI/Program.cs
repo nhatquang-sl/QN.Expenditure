@@ -1,13 +1,16 @@
 using System.Reflection;
 using Auth.Infrastructure;
+using Cex.Application.Signals.Commands.FindSignal;
 using Cex.Infrastructure;
 using Lib.Application.Abstractions;
+using Lib.EventBus;
 using Lib.Notifications;
 using Microsoft.Extensions.Caching.Hybrid;
 using NSwag;
 using NSwag.Generation.Processors.Security;
 using Serilog;
 using ServiceDefaults;
+using WebAPI.Controllers;
 using WebAPI.HostedServices;
 using WebAPI.Middleware;
 using WebAPI.Services;
@@ -64,6 +67,8 @@ builder.Host.UseSerilog((context, services, loggerConfig) =>
 // builder.Services.AddTransient(_ =>
 //     new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
 builder.Services.AddTelegramNotifier(builder.Configuration);
+builder.Services.AddLibEventBusServices(builder.Configuration,
+    busConfig => { busConfig.AddConsumer<FoundSignalEventConsumer>(); });
 builder.Services.AddAuthInfrastructureServices(builder.Configuration);
 builder.Services.AddCexInfrastructureServices(builder.Configuration);
 
@@ -71,8 +76,13 @@ builder.Services.AddSingleton<HttpContextEnricher>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddControllers();
 
-// builder.Services.AddHostedService<SpotGridService>();
-builder.Services.AddHostedService<FindSignalService>();
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddSource(nameof(SignalsController))
+    );
+
+// builder.Services.AddTracedHostedService<SpotGridService>();
+builder.Services.AddTracedHostedService<FindSignalService>();
 // builder.Services.AddHostedService<SyncTradeHistoryService>();
 // builder.Services.AddHostedService<ListenCexWebsocketService>();
 
@@ -140,7 +150,10 @@ app.UseSwaggerUi();
 
 app.UseCors();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

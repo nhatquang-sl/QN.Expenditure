@@ -29,6 +29,7 @@ import ExchangeSettingUpdate from 'features/settings/exchange-setting/update';
 import SyncSetting from 'features/settings/sync-setting';
 import SyncSettingCreate from 'features/settings/sync-setting/create';
 import SyncSettingUpdate from 'features/settings/sync-setting/update';
+import Signals from 'features/signal/signals';
 import TradeHistory from 'features/trade/trade-history';
 import './App.css';
 const defaultTheme = createTheme();
@@ -116,6 +117,10 @@ const router = createBrowserRouter([
       {
         path: 'trade/history/:symbol?',
         element: <TradeHistory />,
+      },
+      {
+        path: 'signals',
+        element: <Signals />,
       },
       // {
       //   path: 'bnb/spot-grids/create',

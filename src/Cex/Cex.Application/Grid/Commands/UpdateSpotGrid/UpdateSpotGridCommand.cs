@@ -1,4 +1,3 @@
-﻿using AutoMapper;
 using Cex.Application.Common.Abstractions;
 using Cex.Application.Grid.DTOs;
 using Cex.Application.Grid.Shared.Extensions;
@@ -27,7 +26,6 @@ namespace Cex.Application.Grid.Commands.UpdateSpotGrid
     }
 
     public class UpdateSpotGridCommandHandler(
-        IMapper mapper,
         ILogTrace logTrace,
         ICurrentUser currentUser,
         ICexDbContext cexDbContext,
@@ -86,7 +84,7 @@ namespace Cex.Application.Grid.Commands.UpdateSpotGrid
 
             await cexDbContext.SaveChangesAsync(cancellationToken);
 
-            return mapper.Map<SpotGridDto>(entity) ?? new SpotGridDto();
+            return SpotGridDto.From(entity);
         }
 
         private async Task CancelThenAddNormalSteps(SpotGrid grid, List<SpotGridStep> steps)

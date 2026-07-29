@@ -111,6 +111,7 @@ export {
   bnbSpotClient,
   candlesClient,
   exchangeSettingsClient,
+  instance,
   spotGridClient,
   syncSettingsClient,
   tradeClient,

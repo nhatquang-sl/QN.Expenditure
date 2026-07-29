@@ -13,11 +13,13 @@ function Main() {
           theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
         flexGrow: 1,
         height: '100vh',
-        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
       <Toolbar />
-      <Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
+      <Container maxWidth={false} sx={{ pt: 4, pb: 4, margin: 0, flex: 1, overflow: 'auto' }}>
         <Outlet />
         <ConsecutiveSnackBars />
         {/* <Copyright sx={{ pt: 4 }} /> */}

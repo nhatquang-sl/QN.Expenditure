@@ -1,4 +1,3 @@
-﻿using AutoMapper;
 using Cex.Application.BnbSpotOrder.DTOs;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Entities;
@@ -11,14 +10,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders
 {
     public class SyncSpotOrders(
-        IMapper mapper,
         ILogTrace logTrace,
         IBnbService bndService,
         ICexDbContext dbContext)
     {
         protected readonly IBnbService _bndService = bndService;
         protected readonly ILogTrace _logTrace = logTrace;
-        protected readonly IMapper _mapper = mapper;
         protected readonly ICexDbContext DbContext = dbContext;
 
         protected async Task<SpotOrderSyncSettingDto> Sync(Domain.Entities.BnbSetting setting
@@ -32,18 +29,25 @@ namespace Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders
                 return await UpdateLastSyncToSyncSetting(syncSetting, cancellationToken);
             }
 
-            ;
-
-            var spotOrderEntities = _mapper.Map<List<SpotOrder>>(spotOrders)?
-                .Select(x =>
-                {
-                    x.UserId = setting.UserId;
-                    return x;
-                })
-                .ToList();
+            var spotOrderEntities = spotOrders.Select(raw => new SpotOrder
+            {
+                UserId = setting.UserId,
+                Symbol = raw.Symbol,
+                OrderId = raw.OrderId.ToString(),
+                ClientOrderId = raw.ClientOrderId,
+                Price = decimal.Parse(raw.Price ?? "0", System.Globalization.CultureInfo.InvariantCulture),
+                OrigQty = decimal.Parse(raw.OrigQty ?? "0", System.Globalization.CultureInfo.InvariantCulture),
+                TimeInForce = raw.TimeInForce,
+                Type = raw.Type,
+                Side = raw.Side,
+                IsWorking = raw.IsWorking,
+                CreatedAt = raw.Time.ToDateTimeFromMilliseconds(),
+                UpdatedAt = raw.UpdateTime.ToDateTimeFromMilliseconds(),
+                WorkingTime = raw.WorkingTime.ToDateTimeFromMilliseconds()
+            }).ToList();
 
             // insert spot orders
-            await DbContext.SpotOrders.AddRangeAsync(spotOrderEntities ?? [], cancellationToken);
+            await DbContext.SpotOrders.AddRangeAsync(spotOrderEntities, cancellationToken);
 
             // update sync setting
             var lastSyncAt = spotOrders.Max(x => x.UpdateTime);
@@ -53,7 +57,7 @@ namespace Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders
             DbContext.SpotOrderSyncSettings.Update(ss);
             _logTrace.LogInformation($"Last Sync {syncSetting.Symbol} at {ss.LastSyncAt}");
             await DbContext.SaveChangesAsync(cancellationToken);
-            return _mapper.Map<SpotOrderSyncSettingDto>(ss);
+            return SpotOrderSyncSettingDto.From(ss);
         }
 
         private async Task<SpotOrderSyncSettingDto> UpdateLastSyncToSyncSetting(SpotOrderSyncSetting syncSetting,
@@ -74,7 +78,7 @@ namespace Cex.Application.BnbSpotOrder.Commands.SyncSpotOrders
                 await DbContext.SaveChangesAsync(cancellationToken);
             }
 
-            return _mapper.Map<SpotOrderSyncSettingDto>(ss);
+            return SpotOrderSyncSettingDto.From(ss);
         }
     }
 }

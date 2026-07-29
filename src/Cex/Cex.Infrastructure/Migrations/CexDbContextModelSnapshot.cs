@@ -71,7 +71,7 @@ namespace Cex.Infrastructure.Migrations
                     b.ToTable("ExchangeSettings");
                 });
 
-            modelBuilder.Entity("Cex.Domain.Entities.SignalRecord", b =>
+            modelBuilder.Entity("Cex.Domain.Entities.Signal", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -88,6 +88,11 @@ namespace Cex.Infrastructure.Migrations
                     b.Property<DateTime>("DetectedAt")
                         .HasPrecision(0)
                         .HasColumnType("datetime2(0)");
+
+                    b.Property<int>("EntryHitAfterMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(-1);
 
                     b.Property<DateTime?>("EntryHitAt")
                         .HasPrecision(0)
@@ -107,6 +112,30 @@ namespace Cex.Infrastructure.Migrations
                         .HasPrecision(0)
                         .HasColumnType("datetime2(0)")
                         .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("Leverage")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(10);
+
+                    b.Property<decimal>("MaxProfit")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateTime?>("MaxProfitCheckedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime2(0)");
+
+                    b.Property<int>("MaxProfitHitAfterMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(-1);
+
+                    b.Property<DateTime?>("MaxProfitHitAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime2(0)");
 
                     b.Property<DateTime>("PreviousCandleAt")
                         .HasPrecision(0)
@@ -128,6 +157,11 @@ namespace Cex.Infrastructure.Migrations
                         .HasPrecision(18, 8)
                         .HasColumnType("decimal(18,8)");
 
+                    b.Property<int>("StopLossHitAfterMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(-1);
+
                     b.Property<DateTime?>("StopLossHitAt")
                         .HasPrecision(0)
                         .HasColumnType("datetime2(0)");
@@ -147,12 +181,23 @@ namespace Cex.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EntryHitAfterMinutes");
+
                     b.HasIndex("LastCheckedCandleAt");
+
+                    b.HasIndex("MaxProfitCheckedAt");
+
+                    b.HasIndex("MaxProfitHitAfterMinutes");
+
+                    b.HasIndex("StopLossHitAfterMinutes");
 
                     b.HasIndex("Symbol", "Interval", "DetectedAt")
                         .IsUnique();
 
-                    b.ToTable("SignalRecords");
+                    b.ToTable("Signals", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Signals_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
+                        });
                 });
 
             modelBuilder.Entity("Cex.Domain.Entities.SpotGrid", b =>

@@ -1,20 +1,18 @@
-﻿using AutoMapper;
-using Cex.Application.Common.Mappings;
 using Cex.Domain.Entities;
 using Lib.Application.Extensions;
 
 namespace Cex.Application.BnbSpotOrder.DTOs
 {
-    public class SpotOrderSyncSettingDto : IMapFrom<SpotOrderSyncSetting>
+    public class SpotOrderSyncSettingDto
     {
         public string Symbol { get; set; }
         public long LastSyncAt { get; set; }
 
-        public void Mapping(Profile profile)
+        public static SpotOrderSyncSettingDto From(SpotOrderSyncSetting entity) => new()
         {
-            profile.CreateMap<SpotOrderSyncSetting, SpotOrderSyncSettingDto>()
-                .ForMember(x => x.LastSyncAt, opt => opt.MapFrom(x => x.LastSyncAt.ToUnixTimestampMilliseconds()));
-        }
+            Symbol = entity.Symbol,
+            LastSyncAt = entity.LastSyncAt.ToUnixTimestampMilliseconds()
+        };
     }
 
     public class SpotOrderSyncSettingUpdateDto

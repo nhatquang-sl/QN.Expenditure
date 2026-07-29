@@ -1,7 +1,6 @@
-﻿using Auth.Application.Account.DTOs;
+using Auth.Application.Account.DTOs;
 using Auth.Application.Common.Abstractions;
 using Auth.Domain.Entities;
-using AutoMapper;
 using Lib.Application.Extensions;
 using MediatR;
 
@@ -17,7 +16,6 @@ namespace Auth.Application.Account.Commands.Login
     }
 
     public class LoginCommandHandler(
-        IMapper mapper,
         IIdentityService identityService,
         IJwtProvider jwtService,
         IAuthDbContext dbContext)
@@ -26,22 +24,30 @@ namespace Auth.Application.Account.Commands.Login
         public async Task<UserAuthDto> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
             var userProfile =
-                await identityService.LoginAsync(request.Email, request.Password, request.RememberMe);
+                await identityService.LoginAsync(request.Email, request.Password);
 
             var (accessToken, refreshToken, accessTokenExpires, refreshTokenExpires) =
-                jwtService.GenerateTokens(userProfile);
+                jwtService.GenerateTokens(userProfile, request.RememberMe);
 
-            var userAuth = mapper.Map<UserAuthDto>(userProfile);
-            userAuth.AccessToken = accessToken;
-            userAuth.RefreshToken = refreshToken;
-            userAuth.AccessTokenExpires = accessTokenExpires.ToUnixTimestampMilliseconds();
-            userAuth.RefreshTokenExpires = refreshTokenExpires.ToUnixTimestampMilliseconds();
+            var userAuth = new UserAuthDto
+            {
+                Id = userProfile.Id,
+                Email = userProfile.Email,
+                FirstName = userProfile.FirstName,
+                LastName = userProfile.LastName,
+                EmailConfirmed = userProfile.EmailConfirmed,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpires = accessTokenExpires.ToUnixTimestampMilliseconds(),
+                RefreshTokenExpires = refreshTokenExpires.ToUnixTimestampMilliseconds()
+            };
 
             await dbContext.UserLoginHistories.AddAsync(new UserLoginHistory
             {
                 UserId = userProfile.Id,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
+                RememberMe = request.RememberMe,
                 IpAddress = request.IpAddress,
                 UserAgent = request.UserAgent,
                 CreatedAt = DateTime.UtcNow

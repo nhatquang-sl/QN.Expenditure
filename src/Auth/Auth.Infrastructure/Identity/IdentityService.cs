@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Auth.Application.Account.Commands.ChangeEmail;
@@ -9,7 +9,6 @@ using Auth.Application.Account.Commands.Register;
 using Auth.Application.Account.Commands.ResetPassword;
 using Auth.Application.Account.DTOs;
 using Auth.Application.Common.Abstractions;
-using AutoMapper;
 using Lib.Application.Exceptions;
 using Lib.Application.Logging;
 using Microsoft.AspNetCore.Identity;
@@ -21,14 +20,12 @@ namespace Auth.Infrastructure.Identity
     public class IdentityService : IIdentityService
     {
         private readonly ILogTrace _logTrace;
-        private readonly IMapper _mapper;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
 
         public IdentityService(UserManager<ApplicationUser> userManager, ILogTrace logTrace
-            , SignInManager<ApplicationUser> signInManager, IMapper mapper)
+            , SignInManager<ApplicationUser> signInManager)
         {
-            _mapper = mapper;
             _logTrace = logTrace;
             _userManager = userManager;
             _signInManager = signInManager;
@@ -36,7 +33,13 @@ namespace Auth.Infrastructure.Identity
 
         public async Task<(UserProfileDto, string)> CreateUserAsync(RegisterCommand request)
         {
-            var user = _mapper.Map<ApplicationUser>(request);
+            var user = new ApplicationUser
+            {
+                Email = request.Email,
+                UserName = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName
+            };
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
@@ -59,7 +62,14 @@ namespace Auth.Infrastructure.Identity
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-            return (_mapper.Map<UserProfileDto>(user), code);
+            return (new UserProfileDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                EmailConfirmed = user.EmailConfirmed
+            }, code);
         }
 
         public async Task<string> GenerateEmailConfirmCode(string userId)
@@ -120,35 +130,14 @@ namespace Auth.Infrastructure.Identity
             return "Thank you for confirming your email change.";
         }
 
-        public async Task<UserProfileDto> LoginAsync(string email, string password, bool rememberMe)
+        public async Task<UserProfileDto> LoginAsync(string email, string password)
         {
+            var user = await _userManager.FindByEmailAsync(email)
+                ?? throw new BadRequestException("Email or Password incorrect.");
+
             // This doesn't count login failures towards account lockout
             // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            var result = await _signInManager.PasswordSignInAsync(email, password, rememberMe, false);
-            if (result.Succeeded || result.IsNotAllowed)
-            {
-                _logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", MethodBase.GetCurrentMethod()));
-                //_logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", new { email }, MethodBase.GetCurrentMethod()));
-                var user = await _userManager.FindByEmailAsync(email);
-                _logTrace.AddProperty("UserId", user?.Id ?? "");
-
-                return user == null
-                    ? throw new NotFoundException($"{email} is not found!")
-                    : new UserProfileDto
-                    {
-                        Id = user.Id,
-                        Email = email,
-                        FirstName = user.FirstName,
-                        LastName = user.LastName,
-                        EmailConfirmed = user.EmailConfirmed
-                    };
-            }
-
-            if (result.RequiresTwoFactor)
-            {
-                // return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = request.RememberMe });
-                throw new BadRequestException("Requires Two Factor.");
-            }
+            var result = await _signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: false);
 
             if (result.IsLockedOut)
             {
@@ -156,8 +145,28 @@ namespace Auth.Infrastructure.Identity
                 throw new BadRequestException("User account locked out.");
             }
 
-            _logTrace.Log(new LogEntry(LogLevel.Error, "Invalid login attempt.", MethodBase.GetCurrentMethod()));
-            throw new BadRequestException("Email or Password incorrect.");
+            if (result.RequiresTwoFactor)
+            {
+                throw new BadRequestException("Requires Two Factor.");
+            }
+
+            if (!result.Succeeded && !result.IsNotAllowed)
+            {
+                _logTrace.Log(new LogEntry(LogLevel.Error, "Invalid login attempt.", MethodBase.GetCurrentMethod()));
+                throw new BadRequestException("Email or Password incorrect.");
+            }
+
+            _logTrace.Log(new LogEntry(LogLevel.Information, "User logged in.", MethodBase.GetCurrentMethod()));
+            _logTrace.AddProperty("UserId", user.Id);
+
+            return new UserProfileDto
+            {
+                Id = user.Id,
+                Email = email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                EmailConfirmed = user.EmailConfirmed
+            };
         }
 
         public async Task<string> ChangePassword(string userId, ChangePasswordCommand request)

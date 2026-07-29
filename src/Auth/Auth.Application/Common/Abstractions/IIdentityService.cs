@@ -14,7 +14,7 @@ namespace Auth.Application.Common.Abstractions
         Task<string> GenerateEmailConfirmCode(string userId);
         Task<bool> ConfirmEmailAsync(string userId, string code);
         Task<string> ConfirmEmailChangeAsync(ConfirmEmailChangeCommand request);
-        Task<UserProfileDto> LoginAsync(string email, string password, bool rememberMe);
+        Task<UserProfileDto> LoginAsync(string email, string password);
         Task<string> ChangePassword(string userId, ChangePasswordCommand request);
         Task<string> ChangeEmail(string userId, ChangeEmailCommand request);
         Task<string> ForgotPasswordAsync(ForgotPasswordCommand request);

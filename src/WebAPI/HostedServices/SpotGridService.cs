@@ -10,7 +10,7 @@ using Serilog;
 namespace WebAPI.HostedServices
 {
     public class SpotGridService(
-        IConfiguration configuration) : BackgroundService
+        IConfiguration configuration) : TracedBackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -31,7 +31,7 @@ namespace WebAPI.HostedServices
                     var notifier = scope.ServiceProvider.GetRequiredService<INotifier>();
                     try
                     {
-                        await mediator.Send(new TradeSpotGridCommand(), stoppingToken);
+                        await RunTracedAsync("TradeSpotGrid", ct => mediator.Send(new TradeSpotGridCommand(), ct), stoppingToken);
 
                         await SendDailyStatistics(mediator, notifier, stoppingToken);
                     }
