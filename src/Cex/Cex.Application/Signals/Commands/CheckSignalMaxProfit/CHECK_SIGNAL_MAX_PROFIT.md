@@ -1,61 +1,36 @@
 # CheckSignalMaxProfit
 
+> See [SIGNALS.md](../../SIGNALS.md) for the full entity schema, column reference, and signal lifecycle.
+> Columns written by this command: `MaxProfit`, `MaxProfitHitAt`, `MaxProfitHitAfterMinutes`, `MaxProfitCheckedAt`.
+
 ## Overview
 
-`CheckSignalMaxProfitCommand` runs every minute inside `FindSignalService` and tracks the peak leverage-adjusted profit achieved by each entered position. Two scan windows apply: for stopped-out positions it scans the closed window from entry to stop-loss (once, then complete); for open positions it scans incrementally from the last checkpoint to the current minute on every run. The result — `MaxProfit` (%) and `MaxProfitHitAt` (candle timestamp) — provides retrospective and live insight into how far in-profit a position reached before or since closing.
+`CheckSignalMaxProfitCommand` runs every minute inside `FindSignalService` and tracks the peak leverage-adjusted profit achieved by each entered position. For stopped-out positions it scans the closed window (entry → stop-loss) once, then stops. For open positions it scans incrementally to the current minute on every run.
 
-**Module Location**: `src/Cex/Cex.Application/Signal/Commands/CheckSignalMaxProfit/`
+**Module Location**: `src/Cex/Cex.Application/Signals/Commands/CheckSignalMaxProfit/`
 **Scope**: BTCUSDT only; all signal intervals
 
 ---
 
-## Data Model
-
-### Entity: `Signal` (Existing — modified)
-
-Four new columns:
-
-| Column | Type | Nullable | Default | Constraints | Notes |
-|---|---|---|---|---|---|
-| Leverage | int | No | 10 | CK: `Leverage >= 1 AND Leverage <= 125` | Scales raw price movement to leveraged profit % |
-| MaxProfit | decimal(10,4) | No | 0 | — | Best leverage-adjusted profit % seen; 0 = never above entry |
-| MaxProfitHitAt | datetime2(0) | Yes | NULL | — | OpenTime of the candle where best price was observed; null if `MaxProfit` was never updated above 0 |
-| MaxProfitCheckedAt | datetime2(0) | Yes | NULL | — | Scan pointer; null until entry is detected; set to `EntryHitAt` by `CheckSignalEntry` when entry is detected; advanced by `CheckSignalMaxProfit` each run thereafter |
-
-Updated entity snippet:
-
-```csharp
-public class Signal
-{
-    // ... existing fields ...
-    public int Leverage { get; set; } = 10;
-    public decimal MaxProfit { get; set; } = 0;
-    public DateTime? MaxProfitHitAt { get; set; }
-    public DateTime? MaxProfitCheckedAt { get; set; }
-}
-```
-
-### Business Rules
+## Business Rules
 
 1. **Profit formula** per candle (leverage-adjusted):
-   - Long: `profitPct = (candle.HighestPrice − entryPrice) / entryPrice × 100 × Leverage`
-   - Short: `profitPct = (entryPrice − candle.LowestPrice) / entryPrice × 100 × Leverage`
+   - Long: `profitPct = (candle.HighestPrice - entryPrice) / entryPrice * 100 * Leverage`
+   - Short: `profitPct = (entryPrice - candle.LowestPrice) / entryPrice * 100 * Leverage`
 
-2. **Max update condition** — `MaxProfit` and `MaxProfitHitAt` are overwritten only when `profitPct > signal.MaxProfit`. Strict greater-than preserves the earliest candle when two candles produce identical profit values.
+2. **Max update condition** — `MaxProfit` and `MaxProfitHitAt` are overwritten only when `profitPct > signal.MaxProfit`. Strict greater-than preserves the earliest candle on equal values.
 
-3. **`MaxProfitHitAt` remains null when `MaxProfit` stays at 0** — if no candle in the entire scan window produces `profitPct > 0` (price never moved above entry for Long / below entry for Short), `MaxProfitHitAt` is never set and remains null even after the scan is fully complete. `MaxProfit = 0` with `MaxProfitHitAt = null` means the position was never in profit.
+3. **"Never in profit" state** — if no candle produces `profitPct > 0`, `MaxProfitHitAt` remains `NULL` and `MaxProfit` stays `0` even after the scan is complete.
 
 4. **Scan window**:
-   - Open position (`StopLossHitAt IS NULL`): scans from `MaxProfitCheckedAt ?? EntryHitAt` → now; re-runs every minute indefinitely.
-   - Stopped-out position (`StopLossHitAt IS NOT NULL`): scans from `MaxProfitCheckedAt ?? EntryHitAt` → `StopLossHitAt`; complete when `(MaxProfitCheckedAt ?? EntryHitAt) >= StopLossHitAt`.
+   - Open position (`StopLossHitAt IS NULL`): scans from `MaxProfitCheckedAt ?? EntryHitAt` → now; re-runs indefinitely every minute.
+   - Stopped-out (`StopLossHitAt IS NOT NULL`): scans `MaxProfitCheckedAt ?? EntryHitAt` → `StopLossHitAt`; signal drops from the query once `MaxProfitCheckedAt >= StopLossHitAt`.
 
-5. **Pointer initialisation** — `MaxProfitCheckedAt` is `null` at record creation. Normally `CheckSignalEntry` sets it to `hit.OpenTime` (= `EntryHitAt`) when entry is detected. If a signal has `EntryHitAt` set but `MaxProfitCheckedAt` is still `null` (e.g. seeded rows, backfill gaps), the handler falls back to `EntryHitAt` in all pointer reads, ensuring correct behaviour without requiring a DB migration backfill.
+5. **Pointer initialisation** — `MaxProfitCheckedAt` is `NULL` at record creation. Set to `hit.OpenTime` by `CheckSignalEntry` on entry detection. If still `NULL` when this command runs (e.g. backfilled rows), all pointer reads fall back to `EntryHitAt` via null-coalescing (`?? EntryHitAt`).
 
 6. **Pointer monotonicity** — `MaxProfitCheckedAt` never moves backward.
 
-7. **Leverage range** — 1–125; enforced by a DB check constraint.
-
-8. **Leverage default** — existing rows without an explicit value default to 10.
+7. **Leverage** — `int`, range 1–125, default 10. Multiplying `decimal × int` promotes the `int` to `decimal` — no truncation.
 
 ---
 
@@ -68,60 +43,48 @@ public class Signal
             OR (MaxProfitCheckedAt ?? EntryHitAt) < StopLossHitAt)
      ORDER BY (MaxProfitCheckedAt ?? EntryHitAt) ASC
 
-2. If candidates empty → return early
+2. If empty -> return early
 
 3. startAt = Min(candidates, s => s.MaxProfitCheckedAt ?? s.EntryHitAt)
-   now     = DateTime.UtcNow
-   lastBatchOpenTime = null
 
-4. while startAt < now:
-   a. batch = GetKlines("BTCUSDT", 1min, startAt, interval.GetEndDate(startAt))
-      (returns ≤ 1500 candles sorted ascending by OpenTime)
-   b. if batch empty → break
-   c. lastBatchOpenTime = batch[^1].OpenTime
-      startAt           = lastBatchOpenTime + 1 min
-
-   d. for each signal in candidates:
-        checkFrom = signal.MaxProfitCheckedAt ?? signal.EntryHitAt   ← null-coalesced
-        scanEnd   = signal.StopLossHitAt    (null → no upper bound)
-
+4. Loop while startAt < now:
+   a. Fetch <=1500 1-min candles from startAt to interval.GetEndDate(startAt)
+   b. If batch empty -> break
+   c. For each signal in candidates:
+        checkFrom      = MaxProfitCheckedAt ?? EntryHitAt
+        scanEnd        = StopLossHitAt (null = no upper bound)
         relevantCandles = batch
-            .Where(c => c.OpenTime > checkFrom
-                     && (scanEnd == null || c.OpenTime <= scanEnd))
-            .ToList()
-            (inherits ascending OpenTime order from GetKlines)
+            .Where(c => c.OpenTime > checkFrom AND (scanEnd == null OR c.OpenTime <= scanEnd))
+        If relevantCandles empty -> skip this signal for this batch
 
-        if relevantCandles empty → skip this signal for this batch
+        For each candle in relevantCandles (ascending OpenTime):
+          Compute profitPct per formula above
+          If profitPct > MaxProfit:
+            MaxProfit               = profitPct
+            MaxProfitHitAt          = c.OpenTime
+            MaxProfitHitAfterMinutes = (int)(c.OpenTime - DetectedAt).TotalMinutes
 
-        for each c in relevantCandles (ascending OpenTime):
-          profitPct = Long  ? (c.HighestPrice − entryPrice) / entryPrice × 100 × Leverage
-                      Short ? (entryPrice − c.LowestPrice)  / entryPrice × 100 × Leverage
-          if profitPct > signal.MaxProfit:
-            signal.MaxProfit      = profitPct
-            signal.MaxProfitHitAt = c.OpenTime
+        newPointer = relevantCandles[^1].OpenTime  (latest in range, <= scanEnd)
+        If newPointer > (MaxProfitCheckedAt ?? EntryHitAt):
+          MaxProfitCheckedAt = newPointer
 
-        newPointer = relevantCandles[^1].OpenTime
-                     ← last element is chronologically latest because list is sorted ascending;
-                       always ≤ scanEnd due to the Where filter
-        if newPointer > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt):
-          signal.MaxProfitCheckedAt = newPointer
+   d. startAt = batch[^1].OpenTime + 1 min
 
-5. if lastBatchOpenTime is null → return (no DB write — no batch fetched)
-
+5. If no batch fetched -> return (no DB write)
 6. SaveChangesAsync
 ```
 
-> **Why a per-signal pointer rather than the shared `lastBatchOpenTime` approach used by `CheckSignalStopLoss`?**
-> Open and stopped-out signals have different effective scan ends. A shared pointer would advance stopped-out signals past their `StopLossHitAt`, including post-close candles in the profit calculation. Per-signal advance caps naturally at `StopLossHitAt` via the `relevantCandles` filter.
+> **Why a per-signal pointer rather than a shared `lastBatchOpenTime`?**
+> Open and stopped-out signals have different effective scan ends. A shared pointer would advance stopped-out signals past their `StopLossHitAt`, incorrectly including post-close candles. The per-signal pointer caps naturally at `StopLossHitAt` via the `relevantCandles` filter.
 
-> **Why no early `unhitCount`-style break?**
-> Open positions are never "done" within a run — they always scan to `now`. A break condition would require tracking open vs stopped-out counts for minimal gain. The `while startAt < now` condition terminates naturally.
+> **Why no `unhitCount`-style early break?**
+> Open positions are never "done" within a run; a break condition would require tracking open vs stopped-out counts for minimal gain.
 
 ---
 
 ## Data Access
 
-**Step 1 — Load candidates:**
+**Load candidates:**
 
 ```csharp
 var candidates = await dbContext.Signals
@@ -131,11 +94,9 @@ var candidates = await dbContext.Signals
     .OrderBy(s => s.MaxProfitCheckedAt ?? s.EntryHitAt)
     .Take(100)
     .ToListAsync(cancellationToken);
-
-if (candidates.Count == 0) return;
 ```
 
-**Steps 3–6 — Candle loop, profit tracking:**
+**Candle loop + profit tracking:**
 
 ```csharp
 const IntervalType interval = IntervalType.OneMinute;
@@ -158,9 +119,6 @@ try
         foreach (var signal in candidates)
         {
             var scanEnd = signal.StopLossHitAt;
-
-            // GetKlines returns candles sorted ascending by OpenTime.
-            // relevantCandles inherits that order; no defensive sort is applied.
             var relevantCandles = batch
                 .Where(c => c.OpenTime > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt!.Value) &&
                             (scanEnd == null || c.OpenTime <= scanEnd))
@@ -170,20 +128,18 @@ try
 
             foreach (var c in relevantCandles)
             {
-                // signal.Leverage is int; multiplying decimal by int promotes int to decimal — no truncation.
                 var profitPct = signal.SignalType == SignalType.Long
                     ? (c.HighestPrice - signal.EntryPrice) / signal.EntryPrice * 100m * signal.Leverage
                     : (signal.EntryPrice - c.LowestPrice)  / signal.EntryPrice * 100m * signal.Leverage;
 
                 if (profitPct > signal.MaxProfit)
                 {
-                    signal.MaxProfit      = profitPct;
-                    signal.MaxProfitHitAt = c.OpenTime;
+                    signal.MaxProfit                = profitPct;
+                    signal.MaxProfitHitAt           = c.OpenTime;
+                    signal.MaxProfitHitAfterMinutes = (int)(c.OpenTime - signal.DetectedAt).TotalMinutes;
                 }
             }
 
-            // relevantCandles is sorted ascending; [^1] is the latest candle in the range.
-            // Its OpenTime is always ≤ scanEnd because of the Where filter above.
             var newPointer = relevantCandles[^1].OpenTime;
             if (newPointer > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt!.Value))
                 signal.MaxProfitCheckedAt = newPointer;
@@ -192,8 +148,6 @@ try
 }
 catch (Exception ex)
 {
-    // Any exception (rate-limit 429, network, timeout) during the loop:
-    // fall through and save whatever progress was accumulated before the failure.
     logTrace.LogError("CheckSignalMaxProfit loop interrupted — saving partial progress", ex);
 }
 
@@ -206,65 +160,9 @@ await dbContext.SaveChangesAsync(cancellationToken);
 
 ## Backend Architecture
 
-### Domain Layer
-
-**Modified:** `src/Cex/Cex.Domain/Entities/Signal.cs`
-- Add `public int Leverage { get; set; } = 10;`
-- Add `public decimal MaxProfit { get; set; } = 0;`
-- Add `public DateTime? MaxProfitHitAt { get; set; }`
-- Add `public DateTime? MaxProfitCheckedAt { get; set; }`
-
-### Infrastructure Layer
-
-**Modified:** `src/Cex/Cex.Infrastructure/Data/Configurations/SignalConfiguration.cs`
+**File**: `src/Cex/Cex.Application/Signals/Commands/CheckSignalMaxProfit/CheckSignalMaxProfitCommand.cs`
 
 ```csharp
-builder.Property(x => x.Leverage)
-    .HasDefaultValue(10);
-builder.HasCheckConstraint("CK_Signals_Leverage", "[Leverage] >= 1 AND [Leverage] <= 125");
-
-builder.Property(x => x.MaxProfit)
-    .HasPrecision(10, 4)
-    .HasDefaultValue(0m);
-
-builder.Property(x => x.MaxProfitHitAt).HasPrecision(0);
-builder.Property(x => x.MaxProfitCheckedAt).HasPrecision(0);
-
-builder.HasIndex(x => x.MaxProfitCheckedAt);
-```
-
-**Migration name:** `AddSignalMaxProfit`
-
-### Application Layer
-
-**Modified:** `src/Cex/Cex.Application/Signal/Commands/FindSignalCommand.cs`
-
-`MaxProfitCheckedAt` is **not set** at record creation — it remains `null` until entry is detected.
-
-**Modified:** `src/Cex/Cex.Application/Signal/Commands/CheckSignalEntry/CheckSignalEntryCommand.cs`
-
-In the entry-hit block, add `MaxProfitCheckedAt` alongside the existing `LastCheckedCandleAt` assignment:
-
-```csharp
-signal.EntryHitAt           = hit.OpenTime;
-signal.LastCheckedCandleAt  = hit.OpenTime; // anchor for stop-loss check
-signal.MaxProfitCheckedAt   = hit.OpenTime; // anchor for max-profit check
-```
-
-**New file:** `src/Cex/Cex.Application/Signal/Commands/CheckSignalMaxProfit/CheckSignalMaxProfitCommand.cs`
-
-```csharp
-using Cex.Application.Common.Abstractions;
-using Cex.Domain.Enums;
-using Lib.Application.Logging;
-using Lib.ExternalServices.KuCoin;
-using Lib.ExternalServices.KuCoin.Models;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-
-namespace Cex.Application.Signals.Commands.CheckSignalMaxProfit;
-
 public record CheckSignalMaxProfitCommand : IRequest;
 
 public class CheckSignalMaxProfitCommandHandler(
@@ -273,43 +171,26 @@ public class CheckSignalMaxProfitCommandHandler(
     ILogTrace logTrace,
     ICexDbContext dbContext)
     : IRequestHandler<CheckSignalMaxProfitCommand>
-{
-    public async Task Handle(CheckSignalMaxProfitCommand command, CancellationToken cancellationToken)
-    {
-        // ... (see Data Access section)
-    }
-}
 ```
 
-### Hosted Service
-
-**Modified:** `src/WebAPI/HostedServices/FindSignalService.cs`
-
-Add `CheckSignalMaxProfit` private method and call it **after** `CheckSignalStopLoss` — this ordering is a correctness invariant (see Technical Notes):
+**Hosted Service** — called last in the cycle, after `CheckSignalStopLoss`:
 
 ```csharp
-private async Task CheckSignalMaxProfit(CancellationToken stoppingToken)
-{
-    using var scope = serviceScopeFactory.CreateScope();
-    var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-    await mediator.Send(new CheckSignalMaxProfitCommand(), stoppingToken);
-}
-
-// In ExecuteAsync, inside the trigger block:
 await CheckSignalEntry(stoppingToken);
 await CheckSignalStopLoss(stoppingToken);
 await CheckSignalMaxProfit(stoppingToken);
 ```
 
+`CheckSignalStopLoss` **must run before** this command each cycle — see Technical Notes.
+
 ---
 
 ## Performance Considerations
 
-- **`IX_Signals_MaxProfitCheckedAt`** (new index) — supports `ORDER BY MaxProfitCheckedAt ASC TAKE 100`.
-- **Shared candle stream** — one `GetKlines` call per batch serves all 100 candidates; per-signal filtering is in-memory.
-- **No batch-level skip optimisation** — no `batchHigh`/`batchLow` pre-check is applied. Acceptable given the low expected count of active max-profit candidates; can be added if profiling shows it is needed.
-- **Stopped-out signals terminate naturally** — once `MaxProfitCheckedAt = StopLossHitAt` the signal drops from the query; no extra API calls for completed scans.
-- **No-op saves** — if all candidates' `relevantCandles` are empty for every batch (all pointers already up to date), no entity is dirtied but `SaveChangesAsync` is still called since `lastBatchOpenTime` is non-null. EF Core change tracking avoids issuing any SQL UPDATE in this case.
+- **`IX_Signals_MaxProfitCheckedAt`** — supports `ORDER BY MaxProfitCheckedAt ASC TAKE 100`.
+- **Shared candle stream** — one `GetKlines` call per batch serves all 100 candidates.
+- **Stopped-out signals terminate naturally** — once `MaxProfitCheckedAt >= StopLossHitAt` the signal drops from the query permanently.
+- **No-op saves** — if all candidates' `relevantCandles` are empty (all pointers up to date), no entity is dirtied; EF Core change tracking avoids issuing SQL UPDATEs despite `SaveChangesAsync` being called.
 
 ---
 
@@ -317,101 +198,65 @@ await CheckSignalMaxProfit(stoppingToken);
 
 | Scenario | Handling |
 |---|---|
-| No entered open/unscanned signals | Early return after candidate query — no KuCoin call |
-| First batch is empty | Break; `lastBatchOpenTime` is null; no DB write |
-| Subsequent batch is empty | Break; partial progress from prior batches saved via `SaveChangesAsync` |
-| Signal's `relevantCandles` empty for this batch | Skip signal for this batch; `MaxProfitCheckedAt` unchanged |
-| Exception in loop (429, network, timeout) | Caught in `try/catch`; partial progress saved if ≥ 1 batch fetched; error logged via `ILogTrace`; no rethrow |
-| DB `SaveChangesAsync` failure | Exception propagates to `FindSignalService` outer `catch` block and is logged there |
+| No entered unscanned signals | Early return — no KuCoin call |
+| First batch empty | Break; `lastBatchOpenTime` null; no DB write |
+| Signal's `relevantCandles` empty for a batch | Skip signal for that batch; `MaxProfitCheckedAt` unchanged |
+| Exception in loop (429, network, timeout) | Caught; partial progress saved if >= 1 batch fetched; logged via `ILogTrace` |
+| DB `SaveChangesAsync` failure | Propagates to `FindSignalService` catch block |
 
 ---
 
 ## Implementation Checklist
 
 ### Domain Layer
-- [x] Add `Leverage`, `MaxProfit`, `MaxProfitHitAt`, `MaxProfitCheckedAt` to `Signal`
+- [x] `Leverage`, `MaxProfit`, `MaxProfitHitAt`, `MaxProfitCheckedAt` added to `Signal`
 
 ### Infrastructure Layer
-- [x] Add `Leverage`, `MaxProfit`, `MaxProfitHitAt`, `MaxProfitCheckedAt` config in `SignalConfiguration`
-- [x] Add `IX_Signals_MaxProfitCheckedAt` index
-- [x] Add migration: `AddSignalMaxProfit`
+- [x] EF Core config for the four new columns in `SignalConfiguration`
+- [x] `IX_Signals_MaxProfitCheckedAt` index
+- [x] Migration: `AddSignalMaxProfit` with backfill:
+  `UPDATE Signals SET MaxProfitCheckedAt = EntryHitAt WHERE EntryHitAt IS NOT NULL`
 
 ### Application Layer
-- [x] Modify `FindSignalCommand.cs`: do NOT set `MaxProfitCheckedAt` — leave it `null` at record creation
-- [x] Modify `CheckSignalEntryCommand.cs`: add `signal.MaxProfitCheckedAt = hit.OpenTime;` in the entry-hit block
-- [x] Create `CheckSignalMaxProfitCommand.cs` with handler (full algorithm per Data Access section)
+- [x] `FindSignalCommand.cs`: does NOT set `MaxProfitCheckedAt` — left null at creation
+- [x] `CheckSignalEntryCommand.cs`: sets `signal.MaxProfitCheckedAt = hit.OpenTime` on entry hit
+- [x] `CheckSignalMaxProfitCommand.cs` — full algorithm implemented
 
 ### Hosted Service
-- [x] Add `CheckSignalMaxProfit(CancellationToken)` private method to `FindSignalService`
-- [x] Call `await CheckSignalMaxProfit(stoppingToken)` immediately **after** `await CheckSignalStopLoss(stoppingToken)`
-- [x] Add `using Cex.Application.Signals.Commands.CheckSignalMaxProfit;` import
+- [x] `CheckSignalMaxProfit(CancellationToken)` private method in `FindSignalService`
+- [x] Called after `CheckSignalStopLoss`
 
 ### Testing
-- [ ] Unit: profit formula — Long and Short at leverage values 1, 10, 125
-- [ ] Unit: `MaxProfit` updated only when `profitPct > existing MaxProfit` (strict greater-than; tie retains earlier candle)
-- [ ] Unit: `MaxProfitHitAt` remains null when no candle produces `profitPct > 0`
-- [ ] Unit: open signal `MaxProfitCheckedAt` advances to last batch candle per run
-- [ ] Unit: stopped-out signal `MaxProfitCheckedAt` caps at `StopLossHitAt`; signal excluded from query next run
-- [ ] Unit: empty candidate list → `Handle` returns without calling `GetKlines`
-- [ ] Unit: exception mid-loop → `SaveChangesAsync` called if ≥ 1 batch was fetched
+- [ ] Profit formula — Long and Short at leverage 1, 10, 125
+- [ ] `MaxProfit` updated only on strict greater-than (tie retains earlier candle)
+- [ ] `MaxProfitHitAt` remains null when no candle produces `profitPct > 0`
+- [ ] Open signal `MaxProfitCheckedAt` advances to last batch candle per run
+- [ ] Stopped-out signal `MaxProfitCheckedAt` caps at `StopLossHitAt`; excluded from query next run
+- [ ] Empty candidate list → returns without calling `GetKlines`
+- [ ] Exception mid-loop → `SaveChangesAsync` called if >= 1 batch fetched
 
 ---
 
 ## Technical Notes
 
-- **`CheckSignalStopLoss` must run before `CheckSignalMaxProfit` each cycle** — if `CheckSignalMaxProfit` ran first, an open signal's `MaxProfitCheckedAt` could advance past the stop-loss candle before `StopLossHitAt` is set. In the next run, `MaxProfitCheckedAt >= StopLossHitAt` would exclude the signal from the query while `MaxProfit` already includes candles after the stop. Running `CheckSignalStopLoss` first ensures `StopLossHitAt` is current when `CheckSignalMaxProfit` applies the `scanEnd` cap.
-
-- **`GetKlines` sort contract** — `relevantCandles` inherits ascending `OpenTime` order from `GetKlines`. `relevantCandles[^1]` is the chronologically latest candle in the range; this is required for correct pointer advance. No defensive sort is applied; the contract is trusted.
-
-- **`StopLossHitAt` is always a real candle `OpenTime`** — `CheckSignalStopLoss` sets it to `hit.OpenTime` of an actual KuCoin candle. This guarantees a candle with exactly that `OpenTime` exists in future batches, allowing `MaxProfitCheckedAt` to reach `StopLossHitAt` precisely so the signal drops out of the query.
-
-- **`MaxProfit = 0` with `MaxProfitHitAt = null` after full scan** — a position where price moved immediately and entirely against entry completes its scan with `MaxProfit = 0` and `MaxProfitHitAt = null`. This is the expected "never in profit" sentinel state.
-
-- **`Leverage` type safety** — `signal.Leverage` is `int`; multiplying a `decimal` expression by an `int` promotes the `int` to `decimal` — no integer truncation.
-
-- **`MaxProfitCheckedAt` lifecycle** — `null` at record creation; normally set to `hit.OpenTime` (= `EntryHitAt`) by `CheckSignalEntry` when entry is detected; advanced by `CheckSignalMaxProfit` each run thereafter. If `MaxProfitCheckedAt` is still `null` when `CheckSignalMaxProfit` runs (e.g. seeded or backfilled rows), all four pointer-read sites fall back to `EntryHitAt` via null-coalescing (`?? EntryHitAt`). A `null` value combined with `EntryHitAt IS NULL` means entry has not yet been hit and the signal is excluded from the candidate query entirely.
-
-- **First-run fetch volume** — on the first run for a signal, `MaxProfitCheckedAt` equals `EntryHitAt` (just set by `CheckSignalEntry`), which may be hours or days in the past. That run fetches many candle batches; subsequent runs fetch only ~1 minute of new candles.
-
-  | Run | `MaxProfitCheckedAt` (before run) | Candles fetched |
-  |-----|-----------------------------------|-----------------|
-  | 1st | `EntryHitAt` (set by `CheckSignalEntry`) | `EntryHitAt` → now (potentially large) |
-  | 2nd | last candle from run 1 | ~1 min of new candles |
-  | 3rd+ | close to now | ~1 min of new candles |
-
----
-
-## Database Migration
-
-```bash
-dotnet ef migrations add AddSignalMaxProfit \
-  --project src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj \
-  --startup-project src/Cex/Cex.Infrastructure/Cex.Infrastructure.csproj \
-  --context CexDbContext
-```
-
-After the migration is generated, add a backfill step **inside `Up()`** after `AddCheckConstraint`, before the closing brace:
-
-```csharp
-// Backfill: set MaxProfitCheckedAt only for already-entered signals.
-migrationBuilder.Sql("UPDATE Signals SET MaxProfitCheckedAt = EntryHitAt WHERE EntryHitAt IS NOT NULL");
-```
-
-This ensures existing entered signals get their scan pointer anchored to `EntryHitAt`. Unentered signals remain `null`, consistent with the new lifecycle rule.
+- **`CheckSignalStopLoss` must run before `CheckSignalMaxProfit` each cycle** — if this command ran first, an open signal's `MaxProfitCheckedAt` could advance past the stop-loss candle before `StopLossHitAt` is set. Running `CheckSignalStopLoss` first ensures `StopLossHitAt` is current when the `scanEnd` cap is applied.
+- **`StopLossHitAt` is always a real candle `OpenTime`** — set by `CheckSignalStopLoss` to `hit.OpenTime` of an actual KuCoin candle. This guarantees a candle with exactly that `OpenTime` exists in future batches, allowing `MaxProfitCheckedAt` to reach `StopLossHitAt` precisely.
+- **`GetKlines` sort contract** — `relevantCandles` inherits ascending `OpenTime` order from `GetKlines`. `relevantCandles[^1]` is the chronologically latest candle. No defensive sort is applied; the contract is trusted.
+- **First-run fetch volume** — on the first run, `MaxProfitCheckedAt` equals `EntryHitAt`, which may be hours in the past. Subsequent runs fetch ~1 minute of new candles.
 
 ---
 
 ## Related Features
 
-- **FindSignalCommand** — seeds `EntryPrice`, `SignalType`, `DetectedAt`; `MaxProfitCheckedAt` left `null` at record creation; `Leverage` defaults to 10
-- **CheckSignalEntry** — sets `EntryHitAt` and overwrites `MaxProfitCheckedAt = hit.OpenTime`, anchoring the scan start
-- **CheckSignalStopLoss** — sets `StopLossHitAt`, which is the upper scan bound for closed positions; **must run before `CheckSignalMaxProfit`** each cycle (see Technical Notes)
+- **FindSignalCommand** — seeds `EntryPrice`, `SignalType`, `Leverage`; `MaxProfitCheckedAt` left null
+- **CheckSignalEntry** — sets `EntryHitAt` and initialises `MaxProfitCheckedAt = hit.OpenTime`
+- **CheckSignalStopLoss** — sets `StopLossHitAt` (the scan upper bound for closed positions); must run before this command
 
 ---
 
 ## Future
 
-- Expose `MaxProfit` and `MaxProfitHitAt` via a query/API endpoint for front-end display
-- Configurable leverage per signal at creation time (currently all signals default to 10)
-- Early-exit optimisation: break the candle loop when all stopped-out candidates are fully scanned and no open candidates remain
+- Expose `MaxProfit` and `MaxProfitHitAt` in a dedicated analytics endpoint
+- Configurable leverage per signal at creation time
+- Early-exit optimisation: break the candle loop when all stopped-out candidates are complete and no open candidates remain
 - Notification on new all-time high profit via `INotifier`

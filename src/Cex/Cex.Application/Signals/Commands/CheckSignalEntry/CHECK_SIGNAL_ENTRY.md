@@ -1,64 +1,57 @@
-# CheckSignalEntry Feature
+# CheckSignalEntry
+
+> See [SIGNALS.md](../../SIGNALS.md) for the full entity schema, column reference, and signal lifecycle.
 
 ## Overview
 
-`CheckSignalEntryCommand` runs every minute and checks whether any open signals (those with `EntryHitAt = NULL`) have had their entry price reached by 1-minute candles. It processes signals in batches of 100 (least-recently-checked first) and tracks `LastCheckedCandleAt` per signal so each run only fetches new candles since the last check — not the entire historical window.
+`CheckSignalEntryCommand` runs every minute and detects when open signals (`EntryHitAt = NULL`) have had their entry price reached by 1-minute BTCUSDT candles. Processes up to 100 signals at a time (least-recently-checked first) and advances `LastCheckedCandleAt` per signal so each run only fetches new candles.
 
----
-
-## Entity Change: Add `LastCheckedCandleAt` to `Signal`
-
-```
-LastCheckedCandleAt  DateTime (datetime2(0))  Set to CreatedAt on insert; never null.
-                                               Second-level precision — matches candle OpenTime granularity.
-                                               OpenTime of the last 1-min candle checked for this signal.
-                                               Updated after every check regardless of hit.
-```
-
-This is the key field that avoids re-scanning already-checked candles on subsequent runs.
+**Module Location**: `src/Cex/Cex.Application/Signals/Commands/CheckSignalEntry/`
+**Scope**: BTCUSDT only; all signal intervals
 
 ---
 
 ## Algorithm
 
 ```
-1. Query the 100 least-recently-checked Signals where EntryHitAt IS NULL,
-   ordered by LastCheckedCandleAt ASC
-2. If no candidates → return early (no KuCoin call)
-3. Find startAt = Min(candidates, s => s.LastCheckedCandleAt)
+1. Query 100 Signals WHERE EntryHitAt IS NULL
+   ORDER BY LastCheckedCandleAt ASC
+2. If empty -> return early (no KuCoin call)
+3. startAt = Min(candidates, s => s.LastCheckedCandleAt)
 4. Loop while startAt < now:
-   a. Fetch up to 1500 1-min candles (BTCUSDT) from startAt to interval.GetEndDate(startAt)
-   b. If batch empty → break
-   c. Compute batch price range: batchHigh = Max(HighestPrice), batchLow = Min(LowestPrice)
+   a. Fetch <=1500 1-min candles from startAt to interval.GetEndDate(startAt)
+   b. If batch empty -> break
+   c. batchHigh = Max(HighestPrice), batchLow = Min(LowestPrice)
    d. For each candidate where EntryHitAt IS NULL:
-        - Skip if entry is out of batch range:
-            Long  signal: EntryPrice < batchLow  → skip
-            Short signal: EntryPrice > batchHigh → skip
-        - Find earliest candle in batch where:
-            candle.OpenTime > signal.LastCheckedCandleAt
-            Long  signal hit: candle.LowestPrice  <= signal.EntryPrice
-            Short signal hit: candle.HighestPrice >= signal.EntryPrice
-        - If hit found → set EntryHitAt = hit.OpenTime; set LastCheckedCandleAt = hit.OpenTime; decrement unhitCount
-   e. Advance startAt = batch[^1].OpenTime + 1 min
-   f. If unhitCount == 0 → break early
-5. If no batches were fetched → return early (no DB write)
-6. For every candidate where EntryHitAt IS NULL: set LastCheckedCandleAt = Max(LastCheckedCandleAt, lastCandleOpenTime)
-   (never move the pointer backwards in case of an early-exit gap)
-   Signals that hit entry already had LastCheckedCandleAt set to hit.OpenTime in step 4 — do not overwrite
+        - Skip if entry price is outside batch range (batch-level optimisation):
+            Long  signal: EntryPrice < batchLow  -> skip
+            Short signal: EntryPrice > batchHigh -> skip
+        - Find earliest candle: OpenTime > LastCheckedCandleAt AND hit condition:
+            Long  hit: LowestPrice  <= EntryPrice
+            Short hit: HighestPrice >= EntryPrice
+        - If hit:
+            EntryHitAt             = hit.OpenTime
+            EntryHitAfterMinutes   = (int)(hit.OpenTime - DetectedAt).TotalMinutes
+            LastCheckedCandleAt    = hit.OpenTime  (anchor for CheckSignalStopLoss)
+            MaxProfitCheckedAt     = hit.OpenTime  (anchor for CheckSignalMaxProfit)
+            unhitCount--
+   e. startAt = batch[^1].OpenTime + 1 min
+   f. If unhitCount == 0 -> break early
+5. If no batch was fetched -> return (no DB write)
+6. For each unhit candidate: LastCheckedCandleAt = Max(LastCheckedCandleAt, lastCandleOpenTime)
+   (pointer monotonicity — never move backward)
 7. SaveChangesAsync
 ```
 
-> **Why order by `LastCheckedCandleAt` ASC?**
-> This ensures the signals that were checked least recently come first, so backlogged signals are not starved by newly-created ones.
+> **Why order by `LastCheckedCandleAt` ASC?** Backlogged signals are not starved by newly-created ones.
 
-> **Why always update `LastCheckedCandleAt`?**
-> Even if no entry was hit, we advance the pointer so the next run only fetches the 1 new minute of candles — not the entire window again.
+> **Why always advance `LastCheckedCandleAt` for unhit signals?** Even if no entry was hit, advancing the pointer ensures the next run only fetches ~1 new minute of candles instead of the full historical window again.
 
 ---
 
 ## Data Access
 
-**Step 1 — Load 100 least-recently-checked open signals:**
+**Load candidates:**
 
 ```csharp
 var candidates = await dbContext.Signals
@@ -66,11 +59,9 @@ var candidates = await dbContext.Signals
     .OrderBy(s => s.LastCheckedCandleAt)
     .Take(100)
     .ToListAsync(cancellationToken);
-
-if (candidates.Count == 0) return;
 ```
 
-**Step 3-7 — Fetch batches and detect hits inline:**
+**Candle loop + hit detection:**
 
 ```csharp
 const IntervalType interval = IntervalType.OneMinute;
@@ -101,103 +92,79 @@ try
 
             if (!inRange) continue;
 
-            var checkFrom = signal.LastCheckedCandleAt;
-            var hit = batch
-                .FirstOrDefault(c => c.OpenTime > checkFrom &&
-                                     (signal.SignalType == SignalType.Long
-                                      ? c.LowestPrice  <= signal.EntryPrice
-                                      : c.HighestPrice >= signal.EntryPrice));
+            var hit = batch.FirstOrDefault(c =>
+                c.OpenTime > signal.LastCheckedCandleAt &&
+                (signal.SignalType == SignalType.Long
+                    ? c.LowestPrice  <= signal.EntryPrice
+                    : c.HighestPrice >= signal.EntryPrice));
 
-            if (hit is not null)
-            {
-                signal.EntryHitAt = hit.OpenTime;
-                signal.LastCheckedCandleAt = hit.OpenTime; // anchor for stop-loss check
-                unhitCount--;
-            }
+            if (hit is null) continue;
+
+            signal.EntryHitAt            = hit.OpenTime;
+            signal.EntryHitAfterMinutes  = (int)(hit.OpenTime - signal.DetectedAt).TotalMinutes;
+            signal.LastCheckedCandleAt   = hit.OpenTime;
+            signal.MaxProfitCheckedAt    = hit.OpenTime;
+            unhitCount--;
         }
 
-        if (unhitCount == 0) break; // all hits found
+        if (unhitCount == 0) break;
     }
 }
 catch (Exception ex)
 {
-    // Any exception (rate-limit, network, timeout, etc.) during the loop:
-    // fall through and save whatever progress was accumulated before the failure.
-    // ILogTrace logs the error; we do not rethrow so partial progress is preserved.
-    logTrace.Error(ex, "CheckSignalEntry loop interrupted — saving partial progress");
+    logTrace.LogError("CheckSignalEntry loop interrupted — saving partial progress", ex);
 }
 
-// Always write to DB if at least one batch was fetched — we need to advance LastCheckedCandleAt
-// for unhit signals so the next run (or stop-loss check) only fetches new candles.
-// Signals that hit entry already have LastCheckedCandleAt = hit.OpenTime; skip them.
 if (lastCandleOpenTime is null) return;
 
-foreach (var signal in candidates.Where(s => s.EntryHitAt == null))
-    if (lastCandleOpenTime.Value > signal.LastCheckedCandleAt)
-        signal.LastCheckedCandleAt = lastCandleOpenTime.Value;
+foreach (var signal in candidates.Where(s => s.EntryHitAt == null && lastCandleOpenTime.Value > s.LastCheckedCandleAt))
+    signal.LastCheckedCandleAt = lastCandleOpenTime.Value;
+
+await dbContext.SaveChangesAsync(cancellationToken);
 ```
 
 ---
 
 ## Candle Fetch Window Over Time
 
-| Run | `LastCheckedCandleAt` | Candles fetched |
-| --- | --- | --- |
-| 1st (signal just created) | initialized to `CreatedAt` on insert | `CreatedAt` → now (potentially large) |
-| 2nd | set to last candle from run 1 | ~1 min of new candles |
-| 3rd+ | always close to now | ~1 min of new candles |
-| New signal enters top-100 | initialized to `CreatedAt` on insert | pulls window back to cover it; loop handles the gap |
-
----
-
-## Implementation
-
-### Domain Layer
-
-- [ ] Add `LastCheckedCandleAt DateTime` to `Signal` entity (non-nullable)
-
-### Infrastructure Layer
-
-- [ ] Add `LastCheckedCandleAt` to `SignalConfiguration` with second-level precision: `HasPrecision(0).HasDefaultValueSql("GETUTCDATE()")` → maps to `datetime2(0)` in SQL Server
-- [ ] Add index on `LastCheckedCandleAt` in `SignalConfiguration` (supports the `ORDER BY LastCheckedCandleAt` query that runs every minute)
-- [ ] Add migration: `AddSignalLastCheckedCandleAt`
-
-### Application Layer
-
-**New file**: `src/Cex/Cex.Application/Signal/Commands/CheckSignalEntry/CheckSignalEntryCommand.cs`
-
-- Command: `CheckSignalEntryCommand` (no parameters — always operates on BTCUSDT 1min)
-- Handler: `CheckSignalEntryCommandHandler`
-  - Injects: `IKuCoinService`, `IOptions<KuCoinConfig>`, `ICexDbContext`, `ILogTrace`
-  - Follows same primary constructor pattern as `FindSignalCommandHandler`
-
-### Hosted Service
-
-**Update**: `src/WebAPI/HostedServices/FindSignalService.cs`
-
-Add a call to `CheckSignalEntryCommand` every minute inside `ExecuteAsync`:
-
-```csharp
-await mediator.Send(new CheckSignalEntryCommand(), stoppingToken);
-```
-
-This runs on every loop iteration (already delayed 60 seconds between loops).
+| Run | `LastCheckedCandleAt` before run | Candles fetched |
+|---|---|---|
+| 1st (signal just created) | `CreatedAt` | `CreatedAt` → now (potentially large) |
+| 2nd | Last candle from run 1 | ~1 min of new candles |
+| 3rd+ | Close to now | ~1 min of new candles |
 
 ---
 
 ## Error Handling
 
 | Scenario | Handling |
-| --- | --- |
-| No open signals | Early return after step 1 — no KuCoin call made |
-| No candles returned | Early return after loop — `lastCandleOpenTime` is null, no DB write |
-| Signal out of price range | Skipped for hit detection; `LastCheckedCandleAt` still updated |
-| No candle hits entry | `EntryHitAt` stays null; `LastCheckedCandleAt` still updated |
-| Any exception in the loop (429, network, timeout, …) | Caught inside the handler; partial progress saved if at least one hit was found and at least one batch was fetched; error logged via `ILogTrace` |
-| DB save failure | Exception propagates to `FindSignalService` catch block |
+|---|---|
+| No open signals | Early return — no KuCoin call |
+| First batch empty | Break; `lastCandleOpenTime` null; no DB write |
+| Entry price outside batch range | Signal skipped for hit detection; `LastCheckedCandleAt` still advanced |
+| No candle hits entry | `EntryHitAt` stays null; `LastCheckedCandleAt` advanced |
+| Exception in loop (429, network, timeout) | Caught; partial progress saved if >= 1 batch fetched; logged via `ILogTrace` |
+| DB `SaveChangesAsync` failure | Propagates to `FindSignalService` catch block |
+
+---
+
+## Implementation Checklist
+
+### Application Layer
+- [x] `CheckSignalEntryCommand.cs` — `CheckSignalEntryCommand` record + `CheckSignalEntryCommandHandler`
+  - Injects: `IKuCoinService`, `IOptions<KuCoinConfig>`, `ICexDbContext`, `ILogTrace`
+  - Sets `EntryHitAfterMinutes`, `LastCheckedCandleAt`, `MaxProfitCheckedAt` on entry hit
+
+### Infrastructure Layer
+- [x] `IX_Signals_LastCheckedCandleAt` index on `LastCheckedCandleAt`
+- [x] Migration: `AddSignalLastCheckedCandleAt`
+
+### Hosted Service
+- [x] `CheckSignalEntry(CancellationToken)` private method in `FindSignalService`
+- [x] Called in `ExecuteAsync` before `CheckSignalStopLoss`
 
 ---
 
 ## Future
 
-- `CheckSignalStopLossCommand` / `CheckSignalTakeProfitCommand` follow the same pattern, querying signals where `EntryHitAt IS NOT NULL` and `StopLossHitAt` / `TakeProfitHitAt IS NULL`. They can reuse the same `LastCheckedCandleAt` field or introduce their own pointer fields.
+- `CheckSignalStopLossCommand` and `CheckSignalMaxProfitCommand` follow the same candle-loop pattern, picking up from `LastCheckedCandleAt` and `MaxProfitCheckedAt` respectively
