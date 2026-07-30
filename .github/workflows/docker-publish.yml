@@ -137,5 +137,9 @@ jobs:
             echo "WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${IMAGE_TAGS}" >> .env
             echo "UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${IMAGE_TAGS}" >> .env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            pulumi env run ${{ secrets.PULUMI_ORG }}/qn-expenditure/prod -- docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps
+            pulumi env open ${{ secrets.PULUMI_ORG }}/qn-expenditure/prod --format dotenv > .env.pulumi
+            chmod 600 .env.pulumi
+            docker compose -f docker-compose.yml up -d --remove-orphans
+            docker image prune -a -f
+            docker compose ps
           ENDSSH
