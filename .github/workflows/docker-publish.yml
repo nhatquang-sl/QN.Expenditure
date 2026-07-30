@@ -127,11 +127,12 @@ jobs:
 
             TARGET_DIR="workspace/qex"
             IMAGE_TAGS="${{ env.IMAGE_TAGS }}"
+            export PULUMI_ACCESS_TOKEN="${{ secrets.PULUMI_ACCESS_TOKEN }}"
 
             cd "$TARGET_DIR"
             ls -la
             echo "WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${IMAGE_TAGS}" >> .env
             echo "UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${IMAGE_TAGS}" >> .env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps
+            pulumi env run ${{ secrets.PULUMI_ORG }}/qn-expenditure/prod -- docker compose -f docker-compose.yml up -d --remove-orphans && docker image prune -a -f && docker compose ps
           ENDSSH
