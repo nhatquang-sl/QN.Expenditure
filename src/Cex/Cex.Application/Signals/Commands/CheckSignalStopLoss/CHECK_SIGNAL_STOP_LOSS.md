@@ -4,7 +4,7 @@
 
 ## Overview
 
-`CheckSignalStopLossCommand` runs every minute inside `FindSignalService` and detects when entered positions have been stopped out. Queries up to 100 `Signal` rows where `EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL`, fetches 1-minute BTCUSDT candles in batches starting from each signal's `LastCheckedCandleAt`, and marks `StopLossHitAt` when price crosses the stored `StopLoss` threshold.
+`CheckSignalStopLossCommand` runs every minute inside `FindSignalService` and detects when entered positions have been stopped out. Queries up to 10,000 `Signal` rows where `EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL`, fetches 1-minute BTCUSDT candles in batches starting from each signal's `LastCheckedCandleAt`, and marks `StopLossHitAt` when price crosses the stored `StopLoss` threshold.
 
 **Module Location**: `src/Cex/Cex.Application/Signals/Commands/CheckSignalStopLoss/`
 **Scope**: BTCUSDT only; all signal intervals
@@ -27,7 +27,7 @@
 ## Algorithm
 
 ```
-1. Query 100 Signals:
+1. Query 10,000 Signals:
      WHERE EntryHitAt IS NOT NULL AND StopLossHitAt IS NULL
      ORDER BY LastCheckedCandleAt ASC
 2. If empty -> return early (no KuCoin call)
@@ -60,7 +60,7 @@
 var candidates = await dbContext.Signals
     .Where(s => s.EntryHitAt != null && s.StopLossHitAt == null)
     .OrderBy(s => s.LastCheckedCandleAt)
-    .Take(100)
+    .Take(10000)
     .ToListAsync(cancellationToken);
 ```
 
@@ -132,7 +132,7 @@ public record CheckSignalStopLossCommand : IRequest;
 public class CheckSignalStopLossCommandHandler(
     IKuCoinService kuCoinService,
     IOptions<KuCoinConfig> kuCoinConfig,
-    ILogTrace logTrace,
+    ILogger<CheckSignalStopLossCommandHandler> logger,
     ICexDbContext dbContext)
     : IRequestHandler<CheckSignalStopLossCommand>
 ```
@@ -149,8 +149,8 @@ await CheckSignalMaxProfit(stoppingToken);
 
 ## Performance Considerations
 
-- **`IX_Signals_LastCheckedCandleAt`** — the `ORDER BY LastCheckedCandleAt ASC TAKE 100` query uses this index rather than a full table scan.
-- **Shared candle stream** — one `GetKlines` call per batch serves all 100 candidates; each signal filters independently in memory.
+- **`IX_Signals_LastCheckedCandleAt`** — the `ORDER BY LastCheckedCandleAt ASC TAKE 10000` query uses this index rather than a full table scan.
+- **Shared candle stream** — one `GetKlines` call per batch serves all 10,000 candidates; each signal filters independently in memory.
 - **Early exit** — stops fetching batches once all candidates are stopped out.
 - **No batch-level skip** — unlike `CheckSignalEntry`, no `batchHigh`/`batchLow` pre-check is applied per signal. Acceptable at current candidate counts; can be added if profiling shows it is needed.
 
@@ -164,7 +164,7 @@ await CheckSignalMaxProfit(stoppingToken);
 | First batch empty | Break; `lastCandleOpenTime` null; no DB write |
 | Subsequent batch empty | Break; partial progress from prior batches saved |
 | Signal not yet stopped out | `LastCheckedCandleAt` advanced; `StopLossHitAt` remains null |
-| Exception in loop (429, network, timeout) | Caught; partial progress saved if >= 1 batch fetched; logged via `ILogTrace` |
+| Exception in loop (429, network, timeout) | Caught; partial progress saved if >= 1 batch fetched; logged via `ILogger` |
 | DB `SaveChangesAsync` failure | Propagates to `FindSignalService` catch block |
 
 ---

@@ -5,7 +5,7 @@ using Cex.Domain.Entities;
 using Cex.Domain.Enums;
 using Lib.Application.Abstractions;
 using Lib.Application.Extensions;
-using Lib.Application.Logging;
+using Microsoft.Extensions.Logging;
 using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
@@ -21,14 +21,14 @@ public class FindSignalCommandHandler(
     IOptions<KuCoinConfig> kuCoinConfig,
     ISender sender,
     INotifier notifier,
-    ILogTrace logTrace,
+    ILogger<FindSignalCommandHandler> logger,
     ICexDbContext dbContext,
     IEventBus eventBus)
     : IRequestHandler<FindSignalCommand>
 {
     public async Task Handle(FindSignalCommand command, CancellationToken cancellationToken)
     {
-        logTrace.LogInformation(command.Type.GetDescription());
+        logger.LogInformation("FindSignalCommand: {IntervalType}", command.Type.GetDescription());
         var candles = await kuCoinService.GetKlines("BTCUSDT", command.Type,
             command.Type.GetStartDate(), DateTime.UtcNow, //.AddHours(-1).AddMinutes(-15),
             kuCoinConfig.Value);
@@ -118,7 +118,7 @@ public class FindSignalCommandHandler(
         }
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate key") == true)
         {
-            logTrace.LogError("SaveSignalIfNewAsync()", ex);
+            logger.LogError(ex, "SaveSignalIfNewAsync() duplicate key");
         }
     }
 }

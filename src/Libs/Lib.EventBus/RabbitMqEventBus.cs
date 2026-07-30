@@ -8,13 +8,13 @@ public sealed class RabbitMqEventBus(IPublishEndpoint publisher, ILogger<RabbitM
 {
     public async Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class
     {
-        try
-        {
-            await publisher.Publish(message, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to publish message of type {MessageType}", typeof(T).FullName);
-        }
+        // try
+        // {
+        await publisher.Publish(message, cancellationToken);
+        // }
+        // catch (Exception ex)
+        // {
+        //     logger.LogError(ex, "Failed to publish message of type {MessageType}", typeof(T).FullName);
+        // }
     }
 }
