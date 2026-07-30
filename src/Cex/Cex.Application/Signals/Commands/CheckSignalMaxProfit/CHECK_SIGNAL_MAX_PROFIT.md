@@ -37,7 +37,7 @@
 ## Algorithm
 
 ```
-1. Query 100 Signals:
+1. Query 10,000 Signals:
      WHERE EntryHitAt IS NOT NULL
        AND (StopLossHitAt IS NULL
             OR (MaxProfitCheckedAt ?? EntryHitAt) < StopLossHitAt)
@@ -92,7 +92,7 @@ var candidates = await dbContext.Signals
                 (s.StopLossHitAt == null ||
                  (s.MaxProfitCheckedAt ?? s.EntryHitAt) < s.StopLossHitAt))
     .OrderBy(s => s.MaxProfitCheckedAt ?? s.EntryHitAt)
-    .Take(100)
+    .Take(10000)
     .ToListAsync(cancellationToken);
 ```
 
@@ -168,7 +168,7 @@ public record CheckSignalMaxProfitCommand : IRequest;
 public class CheckSignalMaxProfitCommandHandler(
     IKuCoinService kuCoinService,
     IOptions<KuCoinConfig> kuCoinConfig,
-    ILogTrace logTrace,
+    ILogger<CheckSignalMaxProfitCommandHandler> logger,
     ICexDbContext dbContext)
     : IRequestHandler<CheckSignalMaxProfitCommand>
 ```
@@ -188,7 +188,7 @@ await CheckSignalMaxProfit(stoppingToken);
 ## Performance Considerations
 
 - **`IX_Signals_MaxProfitCheckedAt`** — supports `ORDER BY MaxProfitCheckedAt ASC TAKE 100`.
-- **Shared candle stream** — one `GetKlines` call per batch serves all 100 candidates.
+- **Shared candle stream** — one `GetKlines` call per batch serves all 10,000 candidates.
 - **Stopped-out signals terminate naturally** — once `MaxProfitCheckedAt >= StopLossHitAt` the signal drops from the query permanently.
 - **No-op saves** — if all candidates' `relevantCandles` are empty (all pointers up to date), no entity is dirtied; EF Core change tracking avoids issuing SQL UPDATEs despite `SaveChangesAsync` being called.
 
@@ -201,7 +201,7 @@ await CheckSignalMaxProfit(stoppingToken);
 | No entered unscanned signals | Early return — no KuCoin call |
 | First batch empty | Break; `lastBatchOpenTime` null; no DB write |
 | Signal's `relevantCandles` empty for a batch | Skip signal for that batch; `MaxProfitCheckedAt` unchanged |
-| Exception in loop (429, network, timeout) | Caught; partial progress saved if >= 1 batch fetched; logged via `ILogTrace` |
+| Exception in loop (429, network, timeout) | Caught; partial progress saved if >= 1 batch fetched; logged via `ILogger` |
 | DB `SaveChangesAsync` failure | Propagates to `FindSignalService` catch block |
 
 ---

@@ -1,10 +1,11 @@
+using System.Diagnostics;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Enums;
-using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Cex.Application.Signals.Commands.CheckSignalMaxProfit;
@@ -14,7 +15,7 @@ public record CheckSignalMaxProfitCommand : IRequest;
 public class CheckSignalMaxProfitCommandHandler(
     IKuCoinService kuCoinService,
     IOptions<KuCoinConfig> kuCoinConfig,
-    ILogTrace logTrace,
+    ILogger<CheckSignalMaxProfitCommandHandler> logger,
     ICexDbContext dbContext)
     : IRequestHandler<CheckSignalMaxProfitCommand>
 {
@@ -25,16 +26,21 @@ public class CheckSignalMaxProfitCommandHandler(
                         (s.StopLossHitAt == null ||
                          (s.MaxProfitCheckedAt ?? s.EntryHitAt) < s.StopLossHitAt))
             .OrderBy(s => s.MaxProfitCheckedAt ?? s.EntryHitAt)
-            .Take(100)
+            .Take(10000)
             .ToListAsync(cancellationToken);
 
-        logTrace.LogInformation("Total signals", candidates.Count);
-        if (candidates.Count == 0) return;
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        Activity.Current?.SetTag("CandidateCount", candidates.Count);
 
         const IntervalType interval = IntervalType.OneMinute;
         var startAt = candidates.Min(s => s.MaxProfitCheckedAt ?? s.EntryHitAt!.Value);
         var now = DateTime.UtcNow;
         DateTime? lastBatchOpenTime = null;
+        var updatedCount = 0;
 
         try
         {
@@ -43,7 +49,10 @@ public class CheckSignalMaxProfitCommandHandler(
                 var batch = await kuCoinService.GetKlines(
                     "BTCUSDT", interval, startAt, interval.GetEndDate(startAt), kuCoinConfig.Value);
 
-                if (batch.Count == 0) break;
+                if (batch.Count == 0)
+                {
+                    break;
+                }
 
                 lastBatchOpenTime = batch[^1].OpenTime;
                 startAt = lastBatchOpenTime.Value.AddMinutes(1);
@@ -59,7 +68,10 @@ public class CheckSignalMaxProfitCommandHandler(
                                     (scanEnd == null || c.OpenTime <= scanEnd))
                         .ToList();
 
-                    if (relevantCandles.Count == 0) continue;
+                    if (relevantCandles.Count == 0)
+                    {
+                        continue;
+                    }
 
                     foreach (var c in relevantCandles)
                     {
@@ -70,6 +82,7 @@ public class CheckSignalMaxProfitCommandHandler(
 
                         if (profitPct > signal.MaxProfit)
                         {
+                            if (signal.MaxProfit == 0) updatedCount++;
                             signal.MaxProfit = profitPct;
                             signal.MaxProfitHitAt = c.OpenTime;
                             signal.MaxProfitHitAfterMinutes = (int)(c.OpenTime - signal.DetectedAt).TotalMinutes;
@@ -80,18 +93,25 @@ public class CheckSignalMaxProfitCommandHandler(
                     // Its OpenTime is always ≤ scanEnd because of the Where filter above.
                     var newPointer = relevantCandles[^1].OpenTime;
                     if (newPointer > (signal.MaxProfitCheckedAt ?? signal.EntryHitAt!.Value))
+                    {
                         signal.MaxProfitCheckedAt = newPointer;
+                    }
                 }
             }
+
+            Activity.Current?.SetTag("CandidateHit", updatedCount);
         }
         catch (Exception ex)
         {
             // Any exception (rate-limit 429, network, timeout) during the loop:
             // fall through and save whatever progress was accumulated before the failure.
-            logTrace.LogError("CheckSignalMaxProfit loop interrupted — saving partial progress", ex);
+            logger.LogError(ex, "CheckSignalMaxProfit loop interrupted — saving partial progress");
         }
 
-        if (lastBatchOpenTime is null) return;
+        if (lastBatchOpenTime is null)
+        {
+            return;
+        }
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }

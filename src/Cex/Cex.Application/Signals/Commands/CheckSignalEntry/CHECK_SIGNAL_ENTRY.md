@@ -4,7 +4,7 @@
 
 ## Overview
 
-`CheckSignalEntryCommand` runs every minute and detects when open signals (`EntryHitAt = NULL`) have had their entry price reached by 1-minute BTCUSDT candles. Processes up to 100 signals at a time (least-recently-checked first) and advances `LastCheckedCandleAt` per signal so each run only fetches new candles.
+`CheckSignalEntryCommand` runs every minute and detects when open signals (`EntryHitAt = NULL`) have had their entry price reached by 1-minute BTCUSDT candles. Processes up to 10,000 signals at a time (least-recently-checked first) and advances `LastCheckedCandleAt` per signal so each run only fetches new candles.
 
 **Module Location**: `src/Cex/Cex.Application/Signals/Commands/CheckSignalEntry/`
 **Scope**: BTCUSDT only; all signal intervals
@@ -14,7 +14,7 @@
 ## Algorithm
 
 ```
-1. Query 100 Signals WHERE EntryHitAt IS NULL
+1. Query 10,000 Signals WHERE EntryHitAt IS NULL
    ORDER BY LastCheckedCandleAt ASC
 2. If empty -> return early (no KuCoin call)
 3. startAt = Min(candidates, s => s.LastCheckedCandleAt)
@@ -57,13 +57,15 @@
 var candidates = await dbContext.Signals
     .Where(s => s.EntryHitAt == null)
     .OrderBy(s => s.LastCheckedCandleAt)
-    .Take(100)
+    .Take(10000)
     .ToListAsync(cancellationToken);
 ```
 
 **Candle loop + hit detection:**
 
 ```csharp
+Activity.Current?.SetTag("CandidateCount", candidates.Count);
+
 const IntervalType interval = IntervalType.OneMinute;
 var startAt = candidates.Min(s => s.LastCheckedCandleAt);
 var now = DateTime.UtcNow;
@@ -109,10 +111,12 @@ try
 
         if (unhitCount == 0) break;
     }
+
+    Activity.Current?.SetTag("CandidateHit", candidates.Count - unhitCount);
 }
 catch (Exception ex)
 {
-    logTrace.LogError("CheckSignalEntry loop interrupted — saving partial progress", ex);
+    logger.LogError(ex, "CheckSignalEntry loop interrupted — saving partial progress");
 }
 
 if (lastCandleOpenTime is null) return;
@@ -143,7 +147,7 @@ await dbContext.SaveChangesAsync(cancellationToken);
 | First batch empty | Break; `lastCandleOpenTime` null; no DB write |
 | Entry price outside batch range | Signal skipped for hit detection; `LastCheckedCandleAt` still advanced |
 | No candle hits entry | `EntryHitAt` stays null; `LastCheckedCandleAt` advanced |
-| Exception in loop (429, network, timeout) | Caught; partial progress saved if >= 1 batch fetched; logged via `ILogTrace` |
+| Exception in loop (429, network, timeout) | Caught; partial progress saved if >= 1 batch fetched; logged via `ILogger` |
 | DB `SaveChangesAsync` failure | Propagates to `FindSignalService` catch block |
 
 ---
@@ -152,7 +156,7 @@ await dbContext.SaveChangesAsync(cancellationToken);
 
 ### Application Layer
 - [x] `CheckSignalEntryCommand.cs` — `CheckSignalEntryCommand` record + `CheckSignalEntryCommandHandler`
-  - Injects: `IKuCoinService`, `IOptions<KuCoinConfig>`, `ICexDbContext`, `ILogTrace`
+  - Injects: `IKuCoinService`, `IOptions<KuCoinConfig>`, `ICexDbContext`, `ILogger<CheckSignalEntryCommandHandler>`
   - Sets `EntryHitAfterMinutes`, `LastCheckedCandleAt`, `MaxProfitCheckedAt` on entry hit
 
 ### Infrastructure Layer

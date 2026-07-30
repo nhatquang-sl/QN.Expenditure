@@ -1,10 +1,11 @@
+using System.Diagnostics;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Enums;
-using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Cex.Application.Signals.Commands.CheckSignalStopLoss;
@@ -14,7 +15,7 @@ public record CheckSignalStopLossCommand : IRequest;
 public class CheckSignalStopLossCommandHandler(
     IKuCoinService kuCoinService,
     IOptions<KuCoinConfig> kuCoinConfig,
-    ILogTrace logTrace,
+    ILogger<CheckSignalStopLossCommandHandler> logger,
     ICexDbContext dbContext)
     : IRequestHandler<CheckSignalStopLossCommand>
 {
@@ -23,10 +24,12 @@ public class CheckSignalStopLossCommandHandler(
         var candidates = await dbContext.Signals
             .Where(s => s.EntryHitAt != null && s.StopLossHitAt == null)
             .OrderBy(s => s.LastCheckedCandleAt)
-            .Take(100)
+            .Take(10000)
             .ToListAsync(cancellationToken);
 
         if (candidates.Count == 0) return;
+
+        Activity.Current?.SetTag("CandidateCount", candidates.Count);
 
         const IntervalType interval = IntervalType.OneMinute;
         var startAt = candidates.Min(s => s.LastCheckedCandleAt);
@@ -64,12 +67,14 @@ public class CheckSignalStopLossCommandHandler(
 
                 if (unhitCount == 0) break;
             }
+
+            Activity.Current?.SetTag("CandidateHit", candidates.Count - unhitCount);
         }
         catch (Exception ex)
         {
             // Any exception (rate-limit 429, network, timeout) during the loop:
             // fall through and save whatever progress was accumulated before the failure.
-            logTrace.LogError("CheckSignalStopLoss loop interrupted — saving partial progress", ex);
+            logger.LogError(ex, "CheckSignalStopLoss loop interrupted — saving partial progress");
         }
 
         if (lastCandleOpenTime is null) return;

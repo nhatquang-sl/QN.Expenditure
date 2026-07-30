@@ -1,10 +1,11 @@
+using System.Diagnostics;
 using Cex.Application.Common.Abstractions;
 using Cex.Domain.Enums;
-using Lib.Application.Logging;
 using Lib.ExternalServices.KuCoin;
 using Lib.ExternalServices.KuCoin.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Cex.Application.Signals.Commands.CheckSignalEntry;
@@ -14,7 +15,7 @@ public record CheckSignalEntryCommand : IRequest;
 public class CheckSignalEntryCommandHandler(
     IKuCoinService kuCoinService,
     IOptions<KuCoinConfig> kuCoinConfig,
-    ILogTrace logTrace,
+    ILogger<CheckSignalEntryCommandHandler> logger,
     ICexDbContext dbContext)
     : IRequestHandler<CheckSignalEntryCommand>
 {
@@ -23,10 +24,15 @@ public class CheckSignalEntryCommandHandler(
         var candidates = await dbContext.Signals
             .Where(s => s.EntryHitAt == null)
             .OrderBy(s => s.LastCheckedCandleAt)
-            .Take(100)
+            .Take(10000)
             .ToListAsync(cancellationToken);
 
-        if (candidates.Count == 0) return;
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        Activity.Current?.SetTag("CandidateCount", candidates.Count);
 
         const IntervalType interval = IntervalType.OneMinute;
         var startAt = candidates.Min(s => s.LastCheckedCandleAt);
@@ -41,10 +47,13 @@ public class CheckSignalEntryCommandHandler(
                 var batch = await kuCoinService.GetKlines(
                     "BTCUSDT", interval, startAt, interval.GetEndDate(startAt), kuCoinConfig.Value);
 
-                if (batch.Count == 0) break;
+                if (batch.Count == 0)
+                {
+                    break;
+                }
 
                 var batchHigh = batch.Max(c => c.HighestPrice);
-                var batchLow  = batch.Min(c => c.LowestPrice);
+                var batchLow = batch.Min(c => c.LowestPrice);
                 lastCandleOpenTime = batch[^1].OpenTime;
                 startAt = lastCandleOpenTime.Value.AddMinutes(1);
 
@@ -54,36 +63,53 @@ public class CheckSignalEntryCommandHandler(
                         ? signal.EntryPrice >= batchLow
                         : signal.EntryPrice <= batchHigh;
 
-                    if (!inRange) continue;
+                    if (!inRange)
+                    {
+                        continue;
+                    }
 
                     var checkFrom = signal.LastCheckedCandleAt;
                     var hit = batch
                         .FirstOrDefault(c => c.OpenTime > checkFrom &&
                                              (signal.SignalType == SignalType.Long
-                                              ? c.LowestPrice  <= signal.EntryPrice
-                                              : c.HighestPrice >= signal.EntryPrice));
+                                                 ? c.LowestPrice <= signal.EntryPrice
+                                                 : c.HighestPrice >= signal.EntryPrice));
 
-                    if (hit is null) continue;
+                    if (hit is null)
+                    {
+                        continue;
+                    }
 
                     signal.EntryHitAt = hit.OpenTime;
                     signal.EntryHitAfterMinutes = (int)(hit.OpenTime - signal.DetectedAt).TotalMinutes;
-                    signal.LastCheckedCandleAt = hit.OpenTime;  // anchor for stop-loss check
-                    signal.MaxProfitCheckedAt  = hit.OpenTime;  // anchor for max-profit check
+                    signal.LastCheckedCandleAt = hit.OpenTime; // anchor for stop-loss check
+                    signal.MaxProfitCheckedAt = hit.OpenTime; // anchor for max-profit check
                     unhitCount--;
                 }
 
-                if (unhitCount == 0) break;
+                if (unhitCount == 0)
+                {
+                    break;
+                }
             }
+
+            Activity.Current?.SetTag("CandidateHit", candidates.Count - unhitCount);
         }
         catch (Exception ex)
         {
-            logTrace.LogError("CheckSignalEntry loop interrupted — saving partial progress", ex);
+            logger.LogError(ex, "CheckSignalEntry loop interrupted — saving partial progress");
         }
 
-        if (lastCandleOpenTime is null) return;
+        if (lastCandleOpenTime is null)
+        {
+            return;
+        }
 
-        foreach (var signal in candidates.Where(s => s.EntryHitAt == null && lastCandleOpenTime.Value > s.LastCheckedCandleAt))
+        foreach (var signal in candidates.Where(s =>
+                     s.EntryHitAt == null && lastCandleOpenTime.Value > s.LastCheckedCandleAt))
+        {
             signal.LastCheckedCandleAt = lastCandleOpenTime.Value;
+        }
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
