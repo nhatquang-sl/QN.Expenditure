@@ -121,12 +121,15 @@ jobs:
 
           ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR"
           scp -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -P ${{ secrets.VPS_PORT }} -r "$SOURCE_DIR"/. ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} \
+            'which pulumi || (curl -fsSL https://get.pulumi.com | sh)'
 
           ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
             set -euo pipefail
 
             TARGET_DIR="workspace/qex"
             IMAGE_TAGS="${{ env.IMAGE_TAGS }}"
+            export PATH=$PATH:$HOME/.pulumi/bin
             export PULUMI_ACCESS_TOKEN="${{ secrets.PULUMI_ACCESS_TOKEN }}"
 
             cd "$TARGET_DIR"
