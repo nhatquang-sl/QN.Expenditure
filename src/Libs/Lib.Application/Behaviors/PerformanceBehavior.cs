@@ -1,41 +1,30 @@
-﻿using Lib.Application.Logging;
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace Lib.Application.Behaviors
+namespace Lib.Application.Behaviors;
+
+public class PerformanceBehavior<TRequest, TResponse>(ILogger<PerformanceBehavior<TRequest, TResponse>> logger)
+    : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
 {
-    public class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-        where TRequest : notnull
+    private static readonly string RequestName = typeof(TRequest).Name;
+
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        private readonly Stopwatch _timer;
-        private readonly ILogTrace _logTrace;
-
-        public PerformanceBehavior(ILogTrace logTrace)
+        var timer = Stopwatch.StartNew();
+        try
         {
-            _timer = new Stopwatch();
-            _logTrace = logTrace;
+            return await next(cancellationToken);
         }
-
-        public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+        finally
         {
-            _timer.Start();
-            try
-            {
-                var response = await next();
-
-                return response;
-            }
-            finally
-            {
-                _timer.Stop();
-
-                var elapsedMilliseconds = _timer.ElapsedMilliseconds;
-
-                var requestName = typeof(TRequest).Name;
-                var logLevel = elapsedMilliseconds > 500 ? LogLevel.Warning : LogLevel.Information;
-                _logTrace.Log(new LogEntry(logLevel, $"Processed Time: {requestName} ({elapsedMilliseconds} milliseconds)",null));
-            }
+            timer.Stop();
+            var elapsedMilliseconds = timer.ElapsedMilliseconds;
+            if (elapsedMilliseconds > 500)
+                logger.LogWarning("Processed Time: {RequestName} ({ElapsedMilliseconds} milliseconds)", RequestName, elapsedMilliseconds);
+            else
+                logger.LogInformation("Processed Time: {RequestName} ({ElapsedMilliseconds} milliseconds)", RequestName, elapsedMilliseconds);
         }
     }
 }

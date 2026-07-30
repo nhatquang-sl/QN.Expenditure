@@ -1,45 +1,29 @@
 ﻿using Lib.Application.Abstractions;
-using Lib.Application.Logging;
 using MediatR;
-using System.Text;
+using Microsoft.Extensions.Logging;
 
-namespace Lib.Application.Behaviors
+namespace Lib.Application.Behaviors;
+
+public class UnhandledExceptionBehavior<TRequest, TResponse>(
+    ILogger<UnhandledExceptionBehavior<TRequest, TResponse>> logger,
+    INotifier notifier)
+    : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
 {
-    public class UnhandledExceptionBehavior<TRequest, TResponse>(
-        ILogTrace logTrace,
-        INotifier notifier)
-        : IPipelineBehavior<TRequest, TResponse>
-        where TRequest : notnull
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
-        public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
-            CancellationToken cancellationToken)
+        var requestName = request.GetType().Name;
+        logger.LogInformation("Started {RequestName} at: {StartedAt}", requestName, DateTime.UtcNow);
+        try
         {
-            try
-            {
-                logTrace.AddProperty("RequestName", request.GetType().Name);
-                logTrace.LogInformation($"Started {request.GetType().Name} at : {DateTime.UtcNow}");
-                return await next();
-            }
-            catch (Exception ex)
-            {
-                var e = ex;
-                var sb = new StringBuilder();
-                while (e != null)
-                {
-                    sb.AppendLine(e.Message);
-                    e = e.InnerException;
-                }
-
-                logTrace.LogError(request.GetType().Name, request);
-                logTrace.LogError(sb.ToString(), new { ex.StackTrace });
-                await notifier.NotifyError(request.GetType().Name, ex, cancellationToken);
-                throw;
-            }
-            finally
-            {
-                if (request.GetType().Name.Equals(logTrace.GetProperty("RequestName")?.ToString()))
-                    logTrace.Flush();
-            }
+            return await next(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unhandled exception in {RequestName}", requestName);
+            await notifier.NotifyError(requestName, ex, cancellationToken);
+            throw;
         }
     }
 }
