@@ -25,7 +25,7 @@ var credentialsPathCandidates = new[]
 var credentialsPath = credentialsPathCandidates.FirstOrDefault(Directory.Exists) ?? credentialsPathCandidates[0];
 
 builder.Configuration
-    .AddJsonFile(Path.Combine(credentialsPath, "appsettings.json"), false, true)
+    .AddJsonFile(Path.Combine(credentialsPath, "appsettings.json"), true, true)
     .AddJsonFile(Path.Combine(credentialsPath, $"appsettings.{builder.Environment.EnvironmentName}.json"), true, true)
     .AddEnvironmentVariables();
 builder.AddServiceDefaults();

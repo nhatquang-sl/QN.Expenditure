@@ -30,3 +30,10 @@ README.md
 !.git/config
 !.git/packed-refs
 !.git/refs/heads/**
+
+# ============================================================
+# SECURITY: exclude credentials from the Docker image.
+# appsettings*.json contains secrets (DB passwords, API keys).
+# Configuration is injected at runtime via docker-compose env vars.
+# ============================================================
+credentials/appsettings*.json
