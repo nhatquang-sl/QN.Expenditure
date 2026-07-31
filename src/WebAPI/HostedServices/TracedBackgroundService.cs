@@ -17,7 +17,12 @@ public abstract class TracedBackgroundService : BackgroundService
         Func<CancellationToken, Task> work,
         CancellationToken cancellationToken)
     {
-        using var activity = ActivitySource.StartActivity(operationName, ActivityKind.Internal);
+        // ActivityKind.Consumer + messaging.* attributes are required to produce
+        // transaction.type = "messaging" in Elastic APM's OTLP intake.
+        // ActivityKind.Internal/.Server without semantic attributes both default to "unknown".
+        using var activity = ActivitySource.StartActivity(operationName, ActivityKind.Consumer);
+        activity?.SetTag("messaging.system", "scheduled");   // triggers "messaging" transaction type in Elastic APM
+        activity?.SetTag("messaging.operation", "process");  // OTel semantic convention for processing a job
         try
         {
             await work(cancellationToken);
