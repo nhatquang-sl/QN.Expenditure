@@ -17,7 +17,7 @@ public abstract class TracedBackgroundService : BackgroundService
         Func<CancellationToken, Task> work,
         CancellationToken cancellationToken)
     {
-        using var activity = ActivitySource.StartActivity(operationName, ActivityKind.Server);
+        using var activity = ActivitySource.StartActivity(operationName, ActivityKind.Internal);
         try
         {
             await work(cancellationToken);

@@ -63,6 +63,7 @@ namespace ServiceDefaults
                 .WithTracing(tracing =>
                 {
                     tracing.AddSource(builder.Environment.ApplicationName)
+                        .AddSource("MassTransit")
                         .AddAspNetCoreInstrumentation(opts => { opts.RecordException = true; })
                         // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                         //.AddGrpcClientInstrumentation()
