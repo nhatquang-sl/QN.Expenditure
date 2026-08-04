@@ -1,0 +1,4 @@
+# Exclude everything not needed for the Go build
+Dockerfile
+*.md
+.git
