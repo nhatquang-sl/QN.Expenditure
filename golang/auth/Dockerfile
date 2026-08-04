@@ -17,13 +17,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 
 # Final stage
 FROM alpine:3.21
-RUN apk --no-cache add ca-certificates tzdata && \
-    addgroup -S auth && adduser -S auth -G auth
+RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 COPY --from=build /auth .
-RUN chown auth:auth /app/auth
-
-USER auth
 EXPOSE 5002
 
 ARG VERSION=0.0.1
