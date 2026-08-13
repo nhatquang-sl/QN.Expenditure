@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"auth/internal/infrastructure/config"
+	"auth/internal/config"
 	"auth/internal/transport/http/handler"
 	"auth/internal/transport/http/middleware"
 )
@@ -19,7 +19,7 @@ func NewServer(cfg config.Config, logger *slog.Logger) *http.Server {
 	h = middleware.Recovery(logger)(h)
 
 	return &http.Server{
-		Addr:    ":" + cfg.Port,
+		Addr:    ":5002",
 		Handler: h,
 	}
 }
