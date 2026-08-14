@@ -1,14 +1,14 @@
 package config
 
 import (
-	_ "embed"
 	"encoding/json"
+	"os"
 )
 
-// Embeds appsettings.json into the binary at compile time, resolved relative to this file's directory
-//
-//go:embed appsettings.json
-var configData []byte
+// Config path is resolved at runtime. Override with CONFIG_PATH env var.
+// Default: "credentials/appsettings.json" (relative to the working directory,
+// which is /app in Docker — matching the mounted credentials volume).
+const defaultConfigPath = "credentials/appsettings.json"
 
 type Config struct {
 	ConnectionStrings struct {
@@ -38,11 +38,20 @@ type Config struct {
 	}
 }
 
-func LoadJSONConfig() (Config, error) {
-	var cfg Config
-	// Unmarshal parses the JSON bytes and maps values into the Config struct fields
-	if err := json.Unmarshal(configData, &cfg); err != nil {
-		return Config{}, err
+func LoadJSONConfig() Config {
+	path := os.Getenv("CONFIG_PATH")
+	if path == "" {
+		path = defaultConfigPath
 	}
-	return cfg, nil
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		panic("failed to read config file: " + err.Error())
+	}
+
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		panic("failed to parse config file: " + err.Error())
+	}
+	return cfg
 }

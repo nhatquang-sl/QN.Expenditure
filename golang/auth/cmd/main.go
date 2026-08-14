@@ -9,11 +9,7 @@ import (
 
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	cfg, err := config.LoadJSONConfig()
-	if err != nil {
-		logger.Error("failed to load config", slog.Any("error", err))
-		os.Exit(1)
-	}
+	cfg := config.LoadJSONConfig()
 
 	logger.Info("config loaded successfully", slog.String("env", cfg.Application.Endpoint), slog.String("version", cfg.Application.Version))
 	// srv := server.NewServer(cfg, logger)
