@@ -9,6 +9,8 @@ import (
 // Default: "credentials/appsettings.json" (relative to the working directory,
 // which is /app in Docker — matching the mounted credentials volume).
 const defaultConfigPath = "credentials/appsettings.json"
+const defaultTLSCertPath = "../../credentials/qex/certs/localhost.pem"
+const defaultTLSKeyPath = "../../credentials/qex/certs/localhost-key.pem"
 
 type Config struct {
 	ConnectionStrings struct {
@@ -36,6 +38,8 @@ type Config struct {
 		Username string
 		Password string
 	}
+	TLSCertPath string
+	TLSKeyPath  string
 }
 
 func LoadJSONConfig() Config {
@@ -53,5 +57,13 @@ func LoadJSONConfig() Config {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		panic("failed to parse config file: " + err.Error())
 	}
+
+	if cfg.TLSCertPath == "" {
+		cfg.TLSCertPath = defaultTLSCertPath
+	}
+	if cfg.TLSKeyPath == "" {
+		cfg.TLSKeyPath = defaultTLSKeyPath
+	}
+
 	return cfg
 }

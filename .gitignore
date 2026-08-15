@@ -415,3 +415,6 @@ FodyWeavers.xsd
 # Claude Code local settings
 # .claude/settings.local.json
 .env
+
+# Go air tmp directory
+golang/auth/tmp/
