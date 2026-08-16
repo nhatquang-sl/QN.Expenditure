@@ -38,8 +38,9 @@ type Config struct {
 		Username string
 		Password string
 	}
-	TLSCertPath string
-	TLSKeyPath  string
+	TLSCertPath  string
+	TLSKeyPath   string
+	GoServerPort int
 }
 
 func LoadJSONConfig() Config {

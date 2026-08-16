@@ -31,3 +31,8 @@ clean:
 stop:
 	@echo "Stopping $(APP_NAME)..."
 	@pkill -f $(BIN_NAME) || echo "$(APP_NAME) is not running."
+
+docker:
+	@echo "Building Docker image for $(APP_NAME)..."
+	@docker build -t $(APP_NAME):latest .
+	@docker run -p 5002:5002 --name $(APP_NAME) $(APP_NAME):latest
