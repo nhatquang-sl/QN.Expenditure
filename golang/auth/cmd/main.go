@@ -1,21 +1,14 @@
 package main
 
 import (
-	"auth/internal/application"
+	"auth/cmd/controllers"
 	"auth/internal/config"
 	"auth/internal/database"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 )
-
-func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
 
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -29,11 +22,8 @@ func main() {
 	// 1. set up HTTP server
 	mux := http.NewServeMux()
 
-	// 2. setup routes
-	handler := application.NewHandler()
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, handler.Health())
-	})
+	// 2. register routes
+	controllers.NewHealthController(mux)
 
 	// 3. server instance
 	serverAddr := fmt.Sprintf(":%d", cfg.GoServerPort)
