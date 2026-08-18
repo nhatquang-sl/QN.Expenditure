@@ -9,23 +9,42 @@ import (
 	"time"
 
 	"auth/cmd/respond"
-	dbsqlc "auth/internal/database/generated"
 	"auth/internal/application/apperror"
 	"auth/internal/application/login"
+	"auth/internal/application/port"
+	"auth/internal/application/register"
 	"auth/internal/application/shared"
+	dbsqlc "auth/internal/database/generated"
 )
 
 type AuthController struct {
-	login *login.Handler
-	isDev bool
+	login    *login.Handler
+	register *register.Handler
+	isDev    bool
 }
 
-func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared.JwtService, logger *slog.Logger, isDev bool) {
+func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared.JwtService, emailService port.EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
 	c := &AuthController{
-		login: login.NewHandler(db, jwtService, logger),
-		isDev: isDev,
+		login:    login.NewHandler(db, jwtService, logger),
+		register: register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
+		isDev:    isDev,
 	}
 	mux.HandleFunc("POST /api/auth/login", c.handleLogin)
+	mux.HandleFunc("POST /api/auth/register", c.handleRegister)
+}
+
+func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) {
+	var cmd register.Command
+	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
+		panic(apperror.NewBadRequest("invalid request body"))
+	}
+	result := c.register.Handle(r.Context(), cmd)
+	respond.NewResponse(w).JSON(http.StatusCreated, map[string]any{
+		"id":        result.Id,
+		"email":     result.Email,
+		"firstName": result.FirstName,
+		"lastName":  result.LastName,
+	})
 }
 
 func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
