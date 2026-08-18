@@ -36,3 +36,14 @@ docker:
 	@echo "Building Docker image for $(APP_NAME)..."
 	@docker build -t $(APP_NAME):latest .
 	@docker run -p 5002:5002 --name $(APP_NAME) $(APP_NAME):latest
+
+migrate-create:
+	@migrate create -ext sql -dir internal/database/migrations -seq $(n)
+
+migrate-up:
+	@echo "Running database migrations..."
+	@migrate -database '$(POSTGRESQL_URL)' -path internal/database/migrations up
+
+migrate-down:
+	@echo "Reverting database migrations..."
+	@migrate -database '$(POSTGRESQL_URL)' -path internal/database/migrations down
