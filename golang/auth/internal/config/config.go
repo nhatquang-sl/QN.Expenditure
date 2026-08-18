@@ -12,6 +12,13 @@ const defaultConfigPath = "credentials/appsettings.json"
 const defaultTLSCertPath = "../../credentials/qex/certs/localhost.pem"
 const defaultTLSKeyPath = "../../credentials/qex/certs/localhost-key.pem"
 
+type JwtConfig struct {
+	Issuer                string
+	Audience              string
+	AccessTokenSecretKey  string
+	RefreshTokenSecretKey string
+}
+
 type Config struct {
 	ConnectionStrings struct {
 		AuthConnection string
@@ -27,12 +34,7 @@ type Config struct {
 		ApiKeyPrivate string
 		FromEmail     string
 	}
-	Jwt struct {
-		Issuer                string
-		Audience              string
-		AccessTokenSecretKey  string
-		RefreshTokenSecretKey string
-	}
+	Jwt JwtConfig
 	RabbitMq struct {
 		Host     string
 		Username string

@@ -1,8 +1,8 @@
 package controllers
 
 import (
+	"auth/cmd/respond"
 	"auth/internal/application/health"
-	"encoding/json"
 	"net/http"
 )
 
@@ -16,7 +16,5 @@ func NewHealthController(mux *http.ServeMux) {
 }
 
 func (c *HealthController) handle(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(c.handler.Handle())
+	respond.NewResponse(w).OK(c.handler.Handle())
 }

@@ -1,0 +1,14 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries:
+      - "../application/**/*.sql"
+    schema:
+      - "schema/"
+    gen:
+      go:
+        package: "generated"
+        out: "generated"
+        emit_pointers_for_null_types: true
+        emit_json_tags: false
+        emit_db_tags: false

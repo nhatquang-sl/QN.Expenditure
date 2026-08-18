@@ -418,3 +418,6 @@ FodyWeavers.xsd
 
 # Go air tmp directory
 golang/auth/tmp/
+
+# sqlc generated code
+golang/auth/internal/database/generated/
