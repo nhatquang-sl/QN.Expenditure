@@ -11,8 +11,8 @@ import (
 	"auth/cmd/respond"
 	"auth/internal/application/apperror"
 	"auth/internal/application/login"
-	"auth/internal/application/port"
 	"auth/internal/application/register"
+	"auth/internal/services/email"
 	"auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 )
@@ -23,7 +23,7 @@ type AuthController struct {
 	isDev    bool
 }
 
-func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared.JwtService, emailService port.EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
+func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared.JwtService, emailService email.EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
 	c := &AuthController{
 		login:    login.NewHandler(db, jwtService, logger),
 		register: register.NewHandler(db, emailService, logger, tokenSecret, baseURL),

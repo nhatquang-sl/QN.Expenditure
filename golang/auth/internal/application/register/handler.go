@@ -16,7 +16,7 @@ import (
 	"unicode"
 
 	"auth/internal/application/apperror"
-	"auth/internal/application/port"
+	"auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 
 	"github.com/go-playground/validator/v10"
@@ -40,14 +40,14 @@ type Result struct {
 
 type Handler struct {
 	db           *dbsqlc.Queries
-	emailService port.EmailService
+	emailService shared.EmailService
 	logger       *slog.Logger
 	validate     *validator.Validate
 	tokenSecret  []byte
 	baseURL      string
 }
 
-func NewHandler(db *dbsqlc.Queries, emailService port.EmailService, logger *slog.Logger, tokenSecret, baseURL string) *Handler {
+func NewHandler(db *dbsqlc.Queries, emailService shared.EmailService, logger *slog.Logger, tokenSecret, baseURL string) *Handler {
 	v := validator.New()
 	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
