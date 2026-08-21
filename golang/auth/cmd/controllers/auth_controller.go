@@ -28,8 +28,8 @@ func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared
 		register: register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
 		isDev:    isDev,
 	}
-	mux.HandleFunc("POST /api/auth/login", c.handleLogin)
-	mux.HandleFunc("POST /api/auth/register", c.handleRegister)
+	mux.HandleFunc("POST /login", c.handleLogin)
+	mux.HandleFunc("POST /register", c.handleRegister)
 }
 
 func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) {

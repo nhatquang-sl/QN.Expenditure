@@ -35,7 +35,7 @@ func main() {
 	serverAddr := fmt.Sprintf(":%d", cfg.GoServerPort)
 	srv := &http.Server{
 		Addr:    serverAddr,
-		Handler: middleware.Recover(mux),
+		Handler: middleware.Recover(logger, mux),
 	}
 
 	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" {

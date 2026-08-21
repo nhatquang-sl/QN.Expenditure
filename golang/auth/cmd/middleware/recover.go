@@ -1,16 +1,18 @@
 package middleware
 
 import (
+	"log/slog"
 	"net/http"
 
 	"auth/cmd/respond"
 	"auth/internal/application/apperror"
 )
 
-func Recover(next http.Handler) http.Handler {
+func Recover(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
+				logger.ErrorContext(r.Context(), "panic recovered", slog.Any("error", rec))
 				writeError(w, rec)
 			}
 		}()

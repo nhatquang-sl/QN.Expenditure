@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS Users (
+CREATE TABLE IF NOT EXISTS "Users" (
     "Id"                   text        NOT NULL PRIMARY KEY,
     "UserName"             text        NOT NULL,
     "NormalizedUserName"   text        NOT NULL,
