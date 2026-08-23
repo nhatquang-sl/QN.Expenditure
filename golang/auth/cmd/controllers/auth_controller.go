@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"auth/cmd/middleware"
 	"auth/cmd/respond"
 	"auth/internal/application/apperror"
+	"auth/internal/application/get_profile"
 	"auth/internal/application/login"
 	"auth/internal/application/register"
 	"auth/internal/application/shared"
@@ -17,19 +19,23 @@ import (
 )
 
 type AuthController struct {
-	login    *login.Handler
-	register *register.Handler
-	isDev    bool
+	login      *login.Handler
+	register   *register.Handler
+	getProfile *get_profile.Handler
+	isDev      bool
 }
 
 func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared.JwtService, emailService shared.EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
 	c := &AuthController{
-		login:    login.NewHandler(db, jwtService, logger),
-		register: register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
-		isDev:    isDev,
+		login:      login.NewHandler(db, jwtService, logger),
+		register:   register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
+		getProfile: get_profile.NewHandler(db),
+		isDev:      isDev,
 	}
+	auth := middleware.Auth(jwtService)
 	mux.HandleFunc("POST /login", c.handleLogin)
 	mux.HandleFunc("POST /register", c.handleRegister)
+	mux.Handle("GET /profile", auth(http.HandlerFunc(c.handleGetProfile)))
 }
 
 func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +94,18 @@ func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, ref
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: sameSite,
+	})
+}
+
+func (c *AuthController) handleGetProfile(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.UserFromContext(r.Context())
+	result := c.getProfile.Handle(r.Context(), get_profile.Query{UserId: claims.Id})
+	respond.NewResponse(w).OK(map[string]any{
+		"id":             result.Id,
+		"email":          result.Email,
+		"firstName":      result.FirstName,
+		"lastName":       result.LastName,
+		"emailConfirmed": result.EmailConfirmed,
 	})
 }
 
