@@ -36,7 +36,7 @@ func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared
 	auth := middleware.Auth(jwtService)
 	mux.HandleFunc("POST /login", c.handleLogin)
 	mux.HandleFunc("POST /register", c.handleRegister)
-	mux.Handle("GET /profile", auth(http.HandlerFunc(c.handleGetProfile)))
+	mux.HandleFunc("GET /profile", auth(c.handleGetProfile))
 }
 
 func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) {

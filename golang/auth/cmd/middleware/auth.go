@@ -13,9 +13,9 @@ type contextKey int
 
 const userClaimsKey contextKey = iota
 
-func Auth(jwtService shared.JwtService) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Auth(jwtService shared.JwtService) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("accessToken")
 			if err != nil {
 				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("missing access token"))
@@ -27,8 +27,8 @@ func Auth(jwtService shared.JwtService) func(http.Handler) http.Handler {
 				return
 			}
 			ctx := context.WithValue(r.Context(), userClaimsKey, claims)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+			next(w, r.WithContext(ctx))
+		}
 	}
 }
 
