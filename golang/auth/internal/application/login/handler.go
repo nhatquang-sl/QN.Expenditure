@@ -9,15 +9,14 @@ import (
 	"encoding/binary"
 	"errors"
 	"log/slog"
-	"reflect"
 	"strings"
 	"time"
 
+	"auth/internal/application"
 	"auth/internal/application/apperror"
 	"auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 
-	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -30,55 +29,38 @@ type Command struct {
 }
 
 type Result struct {
-	Id                  string
-	Email               string
-	FirstName           string
-	LastName            string
-	EmailConfirmed      bool
-	AccessToken         string
-	RefreshToken        string
-	AccessTokenExpires  time.Time
-	RefreshTokenExpires time.Time
+	Id                  string    `json:"id"`
+	Email               string    `json:"email"`
+	FirstName           string    `json:"firstName"`
+	LastName            string    `json:"lastName"`
+	EmailConfirmed      bool      `json:"emailConfirmed"`
+	AccessToken         string    `json:"-"`
+	RefreshToken        string    `json:"-"`
+	AccessTokenExpires  time.Time `json:"-"`
+	RefreshTokenExpires time.Time `json:"-"`
 }
 
-type Handler struct {
+type handler struct {
 	db         *dbsqlc.Queries
 	jwtService shared.JwtService
 	logger     *slog.Logger
-	validate   *validator.Validate
 }
 
-func NewHandler(db *dbsqlc.Queries, jwtService shared.JwtService, logger *slog.Logger) *Handler {
-	v := validator.New()
-	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		if name == "-" {
-			return ""
-		}
-		return name
-	})
-	return &Handler{db: db, jwtService: jwtService, logger: logger, validate: v}
+func NewHandler(db *dbsqlc.Queries, jwtService shared.JwtService, logger *slog.Logger) application.Handler[Command, Result] {
+	return newValidator(handler{db: db, jwtService: jwtService, logger: logger})
 }
 
-func (h *Handler) Handle(ctx context.Context, cmd Command) Result {
-	if err := h.validate.Struct(cmd); err != nil {
-		var ve validator.ValidationErrors
-		if errors.As(err, &ve) {
-			panic(apperror.NewValidationErrors(ve))
-		}
-		panic(err)
-	}
-
+func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	user, err := h.db.GetUserByNormalizedEmail(ctx, strings.ToUpper(cmd.Email))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			panic(apperror.NewUnauthorized("invalid credentials"))
+			return Result{}, apperror.NewUnauthorized("invalid credentials")
 		}
-		panic(err)
+		return Result{}, err
 	}
 
 	if !verifyPassword(cmd.Password, user.PasswordHash) {
-		panic(apperror.NewUnauthorized("invalid credentials"))
+		return Result{}, apperror.NewUnauthorized("invalid credentials")
 	}
 
 	tokens, err := h.jwtService.GenerateTokens(shared.UserClaims{
@@ -89,7 +71,7 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) Result {
 		EmailConfirmed: user.EmailConfirmed,
 	}, cmd.RememberMe)
 	if err != nil {
-		panic(err)
+		return Result{}, err
 	}
 
 	if err := h.db.CreateLoginHistory(ctx, dbsqlc.CreateLoginHistoryParams{
@@ -114,7 +96,7 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) Result {
 		RefreshToken:        tokens.RefreshToken,
 		AccessTokenExpires:  tokens.AccessTokenExpires,
 		RefreshTokenExpires: tokens.RefreshTokenExpires,
-	}
+	}, nil
 }
 
 // verifyPassword checks a plain-text password against an ASP.NET Identity V3 PBKDF2-HMAC-SHA256 hash.

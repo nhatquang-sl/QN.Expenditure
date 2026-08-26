@@ -7,19 +7,16 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"log/slog"
-	"reflect"
 	"strings"
 	"time"
-	"unicode"
 
+	"auth/internal/application"
 	"auth/internal/application/apperror"
 	"auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -32,80 +29,44 @@ type Command struct {
 }
 
 type Result struct {
-	Id        string
-	Email     string
-	FirstName string
-	LastName  string
+	Id        string `json:"id"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }
 
-type Handler struct {
+type handler struct {
 	db           *dbsqlc.Queries
 	emailService shared.EmailService
 	logger       *slog.Logger
-	validate     *validator.Validate
 	tokenSecret  []byte
 	baseURL      string
 }
 
-func NewHandler(db *dbsqlc.Queries, emailService shared.EmailService, logger *slog.Logger, tokenSecret, baseURL string) *Handler {
-	v := validator.New()
-	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		if name == "-" {
-			return ""
-		}
-		return name
-	})
-	v.RegisterValidation("password_strength", func(fl validator.FieldLevel) bool {
-		p := fl.Field().String()
-		if len(p) < 8 {
-			return false
-		}
-		var hasUpper, hasLower, hasDigit bool
-		for _, r := range p {
-			switch {
-			case unicode.IsUpper(r):
-				hasUpper = true
-			case unicode.IsLower(r):
-				hasLower = true
-			case unicode.IsDigit(r):
-				hasDigit = true
-			}
-		}
-		return hasUpper && hasLower && hasDigit
-	})
-	return &Handler{
-		db:           db,
+func NewHandler(db *dbsqlc.Queries, emailService shared.EmailService, logger *slog.Logger, tokenSecret, baseURL string) application.Handler[Command, Result] {
+	return newValidator(handler{
+		db:          db,
 		emailService: emailService,
-		logger:       logger,
-		validate:     v,
-		tokenSecret:  []byte(tokenSecret),
-		baseURL:      baseURL,
-	}
+		logger:      logger,
+		tokenSecret: []byte(tokenSecret),
+		baseURL:     baseURL,
+	})
 }
 
-func (h *Handler) Handle(ctx context.Context, cmd Command) Result {
-	if err := h.validate.Struct(cmd); err != nil {
-		var ve validator.ValidationErrors
-		if errors.As(err, &ve) {
-			panic(apperror.NewValidationErrors(ve))
-		}
-		panic(err)
-	}
-
+func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	normalizedEmail := strings.ToUpper(cmd.Email)
 
 	exists, err := h.db.UserExistsByNormalizedEmail(ctx, normalizedEmail)
 	if err != nil {
-		panic(err)
+		return Result{}, err
 	}
 	if exists {
-		panic(apperror.NewConflict("email already registered"))
+		return Result{}, apperror.NewConflict("email already registered")
 	}
 
 	hash, err := hashPassword(cmd.Password)
 	if err != nil {
-		panic(err)
+		return Result{}, err
 	}
 
 	id := uuid.New().String()
@@ -122,7 +83,7 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) Result {
 		FirstName:          cmd.FirstName,
 		LastName:           cmd.LastName,
 	}); err != nil {
-		panic(err)
+		return Result{}, err
 	}
 
 	token := generateConfirmToken(id, h.tokenSecret)
@@ -145,7 +106,7 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) Result {
 		Email:     cmd.Email,
 		FirstName: cmd.FirstName,
 		LastName:  cmd.LastName,
-	}
+	}, nil
 }
 
 // hashPassword produces an ASP.NET Identity V3 PBKDF2-HMAC-SHA256 hash.

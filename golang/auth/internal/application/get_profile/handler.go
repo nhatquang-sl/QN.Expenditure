@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"auth/internal/application"
 	"auth/internal/application/apperror"
 	dbsqlc "auth/internal/database/generated"
 )
@@ -14,28 +15,28 @@ type Query struct {
 }
 
 type Result struct {
-	Id             string
-	Email          string
-	FirstName      string
-	LastName       string
-	EmailConfirmed bool
+	Id             string `json:"id"`
+	Email          string `json:"email"`
+	FirstName      string `json:"firstName"`
+	LastName       string `json:"lastName"`
+	EmailConfirmed bool   `json:"emailConfirmed"`
 }
 
-type Handler struct {
+type handler struct {
 	db *dbsqlc.Queries
 }
 
-func NewHandler(db *dbsqlc.Queries) *Handler {
-	return &Handler{db: db}
+func NewHandler(db *dbsqlc.Queries) application.Handler[Query, Result] {
+	return &handler{db: db}
 }
 
-func (h *Handler) Handle(ctx context.Context, q Query) Result {
+func (h *handler) Handle(ctx context.Context, q Query) (Result, error) {
 	user, err := h.db.GetUserProfileById(ctx, q.UserId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			panic(apperror.NewNotFound("user not found"))
+			return Result{}, apperror.NewNotFound("user not found")
 		}
-		panic(err)
+		return Result{}, err
 	}
 
 	return Result{
@@ -44,5 +45,5 @@ func (h *Handler) Handle(ctx context.Context, q Query) Result {
 		FirstName:      user.FirstName,
 		LastName:       user.LastName,
 		EmailConfirmed: user.EmailConfirmed,
-	}
+	}, nil
 }

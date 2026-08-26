@@ -1,8 +1,9 @@
 package apperror
 
 import (
-	"errors"
+	"sort"
 
+	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -11,40 +12,35 @@ type AppError struct {
 	Message string
 }
 
+// Error implements the error interface.
 func (e *AppError) Error() string { return e.Message }
 
-func NewBadRequest(msg string) *AppError    { return &AppError{Code: 400, Message: msg} }
-func NewUnauthorized(msg string) *AppError  { return &AppError{Code: 401, Message: msg} }
-func NewNotFound(msg string) *AppError      { return &AppError{Code: 404, Message: msg} }
-func NewConflict(msg string) *AppError      { return &AppError{Code: 409, Message: msg} }
-
-type ValidationErrors struct {
-	Errors []FieldError `json:"errors"`
-}
+func NewBadRequest(msg string) *AppError   { return &AppError{Code: 400, Message: msg} }
+func NewUnauthorized(msg string) *AppError { return &AppError{Code: 401, Message: msg} }
+func NewNotFound(msg string) *AppError     { return &AppError{Code: 404, Message: msg} }
+func NewConflict(msg string) *AppError     { return &AppError{Code: 409, Message: msg} }
 
 type FieldError struct {
 	Name   string   `json:"name"`
 	Errors []string `json:"errors"`
 }
 
-func (e *ValidationErrors) Error() string { return "validation failed" }
-
-func NewValidationErrors(err validator.ValidationErrors) *ValidationErrors {
-	grouped := make(map[string][]string)
-	for _, fe := range err {
-		grouped[fe.Field()] = append(grouped[fe.Field()], fe.Tag())
-	}
-	result := &ValidationErrors{}
-	for name, errs := range grouped {
-		result.Errors = append(result.Errors, FieldError{Name: name, Errors: errs})
-	}
-	return result
+type ValidationError struct {
+	Fields []FieldError
 }
 
-func AsValidationErrors(err error) (*ValidationErrors, bool) {
-	var ve validator.ValidationErrors
-	if errors.As(err, &ve) {
-		return NewValidationErrors(ve), true
+// Error implements the error interface.
+func (e *ValidationError) Error() string { return "validation failed" }
+
+func NewValidationErrors(err validator.ValidationErrors, trans ut.Translator) *ValidationError {
+	grouped := make(map[string][]string)
+	for _, fe := range err {
+		grouped[fe.Field()] = append(grouped[fe.Field()], fe.Translate(trans))
 	}
-	return nil, false
+	fields := make([]FieldError, 0, len(grouped))
+	for name, errs := range grouped {
+		fields = append(fields, FieldError{Name: name, Errors: errs})
+	}
+	sort.Slice(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
+	return &ValidationError{Fields: fields}
 }

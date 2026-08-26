@@ -10,6 +10,7 @@ import (
 
 	"auth/cmd/middleware"
 	"auth/cmd/respond"
+	"auth/internal/application"
 	"auth/internal/application/apperror"
 	"auth/internal/application/get_profile"
 	"auth/internal/application/login"
@@ -19,9 +20,9 @@ import (
 )
 
 type AuthController struct {
-	login      *login.Handler
-	register   *register.Handler
-	getProfile *get_profile.Handler
+	login      application.Handler[login.Command, login.Result]
+	register   application.Handler[register.Command, register.Result]
+	getProfile application.Handler[get_profile.Query, get_profile.Result]
 	isDev      bool
 }
 
@@ -43,13 +44,8 @@ func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) 
 	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
 		panic(apperror.NewBadRequest("invalid request body"))
 	}
-	result := c.register.Handle(r.Context(), cmd)
-	respond.NewResponse(w).JSON(http.StatusCreated, map[string]any{
-		"id":        result.Id,
-		"email":     result.Email,
-		"firstName": result.FirstName,
-		"lastName":  result.LastName,
-	})
+	result, err := c.register.Handle(r.Context(), cmd)
+	respond.NewResponse(w).JSON(http.StatusCreated, result, err)
 }
 
 func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -60,17 +56,12 @@ func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
 	cmd.IPAddress = clientIP(r)
 	cmd.UserAgent = r.Header.Get("User-Agent")
 
-	result := c.login.Handle(r.Context(), cmd)
+	result, err := c.login.Handle(r.Context(), cmd)
+	if err == nil {
+		c.setTokenCookies(w, result.AccessToken, result.RefreshToken, result.AccessTokenExpires, result.RefreshTokenExpires)
+	}
 
-	c.setTokenCookies(w, result.AccessToken, result.RefreshToken, result.AccessTokenExpires, result.RefreshTokenExpires)
-
-	respond.NewResponse(w).OK(map[string]any{
-		"id":             result.Id,
-		"email":          result.Email,
-		"firstName":      result.FirstName,
-		"lastName":       result.LastName,
-		"emailConfirmed": result.EmailConfirmed,
-	})
+	respond.NewResponse(w).JSON(http.StatusOK, result, err)
 }
 
 func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string, atExp, rtExp time.Time) {
@@ -98,15 +89,13 @@ func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, ref
 }
 
 func (c *AuthController) handleGetProfile(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.UserFromContext(r.Context())
-	result := c.getProfile.Handle(r.Context(), get_profile.Query{UserId: claims.Id})
-	respond.NewResponse(w).OK(map[string]any{
-		"id":             result.Id,
-		"email":          result.Email,
-		"firstName":      result.FirstName,
-		"lastName":       result.LastName,
-		"emailConfirmed": result.EmailConfirmed,
-	})
+	claims, err := middleware.UserFromContext(r.Context())
+	if err != nil {
+		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, err)
+		return
+	}
+	result, err := c.getProfile.Handle(r.Context(), get_profile.Query{UserId: claims.Id})
+	respond.NewResponse(w).JSON(http.StatusOK, result, err)
 }
 
 func clientIP(r *http.Request) string {

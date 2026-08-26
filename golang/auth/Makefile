@@ -37,6 +37,10 @@ docker:
 	@docker build -t $(APP_NAME):latest .
 	@docker run -p 5002:5002 --name $(APP_NAME) $(APP_NAME):latest
 
+test:
+	@echo "Running tests..."
+	@go test -v ./cmd/controller_tests/...
+
 migrate-create:
 	@migrate create -ext sql -dir internal/database/migrations -seq $(n)
 

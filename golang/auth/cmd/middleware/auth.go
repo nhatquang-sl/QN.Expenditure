@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"auth/cmd/respond"
 	"auth/internal/application/apperror"
 	"auth/internal/application/shared"
 )
@@ -17,11 +18,13 @@ func Auth(jwtService shared.JwtService) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("accessToken")
 			if err != nil {
-				panic(apperror.NewUnauthorized("missing access token"))
+				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("missing access token"))
+				return
 			}
 			claims, err := jwtService.ValidateAccessToken(cookie.Value)
 			if err != nil {
-				panic(apperror.NewUnauthorized("invalid access token"))
+				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("invalid access token"))
+				return
 			}
 			ctx := context.WithValue(r.Context(), userClaimsKey, claims)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -29,10 +32,10 @@ func Auth(jwtService shared.JwtService) func(http.Handler) http.Handler {
 	}
 }
 
-func UserFromContext(ctx context.Context) *shared.UserClaims {
+func UserFromContext(ctx context.Context) (*shared.UserClaims, error) {
 	claims, ok := ctx.Value(userClaimsKey).(*shared.UserClaims)
 	if !ok || claims == nil {
-		panic(apperror.NewUnauthorized("unauthenticated"))
+		return nil, apperror.NewUnauthorized("unauthenticated")
 	}
-	return claims
+	return claims, nil
 }

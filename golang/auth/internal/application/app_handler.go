@@ -1,12 +1,7 @@
 package application
 
-import "auth/internal/application/health"
+import "context"
 
-type Handler struct {
-	// Add any dependencies or services needed for the handler
-	Health *health.Handler
-}
-
-func NewHandler() *Handler {
-	return &Handler{}
+type Handler[C, R any] interface {
+	Handle(ctx context.Context, cmd C) (R, error)
 }

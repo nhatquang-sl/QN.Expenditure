@@ -13,21 +13,19 @@ func Recover(logger *slog.Logger, next http.Handler) http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				logger.ErrorContext(r.Context(), "panic recovered", slog.Any("error", rec))
-				writeError(w, rec)
+				writePanic(w, rec)
 			}
 		}()
 		next.ServeHTTP(w, r)
 	})
 }
 
-func writeError(w http.ResponseWriter, rec any) {
+func writePanic(w http.ResponseWriter, rec any) {
 	res := respond.NewResponse(w)
 	switch e := rec.(type) {
 	case *apperror.AppError:
-		res.JSON(e.Code, map[string]string{"message": e.Message})
-	case *apperror.ValidationErrors:
-		res.JSON(http.StatusUnprocessableEntity, e)
+		res.JSON(e.Code, map[string]string{"message": e.Message}, nil)
 	default:
-		res.JSON(http.StatusInternalServerError, map[string]string{"message": "Internal Server Error"})
+		res.JSON(http.StatusInternalServerError, map[string]string{"message": "Internal Server Error"}, nil)
 	}
 }
