@@ -42,7 +42,8 @@ func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared
 func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var cmd register.Command
 	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-		panic(apperror.NewBadRequest("invalid request body"))
+		respond.NewResponse(w).JSON(http.StatusBadRequest, nil, apperror.NewBadRequest("invalid request body"))
+		return
 	}
 	result, err := c.register.Handle(r.Context(), cmd)
 	respond.NewResponse(w).JSON(http.StatusCreated, result, err)
@@ -51,7 +52,8 @@ func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) 
 func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var cmd login.Command
 	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-		panic(apperror.NewBadRequest("invalid request body"))
+		respond.NewResponse(w).JSON(http.StatusBadRequest, nil, apperror.NewBadRequest("invalid request body"))
+		return
 	}
 	cmd.IPAddress = clientIP(r)
 	cmd.UserAgent = r.Header.Get("User-Agent")

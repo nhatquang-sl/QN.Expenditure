@@ -419,5 +419,8 @@ FodyWeavers.xsd
 # Go air tmp directory
 golang/auth/tmp/
 
+# Go test coverage output
+golang/auth/coverage.out
+
 # sqlc generated code
 golang/auth/internal/database/generated/

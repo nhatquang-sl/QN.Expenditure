@@ -41,6 +41,16 @@ test:
 	@echo "Running tests..."
 	@go test -v ./cmd/controller_tests/...
 
+coverage:
+	@echo "Running tests with coverage..."
+	@go test -coverprofile=coverage.out -coverpkg=./... ./cmd/controller_tests/...
+	@go tool cover -func=coverage.out
+
+coverage-html:
+	@echo "Running tests with coverage..."
+	@go test -coverprofile=coverage.out -coverpkg=./... ./cmd/controller_tests/...
+	@go tool cover -html=coverage.out
+
 migrate-create:
 	@migrate create -ext sql -dir internal/database/migrations -seq $(n)
 

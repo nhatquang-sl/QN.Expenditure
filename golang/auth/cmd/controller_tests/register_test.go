@@ -22,6 +22,7 @@ func TestRegister(t *testing.T) {
 	t.Run("DuplicateEmail", registerDuplicateEmail)
 	t.Run("WeakPassword", registerWeakPassword)
 	t.Run("MissingFields", registerMissingFields)
+	t.Run("InvalidBody", registerInvalidBody)
 }
 
 func registerSuccess(t *testing.T) {
@@ -92,6 +93,18 @@ func registerWeakPassword(t *testing.T) {
 
 	require.Equal(t, http.StatusUnprocessableEntity, w.Code)
 	assert.JSONEq(t, `[{"name":"password","errors":["password must be at least 8 characters with an uppercase letter, a lowercase letter, and a digit"]}]`, w.Body.String())
+}
+
+func registerInvalidBody(t *testing.T) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader([]byte("not-json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	newTestHandler().ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	assert.JSONEq(t, `{"message":"invalid request body"}`, w.Body.String())
 }
 
 func registerMissingFields(t *testing.T) {
