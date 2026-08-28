@@ -1,0 +1,89 @@
+package controllertests
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"auth/internal/application/get_profile"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGetProfile(t *testing.T) {
+	t.Run("Success", getProfileSuccess)
+	t.Run("NoCookie", getProfileNoCookie)
+	t.Run("InvalidToken", getProfileInvalidToken)
+}
+
+// loginUser is a helper that registers and logs in a user, returning the access token.
+func loginUser(t *testing.T, handler http.Handler, email, password string) string {
+	t.Helper()
+	registerUser(t, handler, email, password)
+
+	body, _ := json.Marshal(map[string]string{
+		"email":    email,
+		"password": password,
+	})
+	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	for _, c := range w.Result().Cookies() {
+		if c.Name == "accessToken" {
+			return c.Value
+		}
+	}
+	t.Fatal("accessToken cookie not found in login response")
+	return ""
+}
+
+func getProfileSuccess(t *testing.T) {
+	t.Helper()
+	email := fmt.Sprintf("profile.success+%d@example.com", time.Now().UnixNano())
+	handler := newTestHandler()
+	accessToken := loginUser(t, handler, email, "Password1")
+
+	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
+	req.AddCookie(&http.Cookie{Name: "accessToken", Value: accessToken})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var result get_profile.Result
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&result))
+	assert.Equal(t, email, result.Email)
+	assert.Equal(t, "Test", result.FirstName)
+	assert.Equal(t, "User", result.LastName)
+	assert.NotEmpty(t, result.Id)
+}
+
+func getProfileNoCookie(t *testing.T) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
+	w := httptest.NewRecorder()
+
+	newTestHandler().ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.JSONEq(t, `{"message":"missing access token"}`, w.Body.String())
+}
+
+func getProfileInvalidToken(t *testing.T) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
+	req.AddCookie(&http.Cookie{Name: "accessToken", Value: "invalid.token.value"})
+	w := httptest.NewRecorder()
+
+	newTestHandler().ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.JSONEq(t, `{"message":"unauthenticated"}`, w.Body.String())
+}

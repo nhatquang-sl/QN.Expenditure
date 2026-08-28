@@ -3,8 +3,10 @@ package controllertests
 import (
 	"auth/cmd/controllers"
 	"auth/cmd/middleware"
+	. "auth/internal/config"
 	"auth/internal/database"
 	"auth/internal/database/generated"
+	jwtservice "auth/internal/services/jwt"
 	"context"
 	"io"
 	"log/slog"
@@ -22,6 +24,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+var testJwtService = jwtservice.NewService(JwtConfig{
+	Issuer:                "test",
+	Audience:              "test",
+	AccessTokenSecretKey:  "test-access-secret",
+	RefreshTokenSecretKey: "test-refresh-secret",
+})
 
 const (
 	dbName     = "auth"
@@ -54,7 +63,7 @@ func TestMain(m *testing.M) {
 func newTestHandler() http.Handler {
 	mux := http.NewServeMux()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	controllers.NewAuthController(mux, testQueries, nil, nil, logger, "test-secret", "http://localhost", true)
+	controllers.NewAuthController(mux, testQueries, testJwtService, nil, logger, "test-secret", "http://localhost", true)
 	return middleware.Recover(logger, mux)
 }
 
