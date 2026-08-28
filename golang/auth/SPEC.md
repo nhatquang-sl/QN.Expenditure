@@ -33,7 +33,9 @@ Build `golang/auth` — a standalone Go HTTP service that re-implements all 13 a
 
 ## Implementation Decisions
 
-### Architecture
+> Architecture, error handling, middleware, HTTP patterns, and testing decisions are documented in `CLAUDE.md` (the primary operational guide for this codebase).
+
+### Architecture summary
 
 Four layers, dependency flows strictly inward:
 
@@ -41,41 +43,37 @@ Four layers, dependency flows strictly inward:
 cmd/main.go → cmd/middleware/ → cmd/controllers/ → internal/application/
 ```
 
-- `cmd/main.go` — thin entry point: loads config, opens DB, creates mux, wraps with `middleware.Recover`, starts server.
-- `cmd/middleware/` — `Recover` middleware wraps the mux. Catches any panic and maps it to a JSON HTTP response: `*apperror.AppError` → status from `Code`, `*apperror.ValidationErrors` → 422, anything else → 500. This is the single authoritative place for error-to-status mapping.
-- `cmd/controllers/` — HTTP layer. Each controller constructor receives `*http.ServeMux` and self-registers its routes. Controllers own JSON decoding and encoding. They contain no `if err != nil` checks — failures are signalled by panic. Nothing from `net/http` leaks into `internal/application/`.
-- `internal/application/` — pure business logic. Handlers receive plain Go types and return plain Go types (no error return). On failure they panic with a typed error; the middleware catches it. No `net/http` imports anywhere in this layer.
-- No repository layer. Handlers own all their DB logic directly.
-- No mediator bus. Controllers call application handlers directly.
-- No event system. Handlers that send email call the service directly in a fire-and-forget goroutine using `context.WithoutCancel`. RabbitMQ-based events are deferred to a future phase.
+- `internal/application/` — **zero `net/http` imports**. Pure business logic. Handlers return `(R, error)`.
+- `cmd/` — all HTTP concerns: routing, decoding, encoding, middleware, cookies.
+- No repository layer, no mediator bus. Handlers own DB logic directly. Email is fire-and-forget with `context.WithoutCancel`.
 
-### Vertical Slice Delivery
+### Slices
 
 Each slice is an independent unit of work delivered in sequence:
 
-| # | Slice | Type |
-|---|-------|------|
-| 0 | Init project, Dockerfile, `/health` endpoint | Setup |
-| 1 | Register | Command |
-| 2 | Login | Command |
-| 3 | RefreshToken | Command |
-| 4 | Logout | Command |
-| 5 | ConfirmEmail | Command |
-| 6 | ResendEmailConfirmation | Command |
-| 7 | ForgotPassword | Command |
-| 8 | ResetPassword | Command |
-| 9 | ChangePassword | Command |
-| 10 | ChangeEmail | Command |
-| 11 | ConfirmEmailChange | Command |
-| 12 | GetProfile | Query |
-| 13 | GetUserLoginHistories | Query |
+| # | Slice | Type | Status |
+|---|-------|------|--------|
+| 0 | Init project, Dockerfile, `/health` endpoint | Setup | ✅ Done |
+| 1 | Register | Command | ✅ Done |
+| 2 | Login | Command | ✅ Done |
+| 3 | RefreshToken | Command | — |
+| 4 | Logout | Command | — |
+| 5 | ConfirmEmail | Command | — |
+| 6 | ResendEmailConfirmation | Command | — |
+| 7 | ForgotPassword | Command | — |
+| 8 | ResetPassword | Command | — |
+| 9 | ChangePassword | Command | — |
+| 10 | ChangeEmail | Command | — |
+| 11 | ConfirmEmailChange | Command | — |
+| 12 | GetProfile | Query | ✅ Done |
+| 13 | GetUserLoginHistories | Query | — |
 
 ### Database
 
 - PostgreSQL via `database/sql` + `github.com/lib/pq`. No ORM.
 - SQL queries are written by hand in `.sql` files annotated for sqlc. sqlc generates type-safe Go code into `internal/database/generated/`. Generated files are **gitignored** and must be regenerated with `sqlc generate -f internal/database/sqlc.yaml` before building. `sqlc` itself is not a runtime dependency.
 - Each feature's SQL file lives alongside its handler: `login/login.sql` next to `login/handler.go`. sqlc scans all `.sql` files under `internal/application/` via the glob `"../application/**/*.sql"` configured in `internal/database/sqlc.yaml`. No manual listing of feature directories is needed — adding a new `<feature>/<feature>.sql` is enough.
-- `internal/database/context.go` opens the connection, pings, and returns `*generated.Queries` (aliased as `dbsqlc` at import sites). Handlers receive `*dbsqlc.Queries` directly — no handler touches `*sql.DB`.
+- `internal/database/context.go` opens the connection, pings, and returns `(*sql.DB, *generated.Queries, error)`. The `*sql.DB` is retained by `main.go` for `defer db.Close()`. Handlers receive `*generated.Queries` directly — no handler touches `*sql.DB`.
 - Schema snapshots in `internal/database/schema/` define the table shape for sqlc type inference. They are never applied to the database.
 - `UserLoginHistories` has a `RememberMe` column that the Login handler must write.
 
@@ -87,8 +85,8 @@ Each slice is an independent unit of work delivered in sequence:
 
 ### JWT and Tokens
 
-- `shared.JwtProvider` interface has three methods: `GenerateTokens`, `ValidateRefreshToken`, `ValidateAccessToken`.
-- JWT claim shape matches the .NET implementation exactly: `id`, `emailCus`, `firstName`, `lastName`, `emailConfirmed`, `type`, `rte` (refresh token expiry, access token only).
+- `shared.JwtService` interface has three methods: `GenerateTokens`, `ValidateRefreshToken`, `ValidateAccessToken`.
+- JWT claim shape matches the .NET implementation exactly: `id`, `email`, `firstName`, `lastName`, `emailConfirmed`, `type`, `rte` (refresh token expiry, access token only).
 - Access token expiry: 5 minutes (always).
 - Refresh token expiry: 5 hours (default) or 30 days (when `RememberMe: true`), matching the .NET `JwtProvider`.
 - Stateless HMAC-SHA256 tokens (signed with `TOKEN_SECRET`) are used for email confirmation, password reset, and email change confirmation. No token table in the database.
@@ -100,13 +98,13 @@ Each slice is an independent unit of work delivered in sequence:
 ### Cookies
 
 - `HttpOnly: true`, `Secure: !isDevelopment`, `SameSite: Strict` (frontend and API are same-origin).
-- `isDevelopment` is derived from `APP_ENV == "Development"` and passed as a `bool` to `NewAuthHandler` at wiring time.
+- `isDevelopment` is derived from `APP_ENV == "Development"` and passed as a `bool` to `NewAuthController` at wiring time.
 
 ### HTTP
 
 - `net/http` stdlib `ServeMux` (Go 1.22+) with method-prefixed patterns. No third-party router.
 - Each controller in `cmd/controllers/` receives `*http.ServeMux` in its constructor and self-registers its routes. `main.go` calls one constructor per controller.
-- All JSON responses are written via `respond.NewResponse(w).OK(v)` or `respond.NewResponse(w).JSON(status, v)` (`cmd/respond/response.go`). Controllers never set headers or call `WriteHeader` directly. Error responses are never written by controllers — failures are signalled by panic and handled centrally by `middleware.Recover`.
+- All JSON responses are written via `respond.NewResponse(w).JSON(status, result, err)` or `respond.NewResponse(w).OK(v)` (`cmd/respond/response.go`). When `err != nil`, `JSON` writes the error response instead of the success body — `*apperror.AppError` maps to its own status code and `{"message":"..."}`, `*apperror.ValidationError` maps to 422 with `[{"name":"field","errors":["msg"]}]`, anything else maps to 500. Controllers never call `WriteHeader` directly.
 - `X-Forwarded-For` is trusted unconditionally for client IP extraction (acceptable given the controlled network topology).
 
 ### `/health` Endpoint
@@ -117,22 +115,25 @@ Each slice is an independent unit of work delivered in sequence:
 
 ### Validation
 
-- `github.com/go-playground/validator/v10` with struct tags. Custom `password_strength` validator registered once on a shared `*validator.Validate` instance.
+- `github.com/go-playground/validator/v10` with struct tags. Custom validators (e.g. `password_strength`) registered via `NewValidator` configure functions.
 - Validator uses JSON field names (via `RegisterTagNameFunc`) so error field names match the JSON request body.
-- Validation errors returned as `{"errors": [{"name": "fieldName", "errors": ["rule1"]}]}` with HTTP 422.
+- Validation errors returned as a JSON array `[{"name":"fieldName","errors":["message"]}]` with HTTP 422. Fields are sorted alphabetically.
 
 ### Error Handling
 
-- Application handlers signal failures by **panicking** with a typed error — never by returning an error value.
-- `apperror.AppError` for typed HTTP errors (400, 401, 404, 409). Panic with `apperror.NewUnauthorized(...)`, `apperror.NewNotFound(...)`, etc.
-- `apperror.ValidationErrors` for field-level validation failures (422). Panic with `apperror.NewValidationErrors(ve)`.
-- Any other panic value (unexpected errors, genuine bugs) → 500 with `{"message": "Internal Server Error"}` — no internals leaked.
-- The `Recover` middleware in `cmd/middleware/recover.go` is the only place that converts these panics to HTTP responses.
+- Application handlers return `(R, error)`. Business rule failures are returned as `*apperror.AppError`; validation failures as `*apperror.ValidationError`.
+- `respond.NewResponse(w).JSON(status, result, err)` inspects `err` and writes the correct HTTP response:
+  - `*apperror.AppError` → `e.Code` status + `{"message": e.Message}`
+  - `*apperror.ValidationError` → 422 + `[{"name":"...","errors":["..."]}]`
+  - any other error → 500 + `{"message": "Internal Server Error"}`
+  - `nil` → `status` + encoded `result`
+- `middleware.Recover` catches panics (unexpected bugs, genuine runtime errors) and maps `*apperror.AppError` to its status code, everything else to 500. Panics are logged via `slog`.
+- Controllers write decode errors (bad JSON body) directly via `respond.NewResponse(w).JSON(http.StatusBadRequest, nil, apperror.NewBadRequest(...))` and return — they do not panic for decode failures.
 
 ### Middleware
 
-- `cmd/middleware/recover.go` — `Recover(next http.Handler) http.Handler`. Wraps the entire mux in `cmd/main.go`. Recovers any panic and writes a JSON error response. This is the only middleware applied globally.
-- Auth middleware reads `accessToken` cookie, validates the JWT, and stores the user profile in context. Panics with `apperror.NewUnauthorized(...)` on failure so the `Recover` middleware handles the response. Applied per-route inside the relevant controller.
+- `cmd/middleware/recover.go` — `Recover(logger *slog.Logger, next http.Handler) http.Handler`. Wraps the entire mux in `cmd/main.go`. Recovers any panic, logs it, and writes a JSON error response.
+- `cmd/middleware/auth.go` — `Auth(jwtService) func(http.HandlerFunc) http.HandlerFunc`. Applied per-route inside controllers. Reads the `accessToken` cookie, validates it via `jwtService.ValidateAccessToken`, stores `*shared.UserClaims` in context, or writes a `401` response directly and returns.
 
 ### Dependency Injection
 
@@ -140,27 +141,25 @@ Manual constructor injection. Controller constructors receive dependencies (DB, 
 
 ### Email
 
-- Direct calls to `port.EmailService` (Mailjet) from within handlers, in a fire-and-forget goroutine with `context.WithoutCancel`. Email failures are logged but do not fail the HTTP response. A resend endpoint exists as a fallback for lost emails.
+- Direct calls to `shared.EmailService` (Mailjet) from within handlers, in a fire-and-forget goroutine with `context.WithoutCancel`. Email failures are logged but do not fail the HTTP response. A resend endpoint exists as a fallback for lost emails.
 
 ## Testing Decisions
 
-- A good test exercises the handler's external behavior (inputs in, outputs out) without asserting on internal implementation details like which DB method was called or in what order.
-- **Unit tests** for all application handlers — call handler methods directly with plain Go types. No HTTP setup needed because application handlers have no `net/http` dependency. These live alongside their handler in `internal/application/<feature>/`.
-- **HTTP end-to-end tests** for all routes using `net/http/httptest`. These live in `cmd/controllers/` and wire real controllers against mock application handlers.
-- Integration tests (testcontainers-go + real PostgreSQL) are deferred until Go owns at least one database table.
-- No test is written for the current slice — the test structure is established in slice 0 and filled in as each slice is built.
+- Tests exercise the handler's external behavior (HTTP inputs and outputs) without asserting on internal implementation details.
+- **Integration tests** using `testcontainers-go` with a real PostgreSQL container. Tests live in `cmd/controller_tests/`. A single container is shared across all tests in the package via `TestMain`.
+- `newTestHandler()` wires real controllers, real application handlers, a real JWT service (with test secrets), and the `Recover` middleware against the test DB — the full production stack minus the email service.
+- No unit tests for application handlers (they are covered by the integration tests end-to-end).
+- Test helpers (`registerUser`, `loginUser`) reduce boilerplate for common setup steps.
 
 ## Out of Scope
 
 - Event bus / RabbitMQ integration (future phase).
 - Repository layer abstraction.
-- Integration tests (deferred — Go owns no DB tables yet).
-- DB migrations (deferred — all tables owned by .NET).
 - Trusted-proxy IP validation for `X-Forwarded-For`.
 - Any frontend changes.
 
 ## Further Notes
 
 - The Go service and .NET service may run simultaneously against the same database. The PBKDF2 hash format, JWT claim names, and cookie names must be identical between the two implementations to avoid breaking existing sessions.
-- `cmd/main.go` panics on bad config (missing/malformed `appsettings.json`). This is intentional — it is idiomatic Go for a fatal startup precondition.
+- `cmd/main.go` exits with code 1 on bad config or DB connection failure.
 - `cmd/controllers/` has no `net/http` restriction on it — only `internal/application/` must remain HTTP-free.
