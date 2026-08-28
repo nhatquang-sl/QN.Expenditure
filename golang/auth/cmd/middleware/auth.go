@@ -6,14 +6,14 @@ import (
 
 	"auth/cmd/respond"
 	"auth/internal/application/apperror"
-	"auth/internal/application/shared"
+	. "auth/internal/application/shared"
 )
 
 type contextKey int
 
 const userClaimsKey contextKey = iota
 
-func Auth(jwtService shared.JwtService) func(http.HandlerFunc) http.HandlerFunc {
+func Auth(jwtService JwtService) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("accessToken")
@@ -32,8 +32,8 @@ func Auth(jwtService shared.JwtService) func(http.HandlerFunc) http.HandlerFunc 
 	}
 }
 
-func UserFromContext(ctx context.Context) (*shared.UserClaims, error) {
-	claims, ok := ctx.Value(userClaimsKey).(*shared.UserClaims)
+func UserFromContext(ctx context.Context) (*UserClaims, error) {
+	claims, ok := ctx.Value(userClaimsKey).(*UserClaims)
 	if !ok || claims == nil {
 		return nil, apperror.NewUnauthorized("unauthenticated")
 	}

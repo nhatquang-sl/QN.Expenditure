@@ -12,30 +12,34 @@ import (
 	"auth/cmd/respond"
 	"auth/internal/application"
 	"auth/internal/application/apperror"
-	"auth/internal/application/get_profile"
+	getprofile "auth/internal/application/get_profile"
 	"auth/internal/application/login"
+	refreshtoken "auth/internal/application/refresh_token"
 	"auth/internal/application/register"
-	"auth/internal/application/shared"
+	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 )
 
 type AuthController struct {
-	login      application.Handler[login.Command, login.Result]
-	register   application.Handler[register.Command, register.Result]
-	getProfile application.Handler[get_profile.Query, get_profile.Result]
-	isDev      bool
+	login        application.Handler[login.Command, login.Result]
+	register     application.Handler[register.Command, register.Result]
+	refreshToken application.Handler[refreshtoken.Command, refreshtoken.Result]
+	getProfile   application.Handler[getprofile.Query, getprofile.Result]
+	isDev        bool
 }
 
-func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService shared.JwtService, emailService shared.EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
+func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService JwtService, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
 	c := &AuthController{
-		login:      login.NewHandler(db, jwtService, logger),
-		register:   register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
-		getProfile: get_profile.NewHandler(db),
-		isDev:      isDev,
+		login:        login.NewHandler(db, jwtService, logger),
+		register:     register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
+		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
+		getProfile:   getprofile.NewHandler(db),
+		isDev:        isDev,
 	}
 	auth := middleware.Auth(jwtService)
 	mux.HandleFunc("POST /login", c.handleLogin)
 	mux.HandleFunc("POST /register", c.handleRegister)
+	mux.HandleFunc("POST /refresh-token", c.handleRefreshToken)
 	mux.HandleFunc("GET /profile", auth(c.handleGetProfile))
 }
 
@@ -64,6 +68,23 @@ func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond.NewResponse(w).JSON(http.StatusOK, result, err)
+}
+
+func (c *AuthController) handleRefreshToken(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("refreshToken")
+	if err != nil {
+		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("missing refresh token"))
+		return
+	}
+	result, appErr := c.refreshToken.Handle(r.Context(), refreshtoken.Command{
+		RefreshToken: cookie.Value,
+		IPAddress:    clientIP(r),
+		UserAgent:    r.Header.Get("User-Agent"),
+	})
+	if appErr == nil {
+		c.setTokenCookies(w, result.AccessToken, result.RefreshToken, result.AccessTokenExpires, result.RefreshTokenExpires)
+	}
+	respond.NewResponse(w).JSON(http.StatusOK, result, appErr)
 }
 
 func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string, atExp, rtExp time.Time) {
@@ -96,7 +117,7 @@ func (c *AuthController) handleGetProfile(w http.ResponseWriter, r *http.Request
 		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, err)
 		return
 	}
-	result, err := c.getProfile.Handle(r.Context(), get_profile.Query{UserId: claims.Id})
+	result, err := c.getProfile.Handle(r.Context(), getprofile.Query{UserId: claims.Id})
 	respond.NewResponse(w).JSON(http.StatusOK, result, err)
 }
 

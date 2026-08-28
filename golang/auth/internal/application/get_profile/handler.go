@@ -1,4 +1,4 @@
-package get_profile
+package getprofile
 
 import (
 	"context"

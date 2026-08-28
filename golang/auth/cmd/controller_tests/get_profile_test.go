@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"auth/internal/application/get_profile"
+	getprofile "auth/internal/application/get_profile"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,7 +57,7 @@ func getProfileSuccess(t *testing.T) {
 	handler.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var result get_profile.Result
+	var result getprofile.Result
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&result))
 	assert.Equal(t, email, result.Email)
 	assert.Equal(t, "Test", result.FirstName)

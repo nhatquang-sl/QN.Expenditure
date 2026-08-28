@@ -140,6 +140,32 @@ if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
 
 ---
 
+## Go Naming Conventions
+
+### Package names
+Go package names must be **single lowercase words — no underscores, no hyphens**.
+
+Feature directories can use underscores (e.g. `get_profile/`, `refresh_token/`), but the `package` declaration inside must drop them:
+
+```go
+// directory: internal/application/get_profile/
+package getprofile  // ✅ correct
+
+// directory: internal/application/refresh_token/
+package refreshtoken  // ✅ correct
+```
+
+When importing a package whose directory name has underscores, use an alias to keep the call-site readable:
+
+```go
+import (
+    getprofile  "auth/internal/application/get_profile"
+    refreshtoken "auth/internal/application/refresh_token"
+)
+```
+
+---
+
 ## Adding a New Feature Slice
 
 For slice-specific requirements (business rules, JWT/cookie settings, password hash format, DB schema notes), read `SPEC.md` before starting.

@@ -2,6 +2,7 @@ package controllertests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -70,6 +71,11 @@ func loginSuccess(t *testing.T) {
 	assert.Equal(t, email, result["email"])
 	assert.Equal(t, "Test", result["firstName"])
 	assert.NotEmpty(t, result["id"])
+
+	history, err := testQueries.GetLoginHistoryByRefreshToken(context.Background(), cookieMap["refreshToken"])
+	require.NoError(t, err, "login history row should be persisted")
+	assert.Greater(t, history.Id, int64(0))
+	assert.False(t, history.RememberMe)
 }
 
 func loginInvalidBody(t *testing.T) {

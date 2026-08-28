@@ -14,7 +14,7 @@ import (
 
 	"auth/internal/application"
 	"auth/internal/application/apperror"
-	"auth/internal/application/shared"
+	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 
 	"github.com/google/uuid"
@@ -37,13 +37,13 @@ type Result struct {
 
 type handler struct {
 	db           *dbsqlc.Queries
-	emailService shared.EmailService
+	emailService EmailService
 	logger       *slog.Logger
 	tokenSecret  []byte
 	baseURL      string
 }
 
-func NewHandler(db *dbsqlc.Queries, emailService shared.EmailService, logger *slog.Logger, tokenSecret, baseURL string) application.Handler[Command, Result] {
+func NewHandler(db *dbsqlc.Queries, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string) application.Handler[Command, Result] {
 	return newValidator(handler{
 		db:          db,
 		emailService: emailService,

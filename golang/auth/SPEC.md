@@ -56,7 +56,7 @@ Each slice is an independent unit of work delivered in sequence:
 | 0 | Init project, Dockerfile, `/health` endpoint | Setup | ✅ Done |
 | 1 | Register | Command | ✅ Done |
 | 2 | Login | Command | ✅ Done |
-| 3 | RefreshToken | Command | — |
+| 3 | RefreshToken | Command | ✅ Done |
 | 4 | Logout | Command | — |
 | 5 | ConfirmEmail | Command | — |
 | 6 | ResendEmailConfirmation | Command | — |

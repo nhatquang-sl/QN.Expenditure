@@ -14,7 +14,7 @@ import (
 
 	"auth/internal/application"
 	"auth/internal/application/apperror"
-	"auth/internal/application/shared"
+	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 
 	"golang.org/x/crypto/pbkdf2"
@@ -42,11 +42,11 @@ type Result struct {
 
 type handler struct {
 	db         *dbsqlc.Queries
-	jwtService shared.JwtService
+	jwtService JwtService
 	logger     *slog.Logger
 }
 
-func NewHandler(db *dbsqlc.Queries, jwtService shared.JwtService, logger *slog.Logger) application.Handler[Command, Result] {
+func NewHandler(db *dbsqlc.Queries, jwtService JwtService, logger *slog.Logger) application.Handler[Command, Result] {
 	return newValidator(handler{db: db, jwtService: jwtService, logger: logger})
 }
 
@@ -63,7 +63,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, apperror.NewUnauthorized("invalid credentials")
 	}
 
-	tokens, err := h.jwtService.GenerateTokens(shared.UserClaims{
+	tokens, err := h.jwtService.GenerateTokens(UserClaims{
 		Id:             user.Id,
 		Email:          user.Email,
 		FirstName:      user.FirstName,

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"auth/internal/application/shared"
-	"auth/internal/config"
+	. "auth/internal/application/shared"
+	. "auth/internal/config"
 
-	extjwt "github.com/golang-jwt/jwt/v5"
+	. "github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -17,15 +17,15 @@ const (
 )
 
 type Service struct {
-	cfg config.JwtConfig
+	cfg JwtConfig
 }
 
-func NewService(cfg config.JwtConfig) *Service {
+func NewService(cfg JwtConfig) *Service {
 	return &Service{cfg: cfg}
 }
 
 type authClaims struct {
-	extjwt.RegisteredClaims
+	RegisteredClaims
 	Id             string `json:"id"`
 	Email          string `json:"email"`
 	FirstName      string `json:"firstName"`
@@ -34,7 +34,7 @@ type authClaims struct {
 	Type           string `json:"type"`
 }
 
-func (s *Service) GenerateTokens(user shared.UserClaims, rememberMe bool) (shared.TokenPair, error) {
+func (s *Service) GenerateTokens(user UserClaims, rememberMe bool) (TokenPair, error) {
 	now := time.Now().UTC()
 	accessExpires := now.Add(accessTokenExpiry)
 
@@ -51,14 +51,14 @@ func (s *Service) GenerateTokens(user shared.UserClaims, rememberMe bool) (share
 
 	accessToken, err := s.sign(user, s.cfg.AccessTokenSecretKey, accessExpires, refreshExpires.UnixMilli(), tokenType)
 	if err != nil {
-		return shared.TokenPair{}, err
+		return TokenPair{}, err
 	}
 	refreshToken, err := s.sign(user, s.cfg.RefreshTokenSecretKey, refreshExpires, 0, tokenType)
 	if err != nil {
-		return shared.TokenPair{}, err
+		return TokenPair{}, err
 	}
 
-	return shared.TokenPair{
+	return TokenPair{
 		AccessToken:         accessToken,
 		RefreshToken:        refreshToken,
 		AccessTokenExpires:  accessExpires,
@@ -66,21 +66,21 @@ func (s *Service) GenerateTokens(user shared.UserClaims, rememberMe bool) (share
 	}, nil
 }
 
-func (s *Service) ValidateAccessToken(tokenStr string) (*shared.UserClaims, error) {
+func (s *Service) ValidateAccessToken(tokenStr string) (*UserClaims, error) {
 	return s.validate(tokenStr, s.cfg.AccessTokenSecretKey)
 }
 
-func (s *Service) ValidateRefreshToken(tokenStr string) (*shared.UserClaims, error) {
+func (s *Service) ValidateRefreshToken(tokenStr string) (*UserClaims, error) {
 	return s.validate(tokenStr, s.cfg.RefreshTokenSecretKey)
 }
 
-func (s *Service) sign(user shared.UserClaims, secret string, expires time.Time, rte int64, tokenType string) (string, error) {
+func (s *Service) sign(user UserClaims, secret string, expires time.Time, rte int64, tokenType string) (string, error) {
 	claims := authClaims{
-		RegisteredClaims: extjwt.RegisteredClaims{
+		RegisteredClaims: RegisteredClaims{
 			Issuer:    s.cfg.Issuer,
-			Audience:  extjwt.ClaimStrings{s.cfg.Audience},
-			ExpiresAt: extjwt.NewNumericDate(expires),
-			IssuedAt:  extjwt.NewNumericDate(time.Now().UTC()),
+			Audience:  ClaimStrings{s.cfg.Audience},
+			ExpiresAt: NewNumericDate(expires),
+			IssuedAt:  NewNumericDate(time.Now().UTC()),
 		},
 		Id:             user.Id,
 		Email:          user.Email,
@@ -89,13 +89,13 @@ func (s *Service) sign(user shared.UserClaims, secret string, expires time.Time,
 		EmailConfirmed: user.EmailConfirmed,
 		Type:           tokenType,
 	}
-	token := extjwt.NewWithClaims(extjwt.SigningMethodHS256, claims)
+	token := NewWithClaims(SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
 }
 
-func (s *Service) validate(tokenStr, secret string) (*shared.UserClaims, error) {
-	token, err := extjwt.ParseWithClaims(tokenStr, &authClaims{}, func(t *extjwt.Token) (any, error) {
-		if _, ok := t.Method.(*extjwt.SigningMethodHMAC); !ok {
+func (s *Service) validate(tokenStr, secret string) (*UserClaims, error) {
+	token, err := ParseWithClaims(tokenStr, &authClaims{}, func(t *Token) (any, error) {
+		if _, ok := t.Method.(*SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return []byte(secret), nil
@@ -104,7 +104,7 @@ func (s *Service) validate(tokenStr, secret string) (*shared.UserClaims, error) 
 		return nil, nil
 	}
 	c := token.Claims.(*authClaims)
-	return &shared.UserClaims{
+	return &UserClaims{
 		Id:             c.Id,
 		Email:          c.Email,
 		FirstName:      c.FirstName,
