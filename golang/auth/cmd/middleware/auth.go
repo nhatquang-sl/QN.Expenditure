@@ -32,10 +32,10 @@ func Auth(jwtService JwtService) func(http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func UserFromContext(ctx context.Context) (*UserClaims, error) {
+func UserFromContext(ctx context.Context) *UserClaims {
 	claims, ok := ctx.Value(userClaimsKey).(*UserClaims)
 	if !ok || claims == nil {
-		return nil, apperror.NewUnauthorized("unauthenticated")
+		panic("UserFromContext called outside of Auth middleware")
 	}
-	return claims, nil
+	return claims
 }

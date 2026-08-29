@@ -14,6 +14,7 @@ import (
 	"auth/internal/application/apperror"
 	getprofile "auth/internal/application/get_profile"
 	"auth/internal/application/login"
+	"auth/internal/application/logout"
 	refreshtoken "auth/internal/application/refresh_token"
 	"auth/internal/application/register"
 	. "auth/internal/application/shared"
@@ -25,6 +26,7 @@ type AuthController struct {
 	login        application.Handler[login.Command, login.Result]
 	register     application.Handler[register.Command, register.Result]
 	refreshToken application.Handler[refreshtoken.Command, refreshtoken.Result]
+	logout       application.Handler[logout.Command, logout.Result]
 	getProfile   application.Handler[getprofile.Query, getprofile.Result]
 	isDev        bool
 }
@@ -34,6 +36,7 @@ func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, redisService *Red
 		login:        login.NewHandler(db, jwtService, logger),
 		register:     register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
 		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
+		logout:       logout.NewHandler(db),
 		getProfile:   getprofile.NewHandler(db, redisService),
 		isDev:        isDev,
 	}
@@ -41,6 +44,7 @@ func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, redisService *Red
 	mux.HandleFunc("POST /login", c.handleLogin)
 	mux.HandleFunc("POST /register", c.handleRegister)
 	mux.HandleFunc("POST /refresh-token", c.handleRefreshToken)
+	mux.HandleFunc("POST /logout", auth(c.handleLogout))
 	mux.HandleFunc("GET /profile", auth(c.handleGetProfile))
 }
 
@@ -112,14 +116,35 @@ func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, ref
 	})
 }
 
-func (c *AuthController) handleGetProfile(w http.ResponseWriter, r *http.Request) {
-	claims, err := middleware.UserFromContext(r.Context())
-	if err != nil {
-		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, err)
-		return
+func (c *AuthController) handleLogout(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.UserFromContext(r.Context())
+	_, err := c.logout.Handle(r.Context(), logout.Command{TokenId: claims.TokenId})
+	if err == nil {
+		c.clearTokenCookies(w)
 	}
+	respond.NewResponse(w).JSON(http.StatusNoContent, nil, err)
+}
+
+func (c *AuthController) handleGetProfile(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.UserFromContext(r.Context())
 	result, err := c.getProfile.Handle(r.Context(), getprofile.Query{UserId: claims.Id})
 	respond.NewResponse(w).JSON(http.StatusOK, result, err)
+}
+
+func (c *AuthController) clearTokenCookies(w http.ResponseWriter) {
+	secure := !c.isDev
+	sameSite := http.SameSiteStrictMode
+	for _, name := range []string{"accessToken", "refreshToken"} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   secure,
+			SameSite: sameSite,
+		})
+	}
 }
 
 func clientIP(r *http.Request) string {
