@@ -8,6 +8,7 @@ import (
 	"auth/internal/application"
 	"auth/internal/application/apperror"
 	dbsqlc "auth/internal/database/generated"
+	. "auth/internal/services/redis"
 )
 
 type Query struct {
@@ -26,8 +27,12 @@ type handler struct {
 	db *dbsqlc.Queries
 }
 
-func NewHandler(db *dbsqlc.Queries) application.Handler[Query, Result] {
-	return &handler{db: db}
+func NewHandler(db *dbsqlc.Queries, cache *RedisService) application.Handler[Query, Result] {
+	return application.NewCacher[Query, Result](
+		&handler{db: db},
+		cache,
+		func(q Query) string { return "profile:" + q.UserId },
+	)
 }
 
 func (h *handler) Handle(ctx context.Context, q Query) (Result, error) {
@@ -38,7 +43,6 @@ func (h *handler) Handle(ctx context.Context, q Query) (Result, error) {
 		}
 		return Result{}, err
 	}
-
 	return Result{
 		Id:             user.Id,
 		Email:          user.Email,

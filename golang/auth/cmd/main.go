@@ -6,6 +6,7 @@ import (
 	"auth/internal/config"
 	"auth/internal/database"
 	"auth/internal/services/jwt"
+	redisservice "auth/internal/services/redis"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -30,11 +31,12 @@ func main() {
 
 	// 2. register routes
 	jwtService := jwt.NewService(cfg.Jwt)
+	cache := redisservice.NewService(cfg.Redis)
 	isDev := os.Getenv("APP_ENV") == "Development"
 	tokenSecret := os.Getenv("TOKEN_SECRET")
 
 	controllers.NewHealthController(mux)
-	controllers.NewAuthController(mux, queries, jwtService, nil, logger, tokenSecret, cfg.Application.Endpoint, isDev)
+	controllers.NewAuthController(mux, queries, cache, jwtService, nil, logger, tokenSecret, cfg.Application.Endpoint, isDev)
 
 	// 3. server instance
 	serverAddr := fmt.Sprintf(":%d", cfg.GoServerPort)

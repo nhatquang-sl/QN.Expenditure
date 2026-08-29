@@ -7,7 +7,10 @@ import (
 	"auth/internal/database"
 	"auth/internal/database/generated"
 	jwtservice "auth/internal/services/jwt"
+	. "auth/internal/services/redis"
 	"context"
+	"database/sql"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -38,20 +41,33 @@ const (
 	dbPassword = "postgres"
 )
 
-// testQueries is shared across all tests in this package.
+// testDB, testQueries, and testCache are shared across all tests in this package.
+var testDB *sql.DB
 var testQueries *generated.Queries
+var testCache *RedisService
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	q, cf, err := createTestDB(ctx)
+
+	db, q, dbCleanup, err := createTestDB(ctx)
 	if err != nil {
 		panic(err)
 	}
+	testDB = db
 	testQueries = q
+
+	cache, redisCleanup, err := createTestRedis(ctx)
+	if err != nil {
+		panic(err)
+	}
+	testCache = cache
 
 	code := m.Run()
 
-	if err := cf(ctx); err != nil {
+	if err := dbCleanup(ctx); err != nil {
+		panic(err)
+	}
+	if err := redisCleanup(ctx); err != nil {
 		panic(err)
 	}
 
@@ -63,7 +79,7 @@ func TestMain(m *testing.M) {
 func newTestHandler() http.Handler {
 	mux := http.NewServeMux()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	controllers.NewAuthController(mux, testQueries, testJwtService, nil, logger, "test-secret", "http://localhost", true)
+	controllers.NewAuthController(mux, testQueries, testCache, testJwtService, nil, logger, "test-secret", "http://localhost", true)
 	return middleware.Recover(logger, mux)
 }
 
@@ -87,10 +103,10 @@ func createPostgresContainer(ctx context.Context) (*postgres.PostgresContainer, 
 	return postgresContainer, nil
 }
 
-func createTestDB(ctx context.Context) (*generated.Queries, DBCleanupFunc, error) {
+func createTestDB(ctx context.Context) (*sql.DB, *generated.Queries, DBCleanupFunc, error) {
 	ctr, err := createPostgresContainer(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Use ConnectionString instead of building it manually: testcontainers maps
@@ -100,28 +116,28 @@ func createTestDB(ctx context.Context) (*generated.Queries, DBCleanupFunc, error
 	// values passed to postgres.WithUsername/WithPassword/WithDatabase above.
 	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	db, queries, err := database.ConnectDB(connStr)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Run migrations using the open *sql.DB so we don't need to re-parse the
 	// connection string into a URL format.
 	driver, err := migratepostgres.WithInstance(db, &migratepostgres.Config{})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	_, filename, _, _ := runtime.Caller(0)
 	migrationsPath := "file://" + filepath.Join(filepath.Dir(filename), "../../internal/database/migrations")
 	m, err := migrate.NewWithDatabaseInstance(migrationsPath, "postgres", driver)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	cleanup := func(ctx context.Context) error {
@@ -132,5 +148,38 @@ func createTestDB(ctx context.Context) (*generated.Queries, DBCleanupFunc, error
 		}
 		return ctrErr
 	}
-	return queries, cleanup, nil
+	return db, queries, cleanup, nil
+}
+
+func createTestRedis(ctx context.Context) (*RedisService, DBCleanupFunc, error) {
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "redis:7-alpine",
+			ExposedPorts: []string{"6379/tcp"},
+			WaitingFor:   wait.ForLog("Ready to accept connections"),
+		},
+		Started: true,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	host, err := ctr.Host(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	port, err := ctr.MappedPort(ctx, "6379/tcp")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	svc := NewService(RedisConfig{
+		Addr:              fmt.Sprintf("%s:%s", host, port.Port()),
+		DefaultTTLSeconds: 60,
+	})
+
+	cleanup := func(ctx context.Context) error {
+		return testcontainers.TerminateContainer(ctr)
+	}
+	return svc, cleanup, nil
 }

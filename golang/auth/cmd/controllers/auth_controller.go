@@ -18,6 +18,7 @@ import (
 	"auth/internal/application/register"
 	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
+	. "auth/internal/services/redis"
 )
 
 type AuthController struct {
@@ -28,12 +29,12 @@ type AuthController struct {
 	isDev        bool
 }
 
-func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, jwtService JwtService, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
+func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, redisService *RedisService, jwtService JwtService, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
 	c := &AuthController{
 		login:        login.NewHandler(db, jwtService, logger),
 		register:     register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
 		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
-		getProfile:   getprofile.NewHandler(db),
+		getProfile:   getprofile.NewHandler(db, redisService),
 		isDev:        isDev,
 	}
 	auth := middleware.Auth(jwtService)
