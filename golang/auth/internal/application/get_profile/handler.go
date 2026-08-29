@@ -28,7 +28,7 @@ type handler struct {
 }
 
 func NewHandler(db *dbsqlc.Queries, cache *RedisService) application.Handler[Query, Result] {
-	return application.NewCacher[Query, Result](
+	return application.NewCacher(
 		&handler{db: db},
 		cache,
 		func(q Query) string { return "profile:" + q.UserId },
