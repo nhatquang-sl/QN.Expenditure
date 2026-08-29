@@ -32,6 +32,7 @@ type authClaims struct {
 	LastName       string `json:"lastName"`
 	EmailConfirmed bool   `json:"emailConfirmed"`
 	Type           string `json:"type"`
+	TokenId        int64  `json:"tokenId"`
 }
 
 func (s *Service) GenerateTokens(user UserClaims, rememberMe bool) (TokenPair, error) {
@@ -88,6 +89,7 @@ func (s *Service) sign(user UserClaims, secret string, expires time.Time, rte in
 		LastName:       user.LastName,
 		EmailConfirmed: user.EmailConfirmed,
 		Type:           tokenType,
+		TokenId:        user.TokenId,
 	}
 	token := NewWithClaims(SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
@@ -110,5 +112,6 @@ func (s *Service) validate(tokenStr, secret string) (*UserClaims, error) {
 		FirstName:      c.FirstName,
 		LastName:       c.LastName,
 		EmailConfirmed: c.EmailConfirmed,
+		TokenId:        c.TokenId,
 	}, nil
 }

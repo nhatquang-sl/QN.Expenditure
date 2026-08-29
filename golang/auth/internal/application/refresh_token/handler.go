@@ -47,7 +47,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, apperror.NewUnauthorized("invalid refresh token")
 	}
 
-	history, err := h.db.GetLoginHistoryByRefreshToken(ctx, cmd.RefreshToken)
+	history, err := h.db.GetLoginHistoryById(ctx, claims.TokenId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Result{}, apperror.NewUnauthorized("invalid refresh token")
@@ -61,6 +61,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		FirstName:      claims.FirstName,
 		LastName:       claims.LastName,
 		EmailConfirmed: claims.EmailConfirmed,
+		TokenId:        claims.TokenId,
 	}, history.RememberMe)
 	if err != nil {
 		return Result{}, err

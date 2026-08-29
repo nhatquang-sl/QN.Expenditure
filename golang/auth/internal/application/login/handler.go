@@ -63,27 +63,37 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, apperror.NewUnauthorized("invalid credentials")
 	}
 
+	historyId, err := h.db.CreateLoginHistory(ctx, dbsqlc.CreateLoginHistoryParams{
+		UserId:       user.Id,
+		IpAddress:    cmd.IPAddress,
+		UserAgent:    cmd.UserAgent,
+		AccessToken:  "",
+		RefreshToken: "",
+		CreatedAt:    time.Now().UTC(),
+		RememberMe:   cmd.RememberMe,
+	})
+	if err != nil {
+		h.logger.ErrorContext(ctx, "failed to record login history", slog.Any("error", err))
+	}
+
 	tokens, err := h.jwtService.GenerateTokens(UserClaims{
 		Id:             user.Id,
 		Email:          user.Email,
 		FirstName:      user.FirstName,
 		LastName:       user.LastName,
 		EmailConfirmed: user.EmailConfirmed,
+		TokenId:        historyId,
 	}, cmd.RememberMe)
 	if err != nil {
 		return Result{}, err
 	}
 
-	if err := h.db.CreateLoginHistory(ctx, dbsqlc.CreateLoginHistoryParams{
-		UserId:       user.Id,
-		IpAddress:    cmd.IPAddress,
-		UserAgent:    cmd.UserAgent,
+	if err := h.db.UpdateLoginHistoryTokens(ctx, dbsqlc.UpdateLoginHistoryTokensParams{
+		Id:           historyId,
 		AccessToken:  tokens.AccessToken,
 		RefreshToken: tokens.RefreshToken,
-		CreatedAt:    time.Now().UTC(),
-		RememberMe:   cmd.RememberMe,
 	}); err != nil {
-		h.logger.ErrorContext(ctx, "failed to record login history", slog.Any("error", err))
+		h.logger.ErrorContext(ctx, "failed to update login history tokens", slog.Any("error", err))
 	}
 
 	return Result{

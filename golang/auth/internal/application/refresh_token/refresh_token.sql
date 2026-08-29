@@ -1,8 +1,7 @@
--- name: GetLoginHistoryByRefreshToken :one
+-- name: GetLoginHistoryById :one
 SELECT "Id", "RememberMe"
 FROM "UserLoginHistories"
-WHERE "RefreshToken" = $1
-LIMIT 1;
+WHERE "Id" = $1;
 
 -- name: UpdateLoginHistoryTokens :exec
 UPDATE "UserLoginHistories"

@@ -72,9 +72,14 @@ func loginSuccess(t *testing.T) {
 	assert.Equal(t, "Test", result["firstName"])
 	assert.NotEmpty(t, result["id"])
 
-	history, err := testQueries.GetLoginHistoryByRefreshToken(context.Background(), cookieMap["refreshToken"])
+	claims, err := testJwtService.ValidateRefreshToken(cookieMap["refreshToken"])
+	require.NoError(t, err)
+	require.NotNil(t, claims)
+	assert.Greater(t, claims.TokenId, int64(0))
+
+	history, err := testQueries.GetLoginHistoryById(context.Background(), claims.TokenId)
 	require.NoError(t, err, "login history row should be persisted")
-	assert.Greater(t, history.Id, int64(0))
+	assert.Equal(t, claims.TokenId, history.Id)
 	assert.False(t, history.RememberMe)
 }
 

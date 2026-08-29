@@ -15,6 +15,7 @@ type UserClaims struct {
 	FirstName      string
 	LastName       string
 	EmailConfirmed bool
+	TokenId        int64
 }
 
 type JwtService interface {
