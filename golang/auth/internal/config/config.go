@@ -19,6 +19,12 @@ type JwtConfig struct {
 	RefreshTokenSecretKey string
 }
 
+type RedisConfig struct {
+	Addr              string
+	Password          string
+	DefaultTTLSeconds int
+}
+
 type Config struct {
 	ConnectionStrings struct {
 		AuthConnection string
@@ -34,7 +40,8 @@ type Config struct {
 		ApiKeyPrivate string
 		FromEmail     string
 	}
-	Jwt JwtConfig
+	Jwt      JwtConfig
+	Redis    RedisConfig
 	RabbitMq struct {
 		Host     string
 		Username string
