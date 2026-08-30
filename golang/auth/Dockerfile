@@ -3,7 +3,7 @@
 # docker run -it --rm -p 5002:5002 qex.goapi:0.0.2
 # http://localhost:5002/api/weatherforecast
 # Build stage
-FROM golang:1.22-alpine3.21 AS build
+FROM golang:1.27-alpine3.21 AS build
 WORKDIR /app
 COPY golang/auth/go.mod golang/auth/go.sum ./
 RUN go mod download
