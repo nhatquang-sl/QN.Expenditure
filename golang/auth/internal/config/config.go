@@ -79,6 +79,12 @@ func LoadJSONConfig() Config {
 	if v := os.Getenv("PG_AUTH_CONNECTION"); v != "" {
 		cfg.ConnectionStrings.PGAuth = v
 	}
+	if v := os.Getenv("REDIS_ADDR"); v != "" {
+		cfg.Redis.Addr = v
+	}
+	if v := os.Getenv("REDIS_PASSWORD"); v != "" {
+		cfg.Redis.Password = v
+	}
 
 	return cfg
 }
