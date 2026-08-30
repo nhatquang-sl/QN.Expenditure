@@ -118,6 +118,34 @@ jobs:
           build-args: |
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
+  verify-postgres-on-vps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p $HOME/.ssh
+          echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
+          chmod 600 $HOME/.ssh/ssh.key
+      - name: Verify and install PostgreSQL on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
+            set -euo pipefail
+            if command -v psql &>/dev/null; then
+              echo "PostgreSQL is already installed: $(psql --version)"
+              exit 0
+            fi
+            echo "PostgreSQL not found. Installing..."
+            sudo apt-get update -y
+            sudo apt-get install -y postgresql
+            sudo systemctl enable postgresql
+            sudo systemctl start postgresql
+            echo "PostgreSQL installed successfully: $(psql --version)"
+            sudo -u postgres psql -c "CREATE USER ${{ secrets.DB_USERNAME }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';"
+            echo "User '${{ secrets.DB_USERNAME }}' created."
+            sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '${{ secrets.DB_PASSWORD }}';"
+            echo "Default 'postgres' superuser password set."
+          ENDSSH
+
   deploy-docker-to-vps:
     runs-on: ubuntu-latest
     needs: [build-api, build-ui, build-go-auth-api]
