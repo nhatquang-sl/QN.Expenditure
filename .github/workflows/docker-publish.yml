@@ -118,7 +118,7 @@ jobs:
           build-args: |
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
-  verify-postgres-on-vps:
+  setup-postgres:
     runs-on: ubuntu-latest
     steps:
       - name: Setup SSH key

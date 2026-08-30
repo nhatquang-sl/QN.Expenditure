@@ -6,8 +6,9 @@
 FROM golang:1.27-alpine3.24 AS build
 WORKDIR /app
 COPY golang/auth/go.mod golang/auth/go.sum ./
-RUN go mod download
+RUN go mod download && go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
 COPY golang/auth/ .
+RUN sqlc generate -f internal/database/sqlc.yaml
 ARG VERSION=0.0.1
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -trimpath \
