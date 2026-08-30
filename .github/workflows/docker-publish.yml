@@ -21,7 +21,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ssh-key: ${{ secrets.SUB_CREDENTIALS }}
           submodules: true
@@ -57,7 +57,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ssh-key: ${{ secrets.SUB_CREDENTIALS }}
           submodules: true
@@ -91,7 +91,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ssh-key: ${{ secrets.SUB_CREDENTIALS }}
           submodules: true
@@ -166,7 +166,7 @@ jobs:
           echo "IMAGE_TAGS=$IMAGE_TAGS" >> "$GITHUB_ENV"
       - run: echo "$IMAGE_TAGS"
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ssh-key: ${{ secrets.SUB_CREDENTIALS }}
           submodules: true
