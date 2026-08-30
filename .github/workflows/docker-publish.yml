@@ -184,10 +184,13 @@ jobs:
             exit 1
           fi
 
-          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR"
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p $TARGET_DIR/credentials"
           rsync -az --exclude='docker-compose.local.yml' \
             -e "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }}" \
             "$SOURCE_DIR"/ ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/
+          rsync -az \
+            -e "ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }}" \
+            credentials/appsettings.json ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:$TARGET_DIR/credentials/appsettings.json
           ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} \
             'which pulumi || (curl -fsSL https://get.pulumi.com | sh)'
 
