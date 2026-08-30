@@ -18,6 +18,10 @@ type UserClaims struct {
 	TokenId        int64
 }
 
+type SessionData struct {
+	UserId string `json:"userId"`
+}
+
 type JwtService interface {
 	GenerateTokens(user UserClaims, rememberMe bool) (TokenPair, error)
 	ValidateAccessToken(token string) (*UserClaims, error)

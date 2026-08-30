@@ -13,11 +13,8 @@ type Cacher[C, R any] struct {
 }
 
 // NewCacher wraps inner with a Redis cache layer. Results are keyed by keyFn(cmd)
-// using the service's default TTL. If cache is nil, inner is returned unwrapped.
+// using the service's default TTL.
 func NewCacher[C, R any](inner Handler[C, R], cache *RedisService, keyFn func(C) string) Handler[C, R] {
-	if cache == nil {
-		return inner
-	}
 	return &Cacher[C, R]{inner: inner, cache: cache, keyFn: keyFn}
 }
 

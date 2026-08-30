@@ -115,5 +115,5 @@ func getProfileInvalidToken(t *testing.T) {
 	newTestHandler().ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.JSONEq(t, `{"message":"unauthenticated"}`, w.Body.String())
+	assert.JSONEq(t, `{"message":"invalid access token"}`, w.Body.String())
 }

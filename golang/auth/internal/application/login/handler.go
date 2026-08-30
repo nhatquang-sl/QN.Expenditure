@@ -7,8 +7,10 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"auth/internal/application/apperror"
 	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
+	. "auth/internal/services/redis"
 
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -44,10 +47,11 @@ type handler struct {
 	db         *dbsqlc.Queries
 	jwtService JwtService
 	logger     *slog.Logger
+	cache      *RedisService
 }
 
-func NewHandler(db *dbsqlc.Queries, jwtService JwtService, logger *slog.Logger) application.Handler[Command, Result] {
-	return newValidator(handler{db: db, jwtService: jwtService, logger: logger})
+func NewHandler(db *dbsqlc.Queries, jwtService JwtService, logger *slog.Logger, cache *RedisService) application.Handler[Command, Result] {
+	return newValidator(handler{db: db, jwtService: jwtService, logger: logger, cache: cache})
 }
 
 func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
@@ -94,6 +98,11 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		RefreshToken: tokens.RefreshToken,
 	}); err != nil {
 		h.logger.ErrorContext(ctx, "failed to update login history tokens", slog.Any("error", err))
+	}
+
+	data, _ := json.Marshal(SessionData{UserId: user.Id})
+	if err := h.cache.Set(ctx, "session:"+strconv.FormatInt(historyId, 10), string(data), time.Until(tokens.RefreshTokenExpires)); err != nil {
+		h.logger.ErrorContext(ctx, "failed to write session to redis", slog.Any("error", err))
 	}
 
 	return Result{

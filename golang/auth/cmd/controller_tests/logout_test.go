@@ -49,6 +49,19 @@ func logoutSuccess(t *testing.T) {
 	// Login history row should be deleted
 	_, err = testQueries.GetLoginHistoryById(context.Background(), claims.TokenId)
 	assert.True(t, errors.Is(err, sql.ErrNoRows), "login history should be deleted after logout")
+
+	// Redis session entry should be removed
+	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("session:%d", claims.TokenId))
+	require.NoError(t, err)
+	assert.False(t, exists, "redis session entry should be deleted after logout")
+
+	// The old access token should now be rejected (session invalidated)
+	req2 := httptest.NewRequest(http.MethodGet, "/profile", nil)
+	req2.AddCookie(&http.Cookie{Name: "accessToken", Value: accessToken})
+	w2 := httptest.NewRecorder()
+	handler.ServeHTTP(w2, req2)
+	require.Equal(t, http.StatusUnauthorized, w2.Code)
+	assert.JSONEq(t, `{"message":"session invalidated"}`, w2.Body.String())
 }
 
 func logoutNoCookie(t *testing.T) {
@@ -71,5 +84,5 @@ func logoutInvalidToken(t *testing.T) {
 	newTestHandler().ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.JSONEq(t, `{"message":"unauthenticated"}`, w.Body.String())
+	assert.JSONEq(t, `{"message":"invalid access token"}`, w.Body.String())
 }

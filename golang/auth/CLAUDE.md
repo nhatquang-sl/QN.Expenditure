@@ -166,6 +166,34 @@ import (
 
 ---
 
+## Redis Session Whitelist
+
+Active sessions are whitelisted in Redis to enable immediate access token invalidation on logout.
+
+### Key Design
+
+- **Key**: `session:<tokenId>` where `tokenId` = `UserLoginHistories.Id` (int64)
+- **Value**: JSON-encoded `SessionData{UserId string}` — extensible for future role storage
+- **TTL**: refresh token lifetime (`time.Until(tokens.RefreshTokenExpires)` at login time)
+
+### Flow
+
+- **Login** (`internal/application/login/handler.go`): after generating tokens, write session entry (best-effort — log on failure, do not fail login)
+- **Logout** (`internal/application/logout/handler.go`): delete session entry (best-effort — do not fail logout)
+- **Auth middleware** (`cmd/middleware/auth.go`): after JWT validation, call `cache.Exists("session:<tokenId>")`:
+  - Key absent → 401 `"session invalidated"`
+  - Redis error → skip check, allow request (graceful degradation)
+  - `cache == nil` → skip check (tests or degraded deployments)
+
+### Extending SessionData
+
+To add roles in future:
+1. Add `Roles []string \`json:"roles"\`` to `shared.SessionData`
+2. Populate from the DB at login time
+3. The auth middleware (or downstream handlers) can read `SessionData` from context if needed
+
+---
+
 ## Adding a New Feature Slice
 
 For slice-specific requirements (business rules, JWT/cookie settings, password hash format, DB schema notes), read `SPEC.md` before starting.

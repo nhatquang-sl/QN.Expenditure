@@ -33,14 +33,14 @@ type AuthController struct {
 
 func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, redisService *RedisService, jwtService JwtService, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
 	c := &AuthController{
-		login:        login.NewHandler(db, jwtService, logger),
+		login:        login.NewHandler(db, jwtService, logger, redisService),
 		register:     register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
 		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
-		logout:       logout.NewHandler(db),
+		logout:       logout.NewHandler(db, redisService),
 		getProfile:   getprofile.NewHandler(db, redisService),
 		isDev:        isDev,
 	}
-	auth := middleware.Auth(jwtService)
+	auth := middleware.Auth(jwtService, redisService)
 	mux.HandleFunc("POST /login", c.handleLogin)
 	mux.HandleFunc("POST /register", c.handleRegister)
 	mux.HandleFunc("POST /refresh-token", c.handleRefreshToken)

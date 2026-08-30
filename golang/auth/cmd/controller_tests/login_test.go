@@ -81,6 +81,10 @@ func loginSuccess(t *testing.T) {
 	require.NoError(t, err, "login history row should be persisted")
 	assert.Equal(t, claims.TokenId, history.Id)
 	assert.False(t, history.RememberMe)
+
+	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("session:%d", claims.TokenId))
+	require.NoError(t, err, "redis session entry should exist after login")
+	assert.True(t, exists)
 }
 
 func loginInvalidBody(t *testing.T) {
