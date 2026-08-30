@@ -142,6 +142,8 @@ jobs:
             echo "PostgreSQL installed successfully: $(psql --version)"
             sudo -u postgres psql -c "CREATE USER ${{ secrets.DB_USERNAME }} WITH LOGIN PASSWORD '${{ secrets.DB_PASSWORD }}';"
             echo "User '${{ secrets.DB_USERNAME }}' created."
+            sudo -u postgres psql -c "CREATE DATABASE auth OWNER ${{ secrets.DB_USERNAME }};"
+            echo "Database 'auth' created."
             sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '${{ secrets.DB_PASSWORD }}';"
             echo "Default 'postgres' superuser password set."
           ENDSSH
