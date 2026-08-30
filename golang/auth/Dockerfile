@@ -25,10 +25,7 @@ RUN apk --no-cache add ca-certificates tzdata curl && \
 WORKDIR /app
 COPY --from=build /auth .
 COPY --from=build /app/internal/database/migrations ./migrations
-EXPOSE 5002
-
 ARG VERSION=0.0.1
 ENV VERSION=${VERSION}
-ENV PORT=5002
 
 ENTRYPOINT ["/app/auth"]
