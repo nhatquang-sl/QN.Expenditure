@@ -184,8 +184,7 @@ jobs:
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             pulumi env open ${{ secrets.PULUMI_ORG }}/qn-expenditure/prod --format dotenv > .env.pulumi
             chmod 600 .env.pulumi
-            docker compose -f docker-compose.yml up -d qex.postgres
-            docker compose -f docker-compose.yml wait qex.postgres
+            docker compose -f docker-compose.yml up -d --wait qex.postgres
             docker run --rm --network=qex --entrypoint migrate \
               ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_API }}:${IMAGE_TAGS} \
               -path /app/migrations \
