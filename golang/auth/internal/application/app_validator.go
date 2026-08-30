@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"reflect"
 	"strings"
 
@@ -41,13 +42,16 @@ func NewValidator[C, R any](inner Handler[C, R], configure ...func(*v10.Validate
 }
 
 func (vl *Validator[C, R]) Handle(ctx context.Context, cmd C) (R, error) {
+	cmdType := reflect.TypeOf(cmd).Name()
 	if err := vl.validate.Struct(cmd); err != nil {
 		var zero R
 		var ve v10.ValidationErrors
 		if errors.As(err, &ve) {
+			slog.Default().WarnContext(ctx, "validation failed", slog.String("command", cmdType), slog.Any("errors", ve.Translate(vl.trans)))
 			return zero, apperror.NewValidationErrors(ve, vl.trans)
 		}
 		return zero, err
 	}
+	slog.Default().InfoContext(ctx, "validation passed", slog.String("command", cmdType))
 	return vl.inner.Handle(ctx, cmd)
 }

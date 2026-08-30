@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"log/slog"
 
 	. "auth/internal/services/redis"
 )
@@ -19,7 +20,18 @@ func NewCacher[C, R any](inner Handler[C, R], cache *RedisService, keyFn func(C)
 }
 
 func (c *Cacher[C, R]) Handle(ctx context.Context, cmd C) (R, error) {
-	return c.cache.GetOrCreateDefault(ctx, c.keyFn(cmd), func() (R, error) {
+	key := c.keyFn(cmd)
+	missed := false
+	result, err := c.cache.GetOrCreateDefault(ctx, key, func() (R, error) {
+		missed = true
 		return c.inner.Handle(ctx, cmd)
 	})
+	if err == nil {
+		if missed {
+			slog.Default().InfoContext(ctx, "cache miss", slog.String("key", key))
+		} else {
+			slog.Default().InfoContext(ctx, "cache hit", slog.String("key", key))
+		}
+	}
+	return result, err
 }

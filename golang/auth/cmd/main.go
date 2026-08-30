@@ -29,6 +29,7 @@ func main() {
 	defer shutdown(ctx)
 
 	logger := slog.New(slogHandler)
+	slog.SetDefault(logger)
 	logger.Info("config loaded", slog.String("endpoint", cfg.Application.Endpoint), slog.String("version", cfg.Application.Version))
 
 	// connect to database
