@@ -29,6 +29,7 @@ type Config struct {
 	ConnectionStrings struct {
 		AuthConnection string
 		CexConnection  string
+		PGAuth         string
 	}
 	CorsOrigins string
 	Application struct {
@@ -73,6 +74,10 @@ func LoadJSONConfig() Config {
 	}
 	if cfg.TLSKeyPath == "" {
 		cfg.TLSKeyPath = defaultTLSKeyPath
+	}
+
+	if v := os.Getenv("PG_AUTH_CONNECTION"); v != "" {
+		cfg.ConnectionStrings.PGAuth = v
 	}
 
 	return cfg

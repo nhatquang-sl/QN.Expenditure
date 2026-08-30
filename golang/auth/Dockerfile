@@ -18,9 +18,13 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 
 # Final stage
 FROM alpine:3.24
-RUN apk --no-cache add ca-certificates tzdata
+RUN apk --no-cache add ca-certificates tzdata curl && \
+    curl -sSL https://github.com/golang-migrate/migrate/releases/download/v4.19.1/migrate.linux-amd64.tar.gz \
+    | tar -xz -C /usr/local/bin migrate && \
+    apk del curl
 WORKDIR /app
 COPY --from=build /auth .
+COPY --from=build /app/internal/database/migrations ./migrations
 EXPOSE 5002
 
 ARG VERSION=0.0.1

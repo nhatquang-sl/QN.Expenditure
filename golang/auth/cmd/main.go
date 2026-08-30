@@ -19,7 +19,7 @@ func main() {
 	logger.Info("config loaded", slog.String("endpoint", cfg.Application.Endpoint), slog.String("version", cfg.Application.Version))
 
 	// connect to database
-	db, queries, err := database.ConnectDB("host=localhost user=sunlight password=@dmin191092 dbname=auth-test sslmode=disable")
+	db, queries, err := database.ConnectDB(cfg.ConnectionStrings.PGAuth)
 	if err != nil {
 		logger.Error("failed to connect to database", slog.Any("error", err))
 		os.Exit(1)
