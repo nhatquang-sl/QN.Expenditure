@@ -77,10 +77,10 @@ func loginSuccess(t *testing.T) {
 	require.NotNil(t, claims)
 	assert.Greater(t, claims.TokenId, int64(0))
 
-	history, err := testQueries.GetLoginHistoryById(context.Background(), claims.TokenId)
-	require.NoError(t, err, "login history row should be persisted")
-	assert.Equal(t, claims.TokenId, history.Id)
-	assert.False(t, history.RememberMe)
+	session, err := testQueries.GetUserSessionById(context.Background(), claims.TokenId)
+	require.NoError(t, err, "user session row should be persisted")
+	assert.Equal(t, claims.TokenId, session.Id)
+	assert.False(t, session.RememberMe)
 
 	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("session:%d", claims.TokenId))
 	require.NoError(t, err, "redis session entry should exist after login")

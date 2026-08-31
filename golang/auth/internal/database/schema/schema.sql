@@ -21,8 +21,20 @@ CREATE TABLE "Users" (
     "LastName"             text        NOT NULL
 );
 
-CREATE TABLE "UserLoginHistories" (
+CREATE TABLE "UserSessions" (
     "Id"           bigserial   PRIMARY KEY,
+    "UserId"       text        NOT NULL,
+    "IpAddress"    text        NOT NULL DEFAULT '',
+    "UserAgent"    text        NOT NULL DEFAULT '',
+    "AccessToken"  text        NOT NULL,
+    "RefreshToken" text        NOT NULL,
+    "CreatedAt"    timestamptz NOT NULL,
+    "RememberMe"   boolean     NOT NULL DEFAULT false
+);
+
+CREATE TABLE "UserSessionHistories" (
+    "Id"           bigserial   PRIMARY KEY,
+    "SessionId"    bigint      NOT NULL,
     "UserId"       text        NOT NULL,
     "IpAddress"    text        NOT NULL DEFAULT '',
     "UserAgent"    text        NOT NULL DEFAULT '',

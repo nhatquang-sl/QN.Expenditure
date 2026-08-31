@@ -25,7 +25,7 @@ func NewHandler(db *dbsqlc.Queries, cache *RedisService) application.Handler[Com
 }
 
 func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
-	if err := h.db.DeleteLoginHistoryById(ctx, cmd.TokenId); err != nil {
+	if err := h.db.DeleteUserSessionById(ctx, cmd.TokenId); err != nil {
 		return Result{}, err
 	}
 	_ = h.cache.Delete(ctx, "session:"+strconv.FormatInt(cmd.TokenId, 10))

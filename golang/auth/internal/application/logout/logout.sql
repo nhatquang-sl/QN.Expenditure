@@ -1,3 +1,3 @@
--- name: DeleteLoginHistoryById :exec
-DELETE FROM "UserLoginHistories"
+-- name: DeleteUserSessionById :exec
+DELETE FROM "UserSessions"
 WHERE "Id" = $1;

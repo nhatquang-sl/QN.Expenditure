@@ -1,9 +1,9 @@
--- name: GetLoginHistoryById :one
+-- name: GetUserSessionById :one
 SELECT "Id", "RememberMe"
-FROM "UserLoginHistories"
+FROM "UserSessions"
 WHERE "Id" = $1;
 
--- name: UpdateLoginHistoryTokens :exec
-UPDATE "UserLoginHistories"
+-- name: UpdateUserSessionTokens :exec
+UPDATE "UserSessions"
 SET "AccessToken" = $2, "RefreshToken" = $3
 WHERE "Id" = $1;

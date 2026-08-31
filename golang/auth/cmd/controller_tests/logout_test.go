@@ -46,9 +46,9 @@ func logoutSuccess(t *testing.T) {
 	assert.Equal(t, -1, cookieMap["accessToken"].MaxAge)
 	assert.Equal(t, -1, cookieMap["refreshToken"].MaxAge)
 
-	// Login history row should be deleted
-	_, err = testQueries.GetLoginHistoryById(context.Background(), claims.TokenId)
-	assert.True(t, errors.Is(err, sql.ErrNoRows), "login history should be deleted after logout")
+	// User session row should be deleted
+	_, err = testQueries.GetUserSessionById(context.Background(), claims.TokenId)
+	assert.True(t, errors.Is(err, sql.ErrNoRows), "user session should be deleted after logout")
 
 	// Redis session entry should be removed
 	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("session:%d", claims.TokenId))

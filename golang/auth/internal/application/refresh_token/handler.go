@@ -47,7 +47,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, apperror.NewUnauthorized("invalid refresh token")
 	}
 
-	history, err := h.db.GetLoginHistoryById(ctx, claims.TokenId)
+	session, err := h.db.GetUserSessionById(ctx, claims.TokenId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Result{}, apperror.NewUnauthorized("invalid refresh token")
@@ -62,17 +62,17 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		LastName:       claims.LastName,
 		EmailConfirmed: claims.EmailConfirmed,
 		TokenId:        claims.TokenId,
-	}, history.RememberMe)
+	}, session.RememberMe)
 	if err != nil {
 		return Result{}, err
 	}
 
-	if err := h.db.UpdateLoginHistoryTokens(ctx, dbsqlc.UpdateLoginHistoryTokensParams{
-		Id:           history.Id,
+	if err := h.db.UpdateUserSessionTokens(ctx, dbsqlc.UpdateUserSessionTokensParams{
+		Id:           session.Id,
 		AccessToken:  tokens.AccessToken,
 		RefreshToken: tokens.RefreshToken,
 	}); err != nil {
-		h.logger.ErrorContext(ctx, "failed to update login history", slog.Any("error", err))
+		h.logger.ErrorContext(ctx, "failed to update user session tokens", slog.Any("error", err))
 	}
 
 	return Result{
