@@ -3,31 +3,43 @@ package logout
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"auth/internal/application"
+	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 	. "auth/internal/services/redis"
 )
 
 type Command struct {
-	TokenId int64
+	RefreshToken string
 }
 
 type Result struct{}
 
 type handler struct {
-	db    *dbsqlc.Queries
-	cache *RedisService
+	db         *dbsqlc.Queries
+	jwtService JwtService
+	cache      *RedisService
 }
 
-func NewHandler(db *dbsqlc.Queries, cache *RedisService) application.Handler[Command, Result] {
-	return &handler{db: db, cache: cache}
+func NewHandler(db *dbsqlc.Queries, jwtService JwtService, cache *RedisService) application.Handler[Command, Result] {
+	return &handler{db: db, jwtService: jwtService, cache: cache}
 }
 
 func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
-	if err := h.db.DeleteUserSessionById(ctx, cmd.TokenId); err != nil {
+	claims, err := h.jwtService.ValidateRefreshToken(cmd.RefreshToken)
+	if err != nil || claims == nil {
+		return Result{}, nil
+	}
+
+	if err := h.db.DeleteUserSessionById(ctx, claims.TokenId); err != nil {
 		return Result{}, err
 	}
-	_ = h.cache.Delete(ctx, "session:"+strconv.FormatInt(cmd.TokenId, 10))
+
+	if ttl := time.Until(claims.ExpiresAt); ttl > 0 {
+		_ = h.cache.Set(ctx, "revoked:"+strconv.FormatInt(claims.TokenId, 10), "1", ttl)
+	}
+
 	return Result{}, nil
 }

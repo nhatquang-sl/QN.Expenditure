@@ -33,10 +33,10 @@ type AuthController struct {
 
 func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, redisService *RedisService, jwtService JwtService, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
 	c := &AuthController{
-		login:        login.NewHandler(db, jwtService, logger, redisService),
+		login:        login.NewHandler(db, jwtService, logger),
 		register:     register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
 		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
-		logout:       logout.NewHandler(db, redisService),
+		logout:       logout.NewHandler(db, jwtService, redisService),
 		getProfile:   getprofile.NewHandler(db, redisService),
 		isDev:        isDev,
 	}
@@ -117,8 +117,14 @@ func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, ref
 }
 
 func (c *AuthController) handleLogout(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.UserFromContext(r.Context())
-	_, err := c.logout.Handle(r.Context(), logout.Command{TokenId: claims.TokenId})
+	refreshCookie, err := r.Cookie("refreshToken")
+	if err != nil {
+		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("missing refresh token"))
+		return
+	}
+	_, err = c.logout.Handle(r.Context(), logout.Command{
+		RefreshToken: refreshCookie.Value,
+	})
 	if err == nil {
 		c.clearTokenCookies(w)
 	}

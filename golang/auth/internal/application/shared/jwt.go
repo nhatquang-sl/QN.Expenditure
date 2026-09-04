@@ -16,10 +16,7 @@ type UserClaims struct {
 	LastName       string
 	EmailConfirmed bool
 	TokenId        int64
-}
-
-type SessionData struct {
-	UserId string `json:"userId"`
+	ExpiresAt      time.Time
 }
 
 type JwtService interface {

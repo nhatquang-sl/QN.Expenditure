@@ -75,18 +75,18 @@ Each slice is an independent unit of work delivered in sequence:
 - Each feature's SQL file lives alongside its handler: `login/login.sql` next to `login/handler.go`. sqlc scans all `.sql` files under `internal/application/` via the glob `"../application/**/*.sql"` configured in `internal/database/sqlc.yaml`. No manual listing of feature directories is needed — adding a new `<feature>/<feature>.sql` is enough.
 - `internal/database/context.go` opens the connection, pings, and returns `(*sql.DB, *generated.Queries, error)`. The `*sql.DB` is retained by `main.go` for `defer db.Close()`. Handlers receive `*generated.Queries` directly — no handler touches `*sql.DB`.
 - Schema snapshots in `internal/database/schema/` define the table shape for sqlc type inference. They are never applied to the database.
-- `UserLoginHistories` has a `RememberMe` column that the Login handler must write.
+- `UserSessions` has a `RememberMe` column that the Login handler must write.
 
-### Redis Session Store
+### Redis Session Revocation
 
-- On successful login, a session entry is written to Redis:
-  - Key: `session:<tokenId>` where `tokenId` is `UserLoginHistories.Id` (int64)
-  - Value: JSON-encoded `SessionData` struct (currently `{"userId":"..."}`)
-  - TTL: refresh token lifetime (5 hours default, 30 days if `RememberMe: true`)
-- On logout, the session entry is deleted from Redis.
-- The `Auth` middleware checks that `session:<tokenId>` exists in Redis after JWT validation. If the key is absent, it returns 401 `"session invalidated"`.
-- If Redis is unavailable, the whitelist check is skipped (graceful degradation — the JWT signature and expiry still provide baseline security).
-- `SessionData` is structured as JSON from the start so that roles or other per-session data can be added in future without invalidating existing sessions.
+- Redis holds a **revocation list** (not a whitelist). Nothing is written on login.
+- On logout, a revocation entry is written:
+  - Key: `revoked:<tokenId>` where `tokenId` is `UserSessions.Id` (int64)
+  - Value: `"1"` (existence is all that matters)
+  - TTL: remaining refresh token lifetime, derived from the refresh token's `exp` claim
+- The logout handler decodes the refresh token to obtain both `tokenId` and `exp`. If the refresh token is missing or invalid, logout still succeeds silently (cookies are cleared, no revocation entry is written — the token is already naturally invalid).
+- The `Auth` middleware checks that `revoked:<tokenId>` does **not** exist in Redis after JWT validation. If the key is present, it returns 401 `"session invalidated"`.
+- If Redis is unavailable, the revocation check is skipped (graceful degradation — the JWT signature and expiry still provide baseline security).
 
 ### Secrets and Configuration
 

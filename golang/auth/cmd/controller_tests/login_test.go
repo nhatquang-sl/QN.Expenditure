@@ -82,9 +82,9 @@ func loginSuccess(t *testing.T) {
 	assert.Equal(t, claims.TokenId, session.Id)
 	assert.False(t, session.RememberMe)
 
-	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("session:%d", claims.TokenId))
-	require.NoError(t, err, "redis session entry should exist after login")
-	assert.True(t, exists)
+	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("revoked:%d", claims.TokenId))
+	require.NoError(t, err)
+	assert.False(t, exists, "session should not be in revocation list after login")
 }
 
 func loginInvalidBody(t *testing.T) {

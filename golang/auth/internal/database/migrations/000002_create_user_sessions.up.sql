@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS "UserSessionHistories" (
     "RememberMe"   boolean     NOT NULL DEFAULT false
 );
 
-CREATE OR REPLACE FUNCTION fn_user_sessions_insert_history()
+CREATE OR REPLACE FUNCTION fn_user_sessions_history()
 RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO "UserSessionHistories" (
@@ -35,6 +35,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_user_sessions_insert_history
-AFTER INSERT ON "UserSessions"
-FOR EACH ROW EXECUTE FUNCTION fn_user_sessions_insert_history();
+CREATE TRIGGER trg_user_sessions_history
+AFTER INSERT OR UPDATE ON "UserSessions"
+FOR EACH ROW EXECUTE FUNCTION fn_user_sessions_history();

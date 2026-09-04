@@ -28,8 +28,8 @@ func Auth(jwtService JwtService, cache *RedisService) func(http.HandlerFunc) htt
 				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("invalid access token"))
 				return
 			}
-			key := "session:" + strconv.FormatInt(claims.TokenId, 10)
-			if exists, err := cache.Exists(r.Context(), key); err == nil && !exists {
+			key := "revoked:" + strconv.FormatInt(claims.TokenId, 10)
+			if exists, err := cache.Exists(r.Context(), key); err == nil && exists {
 				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("session invalidated"))
 				return
 			}

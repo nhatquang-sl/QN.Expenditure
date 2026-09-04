@@ -24,7 +24,7 @@ func logoutSuccess(t *testing.T) {
 	t.Helper()
 	email := fmt.Sprintf("logout.success+%d@example.com", time.Now().UnixNano())
 	handler := newTestHandler()
-	accessToken := loginUser(t, handler, email, "Password1")
+	accessToken, refreshToken := loginUserTokens(t, handler, email, "Password1")
 
 	// Capture the tokenId from the access token before logout
 	claims, err := testJwtService.ValidateAccessToken(accessToken)
@@ -33,6 +33,7 @@ func logoutSuccess(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
 	req.AddCookie(&http.Cookie{Name: "accessToken", Value: accessToken})
+	req.AddCookie(&http.Cookie{Name: "refreshToken", Value: refreshToken})
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -50,10 +51,10 @@ func logoutSuccess(t *testing.T) {
 	_, err = testQueries.GetUserSessionById(context.Background(), claims.TokenId)
 	assert.True(t, errors.Is(err, sql.ErrNoRows), "user session should be deleted after logout")
 
-	// Redis session entry should be removed
-	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("session:%d", claims.TokenId))
+	// Revocation entry should exist in Redis
+	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("revoked:%d", claims.TokenId))
 	require.NoError(t, err)
-	assert.False(t, exists, "redis session entry should be deleted after logout")
+	assert.True(t, exists, "session should be in revocation list after logout")
 
 	// The old access token should now be rejected (session invalidated)
 	req2 := httptest.NewRequest(http.MethodGet, "/profile", nil)

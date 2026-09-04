@@ -113,5 +113,6 @@ func (s *Service) validate(tokenStr, secret string) (*UserClaims, error) {
 		LastName:       c.LastName,
 		EmailConfirmed: c.EmailConfirmed,
 		TokenId:        c.TokenId,
+		ExpiresAt:      c.ExpiresAt.Time,
 	}, nil
 }
