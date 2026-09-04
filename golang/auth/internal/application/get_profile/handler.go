@@ -16,11 +16,12 @@ type Query struct {
 }
 
 type Result struct {
-	Id             string `json:"id"`
-	Email          string `json:"email"`
-	FirstName      string `json:"firstName"`
-	LastName       string `json:"lastName"`
-	EmailConfirmed bool   `json:"emailConfirmed"`
+	Id             string   `json:"id"`
+	Email          string   `json:"email"`
+	FirstName      string   `json:"firstName"`
+	LastName       string   `json:"lastName"`
+	EmailConfirmed bool     `json:"emailConfirmed"`
+	Roles          []string `json:"roles"`
 }
 
 type handler struct {
@@ -43,11 +44,18 @@ func (h *handler) Handle(ctx context.Context, q Query) (Result, error) {
 		}
 		return Result{}, err
 	}
+
+	roles, err := h.db.GetUserRoles(ctx, q.UserId)
+	if err != nil {
+		return Result{}, err
+	}
+
 	return Result{
 		Id:             user.Id,
 		Email:          user.Email,
 		FirstName:      user.FirstName,
 		LastName:       user.LastName,
 		EmailConfirmed: user.EmailConfirmed,
+		Roles:          roles,
 	}, nil
 }

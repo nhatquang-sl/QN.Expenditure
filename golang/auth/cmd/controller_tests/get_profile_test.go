@@ -17,6 +17,7 @@ import (
 
 func TestGetProfile(t *testing.T) {
 	t.Run("Success", getProfileSuccess)
+	t.Run("IncludesRoles", getProfileIncludesRoles)
 	t.Run("CacheHit", getProfileCacheHit)
 	t.Run("NoCookie", getProfileNoCookie)
 	t.Run("InvalidToken", getProfileInvalidToken)
@@ -44,6 +45,23 @@ func loginUser(t *testing.T, handler http.Handler, email, password string) strin
 	}
 	t.Fatal("accessToken cookie not found in login response")
 	return ""
+}
+
+func getProfileIncludesRoles(t *testing.T) {
+	t.Helper()
+	email := fmt.Sprintf("profile.roles+%d@example.com", time.Now().UnixNano())
+	handler := newTestHandler()
+	accessToken := loginUser(t, handler, email, "Password1")
+
+	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
+	req.AddCookie(&http.Cookie{Name: "accessToken", Value: accessToken})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var result getprofile.Result
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&result))
+	assert.Equal(t, []string{"user"}, result.Roles)
 }
 
 func getProfileSuccess(t *testing.T) {
