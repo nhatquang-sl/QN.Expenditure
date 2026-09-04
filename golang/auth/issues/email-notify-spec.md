@@ -55,8 +55,7 @@ The DB queue is intentional — it provides the auditability and retry durabilit
 | `Id` | text PRIMARY KEY | Human-readable slug, e.g. `activate_account` |
 | `Subject` | text NOT NULL | Mailjet email subject line |
 | `HtmlTemplate` | text NOT NULL | Go `html/template` syntax |
-| `Description` | text | Optional human-readable description |
-| `CreatedAt` | timestamptz NOT NULL | |
+| `CreatedAt` | timestamptz NOT NULL DEFAULT NOW() | |
 
 Managed exclusively via golang-migrate seed migrations. No admin API.
 
@@ -67,12 +66,14 @@ Managed exclusively via golang-migrate seed migrations. No admin API.
 | `Id` | bigserial PRIMARY KEY | |
 | `EmailTypeId` | text FK → EmailType.Id NOT NULL | |
 | `HtmlData` | text NOT NULL | JSON-encoded template data |
-| `Status` | text NOT NULL | Enum: `new`, `sending`, `sent`, `fail` |
+| `Status` | email_queue_status NOT NULL DEFAULT 'new' | PostgreSQL enum: `new`, `sending`, `sent`, `fail` |
 | `Retry` | int NOT NULL DEFAULT 0 | Max 3 attempts |
 | `NextRetryAt` | timestamptz | NULL means eligible immediately |
 | `UserId` | text FK → Users.Id NOT NULL | Recipient; always a known user |
 | `CreatedAt` | timestamptz NOT NULL DEFAULT NOW() | |
-| `UpdatedAt` | timestamptz NOT NULL | Set on every status change |
+| `UpdatedAt` | timestamptz NOT NULL DEFAULT NOW() | Updated on every status change |
+
+A partial index `idx_email_queue_eligible` on `("CreatedAt") WHERE "Status" IN ('new', 'fail')` covers the worker's poll query.
 
 ### `EmailService` interface
 
@@ -178,16 +179,17 @@ Each slice is independently deployable and testable. Later slices depend on earl
 
 ---
 
-### Slice 1: DB schema + email type seed
+### Slice 1: DB schema + email type seed ✅ Done
 
 **Delivers**: The `EmailType` and `EmailQueue` tables exist in PostgreSQL with the correct schema. The `activate_account` email type is seeded with a real HTML template and subject line.
 
 **Work**:
-- Migration: create `EmailType` table
-- Migration: create `EmailQueue` table (with status enum, retry, `NextRetryAt`, FK constraints)
-- Migration: seed `activate_account` email type with subject and HTML template
-- Add `EmailWorker` section to `Config` struct and `appsettings.json`
-- Run `sqlc generate` to produce typed queries for both tables
+- Migration 000003: create `EmailType` table
+- Migration 000004: create `EmailQueue` table with `email_queue_status` PostgreSQL enum, partial index `idx_email_queue_eligible`, and `DEFAULT NOW()` on `UpdatedAt`
+- Migration 000005: seed `activate_account` email type with subject and HTML template
+- Add `EmailWorkerConfig { BatchSize, IntervalSeconds }` to `Config` struct
+- SQL query files: `internal/application/email_type/email_type.sql`, `internal/application/email_queue/email_queue.sql`
+- Run `sqlc generate` — produces typed queries and `EmailQueueStatus` Go enum constants
 
 **Done when**: `make migrate-up` runs cleanly and `SELECT * FROM "EmailType"` returns the `activate_account` row.
 

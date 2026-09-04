@@ -43,3 +43,24 @@ CREATE TABLE "UserSessionHistories" (
     "CreatedAt"    timestamptz NOT NULL,
     "RememberMe"   boolean     NOT NULL DEFAULT false
 );
+
+CREATE TABLE "EmailType" (
+    "Id"           text        PRIMARY KEY,
+    "Subject"      text        NOT NULL,
+    "HtmlTemplate" text        NOT NULL,
+    "CreatedAt"    timestamptz NOT NULL DEFAULT NOW()
+);
+
+CREATE TYPE email_queue_status AS ENUM ('new', 'sending', 'sent', 'fail');
+
+CREATE TABLE "EmailQueue" (
+    "Id"          bigserial          PRIMARY KEY,
+    "EmailTypeId" text               NOT NULL,
+    "HtmlData"    text               NOT NULL,
+    "Status"      email_queue_status NOT NULL DEFAULT 'new',
+    "Retry"       integer            NOT NULL DEFAULT 0,
+    "NextRetryAt" timestamptz,
+    "UserId"      text               NOT NULL,
+    "CreatedAt"   timestamptz        NOT NULL DEFAULT NOW(),
+    "UpdatedAt"   timestamptz        NOT NULL DEFAULT NOW()
+);

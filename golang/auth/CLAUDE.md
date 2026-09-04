@@ -192,7 +192,7 @@ Logged-out sessions are recorded in Redis to enable immediate token invalidation
 For slice-specific requirements (business rules, JWT/cookie settings, password hash format, DB schema notes), read `SPEC.md` before starting.
 
 1. Create `internal/application/<feature>/handler.go` — implement `Handler[Command, Result]`; wrap with `NewValidator` in `NewHandler`
-2. Create `internal/application/<feature>/<feature>.sql` — sqlc-annotated SQL queries
+2. Create `internal/application/<feature>/<feature>.sql` — sqlc-annotated SQL queries. Always list columns explicitly — never use `SELECT *` or `RETURNING *`.
 3. Run `sqlc generate -f internal/database/sqlc.yaml`
 4. Add the route to a controller in `cmd/controllers/` (or create a new one)
 5. Register the controller in `cmd/main.go` (one line)
