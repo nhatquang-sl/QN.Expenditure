@@ -64,3 +64,16 @@ CREATE TABLE "EmailQueue" (
     "CreatedAt"   timestamptz        NOT NULL DEFAULT NOW(),
     "UpdatedAt"   timestamptz        NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE "Roles" (
+    "Id"        varchar(20) PRIMARY KEY,
+    "Name"      varchar(50) NOT NULL,
+    "CreatedAt" timestamptz NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE "UserRoles" (
+    "UserId"    text        NOT NULL REFERENCES "Users"("Id") ON DELETE CASCADE,
+    "RoleId"    varchar(20) NOT NULL REFERENCES "Roles"("Id") ON DELETE RESTRICT,
+    "CreatedAt" timestamptz NOT NULL DEFAULT NOW(),
+    PRIMARY KEY ("UserId", "RoleId")
+);

@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS "UserRoles";
+DROP TABLE IF EXISTS "Roles";
