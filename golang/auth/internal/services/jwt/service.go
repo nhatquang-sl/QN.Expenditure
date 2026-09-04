@@ -26,13 +26,14 @@ func NewService(cfg JwtConfig) *Service {
 
 type authClaims struct {
 	RegisteredClaims
-	Id             string `json:"id"`
-	Email          string `json:"email"`
-	FirstName      string `json:"firstName"`
-	LastName       string `json:"lastName"`
-	EmailConfirmed bool   `json:"emailConfirmed"`
-	Type           string `json:"type"`
-	TokenId        int64  `json:"tokenId"`
+	Id             string   `json:"id"`
+	Email          string   `json:"email"`
+	FirstName      string   `json:"firstName"`
+	LastName       string   `json:"lastName"`
+	EmailConfirmed bool     `json:"emailConfirmed"`
+	Type           string   `json:"type"`
+	TokenId        int64    `json:"tokenId"`
+	Roles          []string `json:"roles"`
 }
 
 func (s *Service) GenerateTokens(user UserClaims, rememberMe bool) (TokenPair, error) {
@@ -50,11 +51,11 @@ func (s *Service) GenerateTokens(user UserClaims, rememberMe bool) (TokenPair, e
 		tokenType = "NEED_ACTIVATE"
 	}
 
-	accessToken, err := s.sign(user, s.cfg.AccessTokenSecretKey, accessExpires, refreshExpires.UnixMilli(), tokenType)
+	accessToken, err := s.sign(user, s.cfg.AccessTokenSecretKey, accessExpires, refreshExpires.UnixMilli(), tokenType, user.Roles)
 	if err != nil {
 		return TokenPair{}, err
 	}
-	refreshToken, err := s.sign(user, s.cfg.RefreshTokenSecretKey, refreshExpires, 0, tokenType)
+	refreshToken, err := s.sign(user, s.cfg.RefreshTokenSecretKey, refreshExpires, 0, tokenType, user.Roles)
 	if err != nil {
 		return TokenPair{}, err
 	}
@@ -75,7 +76,7 @@ func (s *Service) ValidateRefreshToken(tokenStr string) (*UserClaims, error) {
 	return s.validate(tokenStr, s.cfg.RefreshTokenSecretKey)
 }
 
-func (s *Service) sign(user UserClaims, secret string, expires time.Time, rte int64, tokenType string) (string, error) {
+func (s *Service) sign(user UserClaims, secret string, expires time.Time, rte int64, tokenType string, roles []string) (string, error) {
 	claims := authClaims{
 		RegisteredClaims: RegisteredClaims{
 			Issuer:    s.cfg.Issuer,
@@ -90,6 +91,7 @@ func (s *Service) sign(user UserClaims, secret string, expires time.Time, rte in
 		EmailConfirmed: user.EmailConfirmed,
 		Type:           tokenType,
 		TokenId:        user.TokenId,
+		Roles:          roles,
 	}
 	token := NewWithClaims(SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
@@ -114,5 +116,6 @@ func (s *Service) validate(tokenStr, secret string) (*UserClaims, error) {
 		EmailConfirmed: c.EmailConfirmed,
 		TokenId:        c.TokenId,
 		ExpiresAt:      c.ExpiresAt.Time,
+		Roles:          c.Roles,
 	}, nil
 }

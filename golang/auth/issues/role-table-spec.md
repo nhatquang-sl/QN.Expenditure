@@ -37,7 +37,9 @@ Introduce a `Roles` table seeded with two fixed roles (`admin` and `user`), a `U
 
 - **JWT claims — `UserClaims`**: Add `Roles []string` to the shared `UserClaims` struct. The internal `authClaims` struct in the JWT service also gains a `Roles` field. `GenerateTokens` reads `Roles` from the provided `UserClaims`; `ValidateAccessToken` extracts `Roles` back out.
 
-- **Login handler**: After creating the user session, fetch the user's roles via `GetUserRoles`, populate `UserClaims.Roles`, then call `GenerateTokens`. Roles are embedded in the access token only (the refresh token is used solely for session continuity and does not need role data).
+- **Login handler**: After creating the user session, fetch the user's roles via `GetUserRoles`, populate `UserClaims.Roles`, then call `GenerateTokens`. Roles are embedded in **both** the access token and the refresh token.
+
+- **Refresh token handler**: Carries roles forward from `claims.Roles` (extracted from the refresh token) — no DB query needed on refresh. When roles or profile data change in the future, a Redis staleness flag (e.g. `stale-claims:<userId>`) will signal the handler to re-fetch from the DB instead of carrying forward, then clear the flag. This pattern keeps the common path (no change) free of DB hits while still allowing immediate propagation of role changes.
 
 - **Get profile handler**: After `GetUserProfileById`, call `GetUserRoles` and include the result as `Roles []string` in the `Result` struct. Since the profile is cached in Redis, roles are included in the cached value — they are stable and rarely change.
 

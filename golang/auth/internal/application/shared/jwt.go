@@ -17,6 +17,7 @@ type UserClaims struct {
 	EmailConfirmed bool
 	TokenId        int64
 	ExpiresAt      time.Time
+	Roles          []string
 }
 
 type JwtService interface {

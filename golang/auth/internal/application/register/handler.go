@@ -86,6 +86,13 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, err
 	}
 
+	if err := h.db.AssignUserRole(ctx, dbsqlc.AssignUserRoleParams{
+		UserId: id,
+		RoleId: RoleUser,
+	}); err != nil {
+		return Result{}, err
+	}
+
 	token := generateConfirmToken(id, h.tokenSecret)
 	confirmURL := fmt.Sprintf("%s/api/auth/confirm-email?token=%s", h.baseURL, token)
 

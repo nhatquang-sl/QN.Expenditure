@@ -55,14 +55,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, err
 	}
 
-	tokens, err := h.jwtService.GenerateTokens(UserClaims{
-		Id:             claims.Id,
-		Email:          claims.Email,
-		FirstName:      claims.FirstName,
-		LastName:       claims.LastName,
-		EmailConfirmed: claims.EmailConfirmed,
-		TokenId:        claims.TokenId,
-	}, session.RememberMe)
+	tokens, err := h.jwtService.GenerateTokens(*claims, session.RememberMe)
 	if err != nil {
 		return Result{}, err
 	}

@@ -15,6 +15,7 @@ import (
 
 func TestRefreshToken(t *testing.T) {
 	t.Run("Success", refreshTokenSuccess)
+	t.Run("TokenContainsRoles", refreshTokenContainsRoles)
 	t.Run("NoCookie", refreshTokenNoCookie)
 	t.Run("InvalidToken", refreshTokenInvalidToken)
 }
@@ -45,6 +46,32 @@ func refreshTokenSuccess(t *testing.T) {
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&result))
 	assert.Equal(t, email, result["email"])
 	assert.NotEmpty(t, result["id"])
+}
+
+func refreshTokenContainsRoles(t *testing.T) {
+	t.Helper()
+	email := fmt.Sprintf("refresh.roles+%d@example.com", time.Now().UnixNano())
+	handler := newTestHandler()
+	_, refreshToken := loginUserTokens(t, handler, email, "Password1")
+
+	req := httptest.NewRequest(http.MethodPost, "/refresh-token", nil)
+	req.AddCookie(&http.Cookie{Name: "refreshToken", Value: refreshToken})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var newAccessToken string
+	for _, c := range w.Result().Cookies() {
+		if c.Name == "accessToken" {
+			newAccessToken = c.Value
+		}
+	}
+	require.NotEmpty(t, newAccessToken)
+
+	claims, err := testJwtService.ValidateAccessToken(newAccessToken)
+	require.NoError(t, err)
+	require.NotNil(t, claims)
+	assert.Equal(t, []string{"user"}, claims.Roles)
 }
 
 func refreshTokenNoCookie(t *testing.T) {

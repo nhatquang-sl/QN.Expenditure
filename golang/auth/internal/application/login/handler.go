@@ -77,6 +77,12 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		h.logger.ErrorContext(ctx, "failed to create user session", slog.Any("error", err))
 	}
 
+	roles, err := h.db.GetUserRoles(ctx, user.Id)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "failed to fetch user roles", slog.Any("error", err))
+		roles = []string{}
+	}
+
 	tokens, err := h.jwtService.GenerateTokens(UserClaims{
 		Id:             user.Id,
 		Email:          user.Email,
@@ -84,6 +90,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		LastName:       user.LastName,
 		EmailConfirmed: user.EmailConfirmed,
 		TokenId:        historyId,
+		Roles:          roles,
 	}, cmd.RememberMe)
 	if err != nil {
 		return Result{}, err

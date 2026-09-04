@@ -23,6 +23,7 @@ func TestRegister(t *testing.T) {
 	t.Run("WeakPassword", registerWeakPassword)
 	t.Run("MissingFields", registerMissingFields)
 	t.Run("InvalidBody", registerInvalidBody)
+	t.Run("AssignsUserRole", registerAssignsUserRole)
 }
 
 func registerSuccess(t *testing.T) {
@@ -105,6 +106,18 @@ func registerInvalidBody(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
 	assert.JSONEq(t, `{"message":"invalid request body"}`, w.Body.String())
+}
+
+func registerAssignsUserRole(t *testing.T) {
+	t.Helper()
+	email := fmt.Sprintf("register.role+%d@example.com", time.Now().UnixNano())
+	handler := newTestHandler()
+	accessToken := loginUser(t, handler, email, "Password1")
+
+	claims, err := testJwtService.ValidateAccessToken(accessToken)
+	require.NoError(t, err)
+	require.NotNil(t, claims)
+	assert.Equal(t, []string{"user"}, claims.Roles)
 }
 
 func registerMissingFields(t *testing.T) {

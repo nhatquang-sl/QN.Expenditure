@@ -7,3 +7,6 @@ WHERE "NormalizedEmail" = $1;
 INSERT INTO "UserSessions" ("UserId", "IpAddress", "UserAgent", "AccessToken", "RefreshToken", "CreatedAt", "RememberMe")
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING "Id";
+
+-- name: GetUserRoles :many
+SELECT "RoleId" FROM "UserRoles" WHERE "UserId" = $1;

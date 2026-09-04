@@ -16,6 +16,7 @@ import (
 
 func TestLogin(t *testing.T) {
 	t.Run("Success", loginSuccess)
+	t.Run("TokenContainsRoles", loginTokenContainsRoles)
 	t.Run("InvalidBody", loginInvalidBody)
 	t.Run("InvalidCredentials", loginInvalidCredentials)
 	t.Run("WrongPassword", loginWrongPassword)
@@ -85,6 +86,18 @@ func loginSuccess(t *testing.T) {
 	exists, err := testCache.Exists(context.Background(), fmt.Sprintf("revoked:%d", claims.TokenId))
 	require.NoError(t, err)
 	assert.False(t, exists, "session should not be in revocation list after login")
+}
+
+func loginTokenContainsRoles(t *testing.T) {
+	t.Helper()
+	email := fmt.Sprintf("login.roles+%d@example.com", time.Now().UnixNano())
+	handler := newTestHandler()
+	accessToken := loginUser(t, handler, email, "Password1")
+
+	claims, err := testJwtService.ValidateAccessToken(accessToken)
+	require.NoError(t, err)
+	require.NotNil(t, claims)
+	assert.Equal(t, []string{"user"}, claims.Roles)
 }
 
 func loginInvalidBody(t *testing.T) {
