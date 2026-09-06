@@ -5,6 +5,7 @@ import (
 	"auth/cmd/middleware"
 	"auth/internal/config"
 	"auth/internal/database"
+	emailservice "auth/internal/services/email"
 	"auth/internal/services/jwt"
 	redisservice "auth/internal/services/redis"
 	"auth/internal/telemetry"
@@ -46,11 +47,17 @@ func main() {
 	// 2. register routes
 	jwtService := jwt.NewService(cfg.Jwt)
 	cache := redisservice.NewService(cfg.Redis)
+	emailSvcImpl, err := emailservice.NewRabbitMQService(cfg.RabbitMq.Host, cfg.RabbitMq.Username, cfg.RabbitMq.Password)
+	if err != nil {
+		logger.Error("failed to connect to rabbitmq", slog.Any("error", err))
+		os.Exit(1)
+	}
+	defer emailSvcImpl.Close()
 	isDev := os.Getenv("APP_ENV") == "Development"
 	tokenSecret := os.Getenv("TOKEN_SECRET")
 
 	controllers.NewHealthController(mux)
-	controllers.NewAuthController(mux, queries, cache, jwtService, nil, logger, tokenSecret, cfg.Application.Endpoint, isDev)
+	controllers.NewAuthController(mux, queries, cache, jwtService, emailSvcImpl, logger, tokenSecret, cfg.Application.Endpoint, isDev)
 
 	// 3. server instance
 	serverAddr := fmt.Sprintf(":%d", cfg.GoServerPort)

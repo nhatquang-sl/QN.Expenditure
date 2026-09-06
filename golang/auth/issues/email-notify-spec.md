@@ -27,7 +27,7 @@ The DB queue is the source of truth for delivery status and auditability. Templa
 5. As a user, I want each email to be sent at most once, so that I do not receive duplicate activation emails.
 6. As a developer, I want all email types (template, subject, content) to be version-controlled via migrations, so that changes to email content are auditable and reviewable.
 7. As a developer, I want the data passed to each email type to be type-safe at compile time, so that mismatches between template variables and published data are caught before deployment.
-8. As a developer, I want the email pipeline to degrade gracefully when RabbitMQ is unavailable, so that a MQ outage does not break user registration.
+8. As a developer, I want the service to fail fast at startup if RabbitMQ is unavailable, so that misconfigured deployments are caught immediately rather than silently dropping emails.
 9. As a developer, I want the worker to process emails in configurable batch sizes, so that throughput can be tuned for production without a code change.
 10. As a developer, I want the worker polling interval to be configurable, so that the trade-off between latency and DB load can be adjusted without a code change.
 11. As an operator, I want each email attempt logged in the `EmailQueue` table with its status, retry count, and timestamps, so that I can audit delivery failures.
@@ -81,27 +81,33 @@ The existing `shared.EmailService` interface is **replaced entirely** with a new
 
 ```go
 type EmailService interface {
-    Send(ctx context.Context, userId, emailType string, data any) error
+    Send(ctx context.Context, userId string, emailType EmailType, data any) error
 }
 ```
 
-The implementation marshals `data` to JSON and publishes to RabbitMQ. If RabbitMQ is unavailable, the error is logged and the caller moves on — email is best-effort at the publish boundary.
+The implementation marshals `data` to JSON and publishes to RabbitMQ. If RabbitMQ is unavailable at startup, the service exits immediately — email is a hard dependency.
 
-The old `SendEmailConfirmation` method and its implementation are deleted. The register handler is updated to call the new `Send` method with the `activate_account` email type.
+The old `SendEmailConfirmation` method and its implementation are deleted. The register handler is updated to call the new `Send` method with the `EmailTypeActivateAccount` constant.
 
 ### Typed data contracts
 
-A shared package contains one Go struct per email type. The struct fields must match the `html/template` variables in the corresponding `EmailType.HtmlTemplate`. This is a compile-time contract — no runtime schema validation.
+`internal/application/shared/email_data.go` is the single source of truth for all email types. Each email type is represented by:
 
-Example:
+1. An `EmailType` constant — the database slug, enforced by the compiler at every `Send` call site
+2. A data struct — the template variables, matching `EmailType.HtmlTemplate` field-for-field
+
 ```go
+type EmailType string
+
+const EmailTypeActivateAccount EmailType = "activate_account"
+
 type ActivateAccountData struct {
     FirstName  string
     ConfirmURL string
 }
 ```
 
-Callers marshal the concrete struct and pass it as the `data` argument to `EmailService.Send()`.
+Passing a raw string to `Send` is a compile error. Every new email type adds one constant and one struct to this file — no other files change.
 
 ### RabbitMQ topology
 
@@ -201,13 +207,12 @@ Each slice is independently deployable and testable. Later slices depend on earl
 
 **Work**:
 - Define typed data structs package (e.g. `ActivateAccountData`)
-- Replace `shared.EmailService` interface with the new `Send(ctx, userId, emailType, data)` signature
-- Implement a no-op `EmailService` (logs only) for local dev without RabbitMQ
+- Replace `shared.EmailService` interface with the new `Send(ctx context.Context, userId string, emailType EmailType, data any) error` signature
+- Define `EmailType` typed string and `EmailTypeActivateAccount` constant in `shared/email_data.go`
 - Update `register` handler: replace `SendEmailConfirmation` call with `Send`, remove goroutine wrapper
-- Update `cmd/main.go` to wire the no-op implementation
 - Update register tests to assert `Send` is called with the correct `userId` and `emailType`
 
-**Done when**: all existing tests pass, the register handler compiles with the new interface, and the no-op implementation logs the correct payload.
+**Done when**: all existing tests pass and the register handler compiles with the new interface.
 
 ---
 
@@ -217,8 +222,10 @@ Each slice is independently deployable and testable. Later slices depend on earl
 
 **Work**:
 - Implement the RabbitMQ `EmailService`: marshal data to JSON, declare durable exchange + queue, publish with routing key `email.notify`
-- Wire the real implementation in `cmd/main.go` (behind a nil-guard so local dev without RabbitMQ still uses the no-op)
-- Fail fast on publish error: log and return — no fallback
+- Wire in `cmd/main.go`; fail fast (`os.Exit(1)`) if RabbitMQ is unreachable at startup
+- Add `RABBITMQ_HOST`, `RABBITMQ_USERNAME`, `RABBITMQ_PASSWORD` env var overrides to `config.go`
+- Add RabbitMQ env vars and `depends_on: rabbitmq: service_healthy` to `qex.goapi` in `docker-compose.yml`
+- On publish error: log and return — no fallback
 
 **Done when**: registering a user causes a message to appear in the `email.queue` RabbitMQ queue (verifiable via the RabbitMQ management UI).
 

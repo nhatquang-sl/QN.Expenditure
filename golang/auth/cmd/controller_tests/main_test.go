@@ -79,7 +79,7 @@ func TestMain(m *testing.M) {
 func newTestHandler() http.Handler {
 	mux := http.NewServeMux()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	controllers.NewAuthController(mux, testQueries, testCache, testJwtService, nil, logger, "test-secret", "http://localhost", true)
+	controllers.NewAuthController(mux, testQueries, testCache, testJwtService, &mockEmailService{}, logger, "test-secret", "http://localhost", true)
 	return middleware.Recover(logger, mux)
 }
 

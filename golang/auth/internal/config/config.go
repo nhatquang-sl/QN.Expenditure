@@ -91,6 +91,15 @@ func LoadJSONConfig() Config {
 	if v := os.Getenv("REDIS_PASSWORD"); v != "" {
 		cfg.Redis.Password = v
 	}
+	if v := os.Getenv("RABBITMQ_HOST"); v != "" {
+		cfg.RabbitMq.Host = v
+	}
+	if v := os.Getenv("RABBITMQ_USERNAME"); v != "" {
+		cfg.RabbitMq.Username = v
+	}
+	if v := os.Getenv("RABBITMQ_PASSWORD"); v != "" {
+		cfg.RabbitMq.Password = v
+	}
 
 	return cfg
 }

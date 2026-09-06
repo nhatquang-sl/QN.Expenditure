@@ -3,5 +3,5 @@ package shared
 import "context"
 
 type EmailService interface {
-	SendEmailConfirmation(ctx context.Context, toEmail, firstName, confirmURL string) error
+	Send(ctx context.Context, userId string, emailType EmailType, data any) error
 }
