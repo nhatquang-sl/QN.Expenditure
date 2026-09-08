@@ -19,6 +19,7 @@ const (
 
 type emailMessage struct {
 	UserId    string          `json:"userId"`
+	ToEmail   string          `json:"toEmail"`
 	EmailType string          `json:"emailType"`
 	Data      json.RawMessage `json:"data"`
 }
@@ -70,15 +71,16 @@ func (s *RabbitMQService) Close() error {
 	return s.conn.Close()
 }
 
-func (s *RabbitMQService) Send(ctx context.Context, userId string, emailType shared.EmailType, data any) error {
-	rawData, err := json.Marshal(data)
+func (s *RabbitMQService) Send(ctx context.Context, msg shared.EmailMessage) error {
+	rawData, err := json.Marshal(msg.Data)
 	if err != nil {
 		return fmt.Errorf("marshal email data: %w", err)
 	}
 
 	payload, err := json.Marshal(emailMessage{
-		UserId:    userId,
-		EmailType: string(emailType),
+		UserId:    msg.UserId,
+		ToEmail:   msg.ToEmail,
+		EmailType: string(msg.EmailType),
 		Data:      rawData,
 	})
 	if err != nil {

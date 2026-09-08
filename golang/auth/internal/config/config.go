@@ -25,11 +25,6 @@ type RedisConfig struct {
 	DefaultTTLSeconds int
 }
 
-type EmailWorkerConfig struct {
-	BatchSize       int
-	IntervalSeconds int
-}
-
 type Config struct {
 	ConnectionStrings struct {
 		AuthConnection string
@@ -41,15 +36,9 @@ type Config struct {
 		Version  string
 		Endpoint string
 	}
-	Email struct {
-		ApiKeyPublic  string
-		ApiKeyPrivate string
-		FromEmail     string
-	}
-	Jwt         JwtConfig
-	Redis       RedisConfig
-	EmailWorker EmailWorkerConfig
-	RabbitMq    struct {
+	Jwt      JwtConfig
+	Redis    RedisConfig
+	RabbitMq struct {
 		Host     string
 		Username string
 		Password string

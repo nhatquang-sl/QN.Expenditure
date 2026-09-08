@@ -22,13 +22,15 @@ import (
 
 type mockEmailService struct {
 	userId    string
+	toEmail   string
 	emailType shared.EmailType
 	called    bool
 }
 
-func (m *mockEmailService) Send(_ context.Context, userId string, emailType shared.EmailType, _ any) error {
-	m.userId = userId
-	m.emailType = emailType
+func (m *mockEmailService) Send(_ context.Context, msg shared.EmailMessage) error {
+	m.userId = msg.UserId
+	m.toEmail = msg.ToEmail
+	m.emailType = msg.EmailType
 	m.called = true
 	return nil
 }
@@ -156,6 +158,7 @@ func registerSendsActivationEmail(t *testing.T) {
 
 	assert.True(t, mock.called, "EmailService.Send should have been called")
 	assert.Equal(t, result.Id, mock.userId)
+	assert.Equal(t, email, mock.toEmail)
 	assert.Equal(t, shared.EmailTypeActivateAccount, mock.emailType)
 }
 

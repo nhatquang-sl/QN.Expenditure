@@ -96,9 +96,11 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	token := generateConfirmToken(id, h.tokenSecret)
 	confirmURL := fmt.Sprintf("%s/api/auth/confirm-email?token=%s", h.baseURL, token)
 
-	if err := h.emailService.Send(ctx, id, EmailTypeActivateAccount, ActivateAccountData{
-		FirstName:  cmd.FirstName,
-		ConfirmURL: confirmURL,
+	if err := h.emailService.Send(ctx, EmailMessage{
+		UserId:    id,
+		ToEmail:   cmd.Email,
+		EmailType: EmailTypeActivateAccount,
+		Data:      ActivateAccountData{FirstName: cmd.FirstName, ConfirmURL: confirmURL},
 	}); err != nil {
 		h.logger.ErrorContext(ctx, "failed to send confirmation email",
 			slog.String("userId", id),
