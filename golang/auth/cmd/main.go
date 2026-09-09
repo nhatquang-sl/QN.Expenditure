@@ -4,7 +4,7 @@ import (
 	"auth/cmd/controllers"
 	"auth/cmd/middleware"
 	"auth/internal/config"
-	"auth/internal/database"
+	dbsqlc "auth/internal/database/generated"
 	emailservice "auth/internal/services/email"
 	"auth/internal/services/jwt"
 	redisservice "auth/internal/services/redis"
@@ -14,6 +14,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
+	. "qn.expenditure/shared/database"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
@@ -34,12 +36,13 @@ func main() {
 	logger.Info("config loaded", slog.String("endpoint", cfg.Application.Endpoint), slog.String("version", cfg.Application.Version))
 
 	// connect to database
-	db, queries, err := database.ConnectDB(cfg.ConnectionStrings.PGAuth)
+	db, err := OpenPostgres(cfg.ConnectionStrings.PGAuth)
 	if err != nil {
 		logger.Error("failed to connect to database", slog.Any("error", err))
 		os.Exit(1)
 	}
 	defer db.Close()
+	queries := dbsqlc.New(db)
 
 	// 1. set up HTTP server
 	mux := http.NewServeMux()

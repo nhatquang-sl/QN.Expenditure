@@ -4,7 +4,6 @@ import (
 	"auth/cmd/controllers"
 	"auth/cmd/middleware"
 	. "auth/internal/config"
-	"auth/internal/database"
 	"auth/internal/database/generated"
 	jwtservice "auth/internal/services/jwt"
 	. "auth/internal/services/redis"
@@ -19,6 +18,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	. "qn.expenditure/shared/database"
 
 	migrate "github.com/golang-migrate/migrate/v4"
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -119,10 +120,11 @@ func createTestDB(ctx context.Context) (*sql.DB, *generated.Queries, DBCleanupFu
 		return nil, nil, nil, err
 	}
 
-	db, queries, err := database.ConnectDB(connStr)
+	db, err := OpenPostgres(connStr)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	queries := generated.New(db)
 
 	// Run migrations using the open *sql.DB so we don't need to re-parse the
 	// connection string into a URL format.
