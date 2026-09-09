@@ -10,8 +10,6 @@ import (
 
 	"auth/cmd/middleware"
 	"auth/cmd/respond"
-	"auth/internal/application"
-	"auth/internal/application/apperror"
 	getprofile "auth/internal/application/get_profile"
 	"auth/internal/application/login"
 	"auth/internal/application/logout"
@@ -20,14 +18,17 @@ import (
 	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 	. "auth/internal/services/redis"
+
+	. "qn.expenditure/shared/app"
+	. "qn.expenditure/shared/apperror"
 )
 
 type AuthController struct {
-	login        application.Handler[login.Command, login.Result]
-	register     application.Handler[register.Command, register.Result]
-	refreshToken application.Handler[refreshtoken.Command, refreshtoken.Result]
-	logout       application.Handler[logout.Command, logout.Result]
-	getProfile   application.Handler[getprofile.Query, getprofile.Result]
+	login        Handler[login.Command, login.Result]
+	register     Handler[register.Command, register.Result]
+	refreshToken Handler[refreshtoken.Command, refreshtoken.Result]
+	logout       Handler[logout.Command, logout.Result]
+	getProfile   Handler[getprofile.Query, getprofile.Result]
 	isDev        bool
 }
 
@@ -51,7 +52,7 @@ func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, redisService *Red
 func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var cmd register.Command
 	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-		respond.NewResponse(w).JSON(http.StatusBadRequest, nil, apperror.NewBadRequest("invalid request body"))
+		respond.NewResponse(w).JSON(http.StatusBadRequest, nil, NewBadRequest("invalid request body"))
 		return
 	}
 	result, err := c.register.Handle(r.Context(), cmd)
@@ -61,7 +62,7 @@ func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) 
 func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var cmd login.Command
 	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-		respond.NewResponse(w).JSON(http.StatusBadRequest, nil, apperror.NewBadRequest("invalid request body"))
+		respond.NewResponse(w).JSON(http.StatusBadRequest, nil, NewBadRequest("invalid request body"))
 		return
 	}
 	cmd.IPAddress = clientIP(r)
@@ -78,7 +79,7 @@ func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
 func (c *AuthController) handleRefreshToken(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("refreshToken")
 	if err != nil {
-		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("missing refresh token"))
+		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, NewUnauthorized("missing refresh token"))
 		return
 	}
 	result, appErr := c.refreshToken.Handle(r.Context(), refreshtoken.Command{
@@ -119,7 +120,7 @@ func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, ref
 func (c *AuthController) handleLogout(w http.ResponseWriter, r *http.Request) {
 	refreshCookie, err := r.Cookie("refreshToken")
 	if err != nil {
-		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("missing refresh token"))
+		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, NewUnauthorized("missing refresh token"))
 		return
 	}
 	_, err = c.logout.Handle(r.Context(), logout.Command{

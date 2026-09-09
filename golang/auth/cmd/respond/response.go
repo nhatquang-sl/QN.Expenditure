@@ -1,10 +1,9 @@
 package respond
 
 import (
-	"encoding/json"
 	"net/http"
 
-	"auth/internal/application/apperror"
+	sharedhttpx "qn.expenditure/shared/httpx"
 )
 
 type Response struct {
@@ -16,24 +15,7 @@ func NewResponse(w http.ResponseWriter) Response {
 }
 
 func (r Response) JSON(status int, result any, err error) {
-	r.w.Header().Set("Content-Type", "application/json")
-
-	if err != nil {
-		switch e := err.(type) {
-		case *apperror.AppError:
-			r.w.WriteHeader(e.Code)
-			json.NewEncoder(r.w).Encode(map[string]string{"message": e.Message})
-		case *apperror.ValidationError:
-			r.w.WriteHeader(http.StatusUnprocessableEntity)
-			json.NewEncoder(r.w).Encode(e.Fields)
-		default:
-			r.w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(r.w).Encode(map[string]string{"message": "Internal Server Error"})
-		}
-	} else {
-		r.w.WriteHeader(status)
-		json.NewEncoder(r.w).Encode(result)
-	}
+	sharedhttpx.WriteJSON(r.w, status, result, err)
 }
 
 func (r Response) OK(v any) {

@@ -6,9 +6,11 @@ import (
 	"errors"
 
 	"auth/internal/application"
-	"auth/internal/application/apperror"
 	dbsqlc "auth/internal/database/generated"
 	. "auth/internal/services/redis"
+
+	. "qn.expenditure/shared/app"
+	. "qn.expenditure/shared/apperror"
 )
 
 type Query struct {
@@ -28,7 +30,7 @@ type handler struct {
 	db *dbsqlc.Queries
 }
 
-func NewHandler(db *dbsqlc.Queries, cache *RedisService) application.Handler[Query, Result] {
+func NewHandler(db *dbsqlc.Queries, cache *RedisService) Handler[Query, Result] {
 	return application.NewCacher(
 		&handler{db: db},
 		cache,
@@ -40,7 +42,7 @@ func (h *handler) Handle(ctx context.Context, q Query) (Result, error) {
 	user, err := h.db.GetUserProfileById(ctx, q.UserId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return Result{}, apperror.NewNotFound("user not found")
+			return Result{}, NewNotFound("user not found")
 		}
 		return Result{}, err
 	}

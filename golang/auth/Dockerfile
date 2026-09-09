@@ -4,10 +4,11 @@
 # http://localhost:5002/api/weatherforecast
 # Build stage
 FROM golang:1.27-alpine3.24 AS build
-WORKDIR /app
-COPY golang/auth/go.mod golang/auth/go.sum ./
-RUN go mod download && go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
-COPY golang/auth/ .
+WORKDIR /workspace
+COPY golang/shared ./shared
+COPY golang/auth ./auth
+RUN cd /workspace/auth && go mod download && go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+WORKDIR /workspace/auth
 RUN sqlc generate -f internal/database/sqlc.yaml
 ARG VERSION=0.0.1
 RUN CGO_ENABLED=0 GOOS=linux go build \
@@ -24,7 +25,7 @@ RUN apk --no-cache add ca-certificates tzdata curl && \
     apk del curl
 WORKDIR /app
 COPY --from=build /auth .
-COPY --from=build /app/internal/database/migrations ./migrations
+COPY --from=build /workspace/auth/internal/database/migrations ./migrations
 ARG VERSION=0.0.1
 ENV VERSION=${VERSION}
 

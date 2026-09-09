@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"time"
 
-	"auth/internal/application"
 	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
 	. "auth/internal/services/redis"
+
+	. "qn.expenditure/shared/app"
 )
 
 type Command struct {
@@ -23,7 +24,7 @@ type handler struct {
 	cache      *RedisService
 }
 
-func NewHandler(db *dbsqlc.Queries, jwtService JwtService, cache *RedisService) application.Handler[Command, Result] {
+func NewHandler(db *dbsqlc.Queries, jwtService JwtService, cache *RedisService) Handler[Command, Result] {
 	return &handler{db: db, jwtService: jwtService, cache: cache}
 }
 

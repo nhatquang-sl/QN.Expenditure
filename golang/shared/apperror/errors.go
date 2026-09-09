@@ -12,7 +12,6 @@ type AppError struct {
 	Message string
 }
 
-// Error implements the error interface.
 func (e *AppError) Error() string { return e.Message }
 
 func NewBadRequest(msg string) *AppError   { return &AppError{Code: 400, Message: msg} }
@@ -29,7 +28,6 @@ type ValidationError struct {
 	Fields []FieldError
 }
 
-// Error implements the error interface.
 func (e *ValidationError) Error() string { return "validation failed" }
 
 func NewValidationErrors(err validator.ValidationErrors, trans ut.Translator) *ValidationError {

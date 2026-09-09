@@ -5,6 +5,8 @@ import (
 	"log/slog"
 
 	. "auth/internal/services/redis"
+
+	. "qn.expenditure/shared/app"
 )
 
 type Cacher[C, R any] struct {

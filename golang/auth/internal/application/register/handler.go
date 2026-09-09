@@ -12,10 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"auth/internal/application"
-	"auth/internal/application/apperror"
 	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
+
+	. "qn.expenditure/shared/app"
+	. "qn.expenditure/shared/apperror"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
@@ -43,13 +44,13 @@ type handler struct {
 	baseURL      string
 }
 
-func NewHandler(db *dbsqlc.Queries, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string) application.Handler[Command, Result] {
+func NewHandler(db *dbsqlc.Queries, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string) Handler[Command, Result] {
 	return newValidator(handler{
-		db:          db,
+		db:           db,
 		emailService: emailService,
-		logger:      logger,
-		tokenSecret: []byte(tokenSecret),
-		baseURL:     baseURL,
+		logger:       logger,
+		tokenSecret:  []byte(tokenSecret),
+		baseURL:      baseURL,
 	})
 }
 
@@ -61,7 +62,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, err
 	}
 	if exists {
-		return Result{}, apperror.NewConflict("email already registered")
+		return Result{}, NewConflict("email already registered")
 	}
 
 	hash, err := hashPassword(cmd.Password)

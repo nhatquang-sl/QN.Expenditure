@@ -12,10 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"auth/internal/application"
-	"auth/internal/application/apperror"
 	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
+
+	. "qn.expenditure/shared/app"
+	. "qn.expenditure/shared/apperror"
 
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -46,7 +47,7 @@ type handler struct {
 	logger     *slog.Logger
 }
 
-func NewHandler(db *dbsqlc.Queries, jwtService JwtService, logger *slog.Logger) application.Handler[Command, Result] {
+func NewHandler(db *dbsqlc.Queries, jwtService JwtService, logger *slog.Logger) Handler[Command, Result] {
 	return newValidator(handler{db: db, jwtService: jwtService, logger: logger})
 }
 
@@ -54,13 +55,13 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	user, err := h.db.GetUserByNormalizedEmail(ctx, strings.ToUpper(cmd.Email))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return Result{}, apperror.NewUnauthorized("invalid credentials")
+			return Result{}, NewUnauthorized("invalid credentials")
 		}
 		return Result{}, err
 	}
 
 	if !verifyPassword(cmd.Password, user.PasswordHash) {
-		return Result{}, apperror.NewUnauthorized("invalid credentials")
+		return Result{}, NewUnauthorized("invalid credentials")
 	}
 
 	// Insert first to obtain the DB-generated Id, which is embedded as TokenId in the JWT.

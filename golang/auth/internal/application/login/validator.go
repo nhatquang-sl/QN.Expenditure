@@ -1,7 +1,9 @@
 package login
 
-import "auth/internal/application"
+import (
+	. "qn.expenditure/shared/app"
+)
 
-func newValidator(h handler) *application.Validator[Command, Result] {
-	return application.NewValidator(&h)
+func newValidator(h handler) *Validator[Command, Result] {
+	return NewValidator(&h)
 }

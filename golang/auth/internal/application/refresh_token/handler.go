@@ -7,10 +7,11 @@ import (
 	"log/slog"
 	"time"
 
-	"auth/internal/application"
-	"auth/internal/application/apperror"
 	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
+
+	. "qn.expenditure/shared/app"
+	. "qn.expenditure/shared/apperror"
 )
 
 type Command struct {
@@ -37,20 +38,20 @@ type handler struct {
 	logger     *slog.Logger
 }
 
-func NewHandler(db *dbsqlc.Queries, jwtService JwtService, logger *slog.Logger) application.Handler[Command, Result] {
+func NewHandler(db *dbsqlc.Queries, jwtService JwtService, logger *slog.Logger) Handler[Command, Result] {
 	return &handler{db: db, jwtService: jwtService, logger: logger}
 }
 
 func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	claims, err := h.jwtService.ValidateRefreshToken(cmd.RefreshToken)
 	if err != nil || claims == nil {
-		return Result{}, apperror.NewUnauthorized("invalid refresh token")
+		return Result{}, NewUnauthorized("invalid refresh token")
 	}
 
 	session, err := h.db.GetUserSessionById(ctx, claims.TokenId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return Result{}, apperror.NewUnauthorized("invalid refresh token")
+			return Result{}, NewUnauthorized("invalid refresh token")
 		}
 		return Result{}, err
 	}

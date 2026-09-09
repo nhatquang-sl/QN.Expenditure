@@ -1,0 +1,8 @@
+go 1.27.0
+
+use (
+	./auth
+	./email_consumer
+	./email_worker
+	./shared
+)

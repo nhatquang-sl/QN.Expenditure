@@ -4,12 +4,13 @@ import (
 	"net/http"
 
 	"auth/cmd/respond"
-	"auth/internal/application"
 	"auth/internal/application/health"
+
+	. "qn.expenditure/shared/app"
 )
 
 type HealthController struct {
-	handler application.Handler[health.Command, health.Result]
+	handler Handler[health.Command, health.Result]
 }
 
 func NewHealthController(mux *http.ServeMux) {

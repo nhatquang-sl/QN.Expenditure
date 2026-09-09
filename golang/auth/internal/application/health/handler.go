@@ -3,7 +3,7 @@ package health
 import (
 	"context"
 
-	"auth/internal/application"
+	. "qn.expenditure/shared/app"
 )
 
 type Command struct{}
@@ -14,7 +14,7 @@ type Result struct {
 
 type handler struct{}
 
-func NewHandler() application.Handler[Command, Result] {
+func NewHandler() Handler[Command, Result] {
 	return &handler{}
 }
 

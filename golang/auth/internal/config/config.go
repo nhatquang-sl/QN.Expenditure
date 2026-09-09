@@ -1,8 +1,9 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
+
+	sharedconfig "qn.expenditure/shared/config"
 )
 
 // Config path is resolved at runtime. Override with CONFIG_PATH env var.
@@ -54,41 +55,32 @@ func LoadJSONConfig() Config {
 		path = defaultConfigPath
 	}
 
-	data, err := os.ReadFile(path)
-	if err != nil {
-		panic("failed to read config file: " + err.Error())
-	}
-
-	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		panic("failed to parse config file: " + err.Error())
-	}
-
-	if cfg.TLSCertPath == "" {
-		cfg.TLSCertPath = defaultTLSCertPath
-	}
-	if cfg.TLSKeyPath == "" {
-		cfg.TLSKeyPath = defaultTLSKeyPath
-	}
-
-	if v := os.Getenv("PG_AUTH_CONNECTION"); v != "" {
-		cfg.ConnectionStrings.PGAuth = v
-	}
-	if v := os.Getenv("REDIS_ADDR"); v != "" {
-		cfg.Redis.Addr = v
-	}
-	if v := os.Getenv("REDIS_PASSWORD"); v != "" {
-		cfg.Redis.Password = v
-	}
-	if v := os.Getenv("RABBITMQ_HOST"); v != "" {
-		cfg.RabbitMq.Host = v
-	}
-	if v := os.Getenv("RABBITMQ_USERNAME"); v != "" {
-		cfg.RabbitMq.Username = v
-	}
-	if v := os.Getenv("RABBITMQ_PASSWORD"); v != "" {
-		cfg.RabbitMq.Password = v
-	}
+	cfg := sharedconfig.LoadJSON[Config](path, func(cfg *Config) {
+		if cfg.TLSCertPath == "" {
+			cfg.TLSCertPath = defaultTLSCertPath
+		}
+		if cfg.TLSKeyPath == "" {
+			cfg.TLSKeyPath = defaultTLSKeyPath
+		}
+		if v := os.Getenv("PG_AUTH_CONNECTION"); v != "" {
+			cfg.ConnectionStrings.PGAuth = v
+		}
+		if v := os.Getenv("REDIS_ADDR"); v != "" {
+			cfg.Redis.Addr = v
+		}
+		if v := os.Getenv("REDIS_PASSWORD"); v != "" {
+			cfg.Redis.Password = v
+		}
+		if v := os.Getenv("RABBITMQ_HOST"); v != "" {
+			cfg.RabbitMq.Host = v
+		}
+		if v := os.Getenv("RABBITMQ_USERNAME"); v != "" {
+			cfg.RabbitMq.Username = v
+		}
+		if v := os.Getenv("RABBITMQ_PASSWORD"); v != "" {
+			cfg.RabbitMq.Password = v
+		}
+	})
 
 	return cfg
 }

@@ -46,6 +46,38 @@ The pipeline has three distinct hops:
 - **Hop 2**: RabbitMQ → PostgreSQL `EmailQueue` (consumer persists)
 - **Hop 3**: PostgreSQL `EmailQueue` → Mailjet (worker sends)
 
+```mermaid
+sequenceDiagram
+    participant API as API Server<br/>(cmd/main.go)
+    participant RMQ as RabbitMQ<br/>(email.queue)
+    participant Consumer as Email Consumer<br/>(cmd/consumers/email_consumer)
+    participant DB as PostgreSQL<br/>(EmailQueue)
+    participant Worker as Email Worker<br/>(cmd/worker)
+    participant MJ as Mailjet
+
+    API->>RMQ: Publish message<br/>{userId, emailType, data}
+    Note over API,RMQ: Hop 1 — fire and forget
+
+    RMQ-->>Consumer: Deliver message
+    Consumer->>DB: INSERT EmailQueue (status='new')
+    Consumer->>RMQ: ack
+    Note over RMQ,DB: Hop 2 — durable persistence
+
+    loop Every N seconds
+        Worker->>DB: SELECT FOR UPDATE SKIP LOCKED<br/>→ mark 'sending'
+        Worker->>DB: Fetch EmailType template + User email
+        Worker->>MJ: Send rendered HTML email
+        alt success
+            Worker->>DB: UPDATE status='sent'
+        else failure (retry < 3)
+            Worker->>DB: UPDATE status='fail', retry++, nextRetryAt
+        else failure (retry = 3)
+            Worker->>DB: UPDATE status='fail' (permanent)
+        end
+    end
+    Note over DB,MJ: Hop 3 — delivery with retry/backoff
+```
+
 The DB queue is intentional — it provides the auditability and retry durability that RabbitMQ alone cannot guarantee across restarts and failures.
 
 ### `EmailType` table schema
@@ -116,11 +148,12 @@ Passing a raw string to `Send` is a compile error. Every new email type adds one
 - **Queue**: named `email.queue`, durable
 - **Acknowledgement**: manual — consumer acks only after a successful `EmailQueue` INSERT; nacks with requeue on DB failure
 
-### Consumer binary (`cmd/consumer`)
+### Consumer binary (`cmd/consumers/email_consumer`)
 
 - Long-running process subscribing to `email.queue`
 - On each message: validate that `EmailTypeId` exists in `EmailType` table; if unknown, log a warning and ack (discard — this is a programming error, not a transient failure)
 - On valid message: insert row into `EmailQueue` with `status = 'new'`, then ack
+- Consumer logic (types, topology setup, message handling) lives in `internal/consumers/email_consumer.go` — importable by both the binary and the test package
 
 ### Worker binary (`cmd/worker`)
 
@@ -161,7 +194,7 @@ A good test exercises observable external behavior, not internal implementation.
 - A good consumer test proves that a RabbitMQ message results in a row in `EmailQueue`
 - A good worker test proves that an `EmailQueue` row in `new` status results in a Mailjet call and a `sent` status update
 
-### Consumer tests (`cmd/consumer`)
+### Consumer tests (`cmd/consumer_tests`)
 
 - Use `testcontainers-go` to spin up both a PostgreSQL container and a RabbitMQ container, following the pattern in `cmd/controller_tests/main_test.go`
 - Publish a message to the durable queue and assert the resulting `EmailQueue` row has the correct fields and `status = 'new'`
@@ -231,32 +264,34 @@ Each slice is independently deployable and testable. Later slices depend on earl
 
 ---
 
-### Slice 4: Consumer binary (`cmd/consumer`)
+### Slice 4: Consumer binary (`cmd/consumers/email_consumer`) ✅ Done
 
 **Delivers**: RabbitMQ messages are reliably persisted to `EmailQueue`. The second hop is live. Emails are now durable across service restarts.
 
 **Work**:
-- Create `cmd/consumer/main.go`: connect to RabbitMQ, subscribe to `email.queue`
+- Consumer logic extracted to `internal/consumers/email_consumer.go`: `EmailConsumer`, `SetupTopology`, RabbitMQ constants — importable by both binary and tests
+- `cmd/consumers/email_consumer/main.go`: connect to RabbitMQ, subscribe to `email.queue`, delegate to `EmailConsumer.HandleDelivery`
 - On message: validate `EmailTypeId` exists in `EmailType`; unknown types are logged and acked (discarded)
 - On valid message: INSERT into `EmailQueue` with `status = 'new'`, then ack; nack+requeue on DB failure
-- Consumer integration tests: real PostgreSQL + real RabbitMQ containers via `testcontainers-go`
+- Consumer integration tests in `cmd/consumer_tests/`: real PostgreSQL + real RabbitMQ containers via `testcontainers-go`
 - Test cases: valid message → row inserted; unknown email type → no row, message acked
 
 **Done when**: publishing a message to RabbitMQ results in a `new` row in `EmailQueue` within seconds.
 
 ---
 
-### Slice 5: Worker binary (`cmd/worker`)
+### Slice 5: Worker binary (`cmd/worker`) ✅ Done
 
 **Delivers**: Emails are actually sent via Mailjet. The full pipeline is live end-to-end. User story 1 is complete.
 
 **Work**:
-- Create `cmd/worker/main.go`: poll loop with configurable interval and batch size
-- Query eligible rows using `SELECT ... FOR UPDATE SKIP LOCKED LIMIT :batchSize`
-- Per row: set `sending` → render template → call Mailjet → set `sent` or apply retry/backoff/fail logic
-- Exponential backoff: `nextRetryAt = NOW() + (2^retry) minutes`; permanent `fail` after retry = 3
-- Worker integration tests: real PostgreSQL + fake `EmailSender` interface; assert status transitions and `NextRetryAt` values
-- Test cases: success → `sent`; first failure → `fail` + `retry=1` + `NextRetryAt` set; third failure → `fail` + `retry=3` + no further processing
+- `internal/application/worker/worker.sql` — `GetUserEmailById` query; regenerated sqlc
+- `internal/worker/worker.go` — `EmailSender` interface + `Worker` struct with `Tick` method; claims batch via `getemailqueueactive` handler, renders `html/template`, calls `EmailSender.Send`, applies retry/backoff/fail logic
+- Exponential backoff: `nextRetryAt = NOW() + 2^retry minutes`; `NextRetryAt` is NULL and row is permanently `fail` after `retry = 3`
+- `internal/services/email/mailjet_sender.go` — `MailjetSender` implements `EmailSender` using `mailjet-apiv3-go/v4`
+- `cmd/worker/main.go` — poll loop with configurable interval and batch size; runs one tick immediately on startup
+- `cmd/worker_tests/main_test.go` — PostgreSQL container setup + seed helpers
+- `cmd/worker_tests/worker_test.go` — fake `EmailSender`; test cases: success → `sent`; first failure → `fail` + `retry=1` + `NextRetryAt` set; third failure → `fail` + `retry=3` + `NextRetryAt` NULL
 
 **Done when**: a row in `EmailQueue` with `status = 'new'` is sent via Mailjet and transitions to `sent` within one poll interval.
 
@@ -274,6 +309,7 @@ Each slice is independently deployable and testable. Later slices depend on earl
 
 ## Further Notes
 
+- Consumer binaries live under `cmd/consumers/<name>/main.go` — each consumer is its own binary and subdirectory. The shared consumer logic (types, topology, handlers) lives in `internal/consumers/`.
 - The `EmailQueue` table uses the same PascalCase quoted-identifier convention as `UserSessions` and `UserSessionHistories`
 - The worker's `SELECT ... FOR UPDATE SKIP LOCKED` query must be generated via sqlc — do not write raw SQL in application code
 - RabbitMQ connection details are already in `appsettings.json` under the `RabbitMq` key; the consumer and worker read from the same config file as the API server

@@ -6,9 +6,10 @@ import (
 	"strconv"
 
 	"auth/cmd/respond"
-	"auth/internal/application/apperror"
 	. "auth/internal/application/shared"
 	. "auth/internal/services/redis"
+
+	. "qn.expenditure/shared/apperror"
 )
 
 type contextKey int
@@ -20,17 +21,17 @@ func Auth(jwtService JwtService, cache *RedisService) func(http.HandlerFunc) htt
 		return func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("accessToken")
 			if err != nil {
-				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("missing access token"))
+				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, NewUnauthorized("missing access token"))
 				return
 			}
 			claims, err := jwtService.ValidateAccessToken(cookie.Value)
 			if err != nil || claims == nil {
-				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("invalid access token"))
+				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, NewUnauthorized("invalid access token"))
 				return
 			}
 			key := "revoked:" + strconv.FormatInt(claims.TokenId, 10)
 			if exists, err := cache.Exists(r.Context(), key); err == nil && exists {
-				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, apperror.NewUnauthorized("session invalidated"))
+				respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, NewUnauthorized("session invalidated"))
 				return
 			}
 			ctx := context.WithValue(r.Context(), userClaimsKey, claims)

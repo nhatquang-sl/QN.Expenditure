@@ -3,14 +3,14 @@ package register
 import (
 	"unicode"
 
-	"auth/internal/application"
+	. "qn.expenditure/shared/app"
 
 	ut "github.com/go-playground/universal-translator"
 	v10 "github.com/go-playground/validator/v10"
 )
 
-func newValidator(h handler) *application.Validator[Command, Result] {
-	return application.NewValidator(&h, func(v *v10.Validate, trans ut.Translator) {
+func newValidator(h handler) *Validator[Command, Result] {
+	return NewValidator(&h, func(v *v10.Validate, trans ut.Translator) {
 		v.RegisterValidation("password_strength", func(fl v10.FieldLevel) bool {
 			p := fl.Field().String()
 			if len(p) < 8 {
