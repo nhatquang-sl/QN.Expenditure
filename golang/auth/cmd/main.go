@@ -53,7 +53,7 @@ func main() {
 	isDev := os.Getenv("APP_ENV") == "Development"
 	tokenSecret := os.Getenv("TOKEN_SECRET")
 
-	controllers.NewHealthController(mux)
+	controllers.NewHealthController(mux, logger)
 	controllers.NewAuthController(mux, &cfg, queries, cache, jwtService, logger, tokenSecret, isDev)
 
 	// 3. server instance

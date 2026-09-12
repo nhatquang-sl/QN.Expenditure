@@ -30,6 +30,7 @@ type AuthController struct {
 	refreshToken Handler[refreshtoken.Command, refreshtoken.Result]
 	logout       Handler[logout.Command, logout.Result]
 	getProfile   Handler[getprofile.Query, getprofile.Result]
+	logger       *slog.Logger
 	isDev        bool
 }
 
@@ -40,9 +41,10 @@ func NewAuthController(mux *http.ServeMux, cfg *Config, db *dbsqlc.Queries, redi
 		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
 		logout:       logout.NewHandler(db, jwtService, redisService),
 		getProfile:   getprofile.NewHandler(db, redisService),
+		logger:       logger,
 		isDev:        isDev,
 	}
-	auth := middleware.Auth(jwtService, redisService)
+	auth := middleware.Auth(jwtService, redisService, logger)
 	mux.HandleFunc("POST /login", c.handleLogin)
 	mux.HandleFunc("POST /register", c.handleRegister)
 	mux.HandleFunc("POST /refresh-token", c.handleRefreshToken)
@@ -53,17 +55,17 @@ func NewAuthController(mux *http.ServeMux, cfg *Config, db *dbsqlc.Queries, redi
 func (c *AuthController) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var cmd register.Command
 	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-		respond.NewResponse(w).JSON(http.StatusBadRequest, nil, NewBadRequest("invalid request body"))
+		respond.NewResponse(w, c.logger).JSON(http.StatusBadRequest, nil, NewBadRequest("invalid request body"))
 		return
 	}
 	result, err := c.register.Handle(r.Context(), cmd)
-	respond.NewResponse(w).JSON(http.StatusCreated, result, err)
+	respond.NewResponse(w, c.logger).JSON(http.StatusCreated, result, err)
 }
 
 func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var cmd login.Command
 	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-		respond.NewResponse(w).JSON(http.StatusBadRequest, nil, NewBadRequest("invalid request body"))
+		respond.NewResponse(w, c.logger).JSON(http.StatusBadRequest, nil, NewBadRequest("invalid request body"))
 		return
 	}
 	cmd.IPAddress = clientIP(r)
@@ -74,13 +76,13 @@ func (c *AuthController) handleLogin(w http.ResponseWriter, r *http.Request) {
 		c.setTokenCookies(w, result.AccessToken, result.RefreshToken, result.AccessTokenExpires, result.RefreshTokenExpires)
 	}
 
-	respond.NewResponse(w).JSON(http.StatusOK, result, err)
+	respond.NewResponse(w, c.logger).JSON(http.StatusOK, result, err)
 }
 
 func (c *AuthController) handleRefreshToken(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("refreshToken")
 	if err != nil {
-		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, NewUnauthorized("missing refresh token"))
+		respond.NewResponse(w, c.logger).JSON(http.StatusUnauthorized, nil, NewUnauthorized("missing refresh token"))
 		return
 	}
 	result, appErr := c.refreshToken.Handle(r.Context(), refreshtoken.Command{
@@ -91,7 +93,7 @@ func (c *AuthController) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 	if appErr == nil {
 		c.setTokenCookies(w, result.AccessToken, result.RefreshToken, result.AccessTokenExpires, result.RefreshTokenExpires)
 	}
-	respond.NewResponse(w).JSON(http.StatusOK, result, appErr)
+	respond.NewResponse(w, c.logger).JSON(http.StatusOK, result, appErr)
 }
 
 func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, refreshToken string, atExp, rtExp time.Time) {
@@ -121,7 +123,7 @@ func (c *AuthController) setTokenCookies(w http.ResponseWriter, accessToken, ref
 func (c *AuthController) handleLogout(w http.ResponseWriter, r *http.Request) {
 	refreshCookie, err := r.Cookie("refreshToken")
 	if err != nil {
-		respond.NewResponse(w).JSON(http.StatusUnauthorized, nil, NewUnauthorized("missing refresh token"))
+		respond.NewResponse(w, c.logger).JSON(http.StatusUnauthorized, nil, NewUnauthorized("missing refresh token"))
 		return
 	}
 	_, err = c.logout.Handle(r.Context(), logout.Command{
@@ -130,13 +132,13 @@ func (c *AuthController) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		c.clearTokenCookies(w)
 	}
-	respond.NewResponse(w).JSON(http.StatusNoContent, nil, err)
+	respond.NewResponse(w, c.logger).JSON(http.StatusNoContent, nil, err)
 }
 
 func (c *AuthController) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.UserFromContext(r.Context())
 	result, err := c.getProfile.Handle(r.Context(), getprofile.Query{UserId: claims.Id})
-	respond.NewResponse(w).JSON(http.StatusOK, result, err)
+	respond.NewResponse(w, c.logger).JSON(http.StatusOK, result, err)
 }
 
 func (c *AuthController) clearTokenCookies(w http.ResponseWriter) {
