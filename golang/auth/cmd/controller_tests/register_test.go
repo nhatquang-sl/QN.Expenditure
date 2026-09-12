@@ -1,39 +1,22 @@
 package controllertests
 
 import (
-	"auth/cmd/controllers"
-	"auth/cmd/middleware"
 	"auth/internal/application/register"
-	"auth/internal/application/shared"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	. "qn.expenditure/shared/messaging"
+	. "qn.expenditure/shared/messaging/messages"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type mockEmailService struct {
-	userId    string
-	toEmail   string
-	emailType shared.EmailType
-	called    bool
-}
-
-func (m *mockEmailService) Send(_ context.Context, msg shared.EmailMessage) error {
-	m.userId = msg.UserId
-	m.toEmail = msg.ToEmail
-	m.emailType = msg.EmailType
-	m.called = true
-	return nil
-}
 
 // TestRegister groups all register endpoint cases. Each case is extracted into
 // a helper function marked with t.Helper() so that on failure, the reported
@@ -134,12 +117,6 @@ func registerSendsActivationEmail(t *testing.T) {
 	t.Helper()
 	email := fmt.Sprintf("register.email+%d@example.com", time.Now().UnixNano())
 
-	mock := &mockEmailService{}
-	mux := http.NewServeMux()
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	controllers.NewAuthController(mux, testQueries, testCache, testJwtService, mock, logger, "test-secret", "http://localhost", true)
-	handler := middleware.Recover(logger, mux)
-
 	body, _ := json.Marshal(map[string]string{
 		"email":     email,
 		"password":  "Password1",
@@ -149,17 +126,41 @@ func registerSendsActivationEmail(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
+	newTestHandler().ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusCreated, w.Code)
 
 	var result register.Result
 	require.NoError(t, json.NewDecoder(w.Body).Decode(&result))
 
-	assert.True(t, mock.called, "EmailService.Send should have been called")
-	assert.Equal(t, result.Id, mock.userId)
-	assert.Equal(t, email, mock.toEmail)
-	assert.Equal(t, shared.EmailTypeActivateAccount, mock.emailType)
+	// Open a consumer on the same queue to verify the published message.
+	consumer, err := ConnectAmqp[EmailMessage](testRabbitMqCfg)
+	require.NoError(t, err)
+	defer consumer.Close()
+
+	deliveries, err := consumer.Consume()
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	for {
+		select {
+		case d := <-deliveries:
+			var msg EmailMessage
+			if err := json.Unmarshal(d.Body, &msg); err != nil {
+				continue
+			}
+			if msg.ToEmail != email {
+				continue
+			}
+			assert.Equal(t, result.Id, msg.UserId)
+			assert.Equal(t, EmailTypeActivateAccount, msg.EmailType)
+			return
+		case <-ctx.Done():
+			t.Fatal("timed out waiting for activation email on RabbitMQ queue")
+		}
+	}
 }
 
 func registerAssignsUserRole(t *testing.T) {

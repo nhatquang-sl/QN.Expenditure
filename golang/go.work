@@ -4,5 +4,6 @@ use (
 	./auth
 	./email_consumer
 	./email_worker
+	./emaildb
 	./shared
 )

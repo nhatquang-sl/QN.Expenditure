@@ -1,4 +1,4 @@
-package shared
+package messages
 
 type EmailType string
 
@@ -10,7 +10,6 @@ type ActivateAccountData struct {
 	ConfirmURL string
 }
 
-// EmailMessage is the payload passed to EmailService.Send.
 type EmailMessage struct {
 	UserId    string
 	ToEmail   string

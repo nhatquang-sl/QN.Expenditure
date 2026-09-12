@@ -16,6 +16,7 @@ import (
 	refreshtoken "auth/internal/application/refresh_token"
 	"auth/internal/application/register"
 	. "auth/internal/application/shared"
+	. "auth/internal/config"
 	dbsqlc "auth/internal/database/generated"
 	. "auth/internal/services/redis"
 
@@ -32,10 +33,10 @@ type AuthController struct {
 	isDev        bool
 }
 
-func NewAuthController(mux *http.ServeMux, db *dbsqlc.Queries, redisService *RedisService, jwtService JwtService, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string, isDev bool) {
+func NewAuthController(mux *http.ServeMux, cfg *Config, db *dbsqlc.Queries, redisService *RedisService, jwtService JwtService, logger *slog.Logger, tokenSecret string, isDev bool) {
 	c := &AuthController{
 		login:        login.NewHandler(db, jwtService, logger),
-		register:     register.NewHandler(db, emailService, logger, tokenSecret, baseURL),
+		register:     register.NewHandler(db, logger, &cfg.RabbitMq, tokenSecret, cfg.Application.Endpoint),
 		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
 		logout:       logout.NewHandler(db, jwtService, redisService),
 		getProfile:   getprofile.NewHandler(db, redisService),

@@ -4,6 +4,7 @@ import (
 	"os"
 
 	sharedconfig "qn.expenditure/shared/config"
+	. "qn.expenditure/shared/messaging"
 )
 
 // Config path is resolved at runtime. Override with CONFIG_PATH env var.
@@ -37,13 +38,9 @@ type Config struct {
 		Version  string
 		Endpoint string
 	}
-	Jwt      JwtConfig
-	Redis    RedisConfig
-	RabbitMq struct {
-		Host     string
-		Username string
-		Password string
-	}
+	Jwt          JwtConfig
+	Redis        RedisConfig
+	RabbitMq     RabbitMqConfig
 	TLSCertPath  string
 	TLSKeyPath   string
 	GoServerPort int

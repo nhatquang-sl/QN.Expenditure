@@ -17,6 +17,8 @@ import (
 
 	. "qn.expenditure/shared/app"
 	. "qn.expenditure/shared/apperror"
+	. "qn.expenditure/shared/messaging"
+	. "qn.expenditure/shared/messaging/messages"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
@@ -38,16 +40,22 @@ type Result struct {
 
 type handler struct {
 	db           *dbsqlc.Queries
-	emailService EmailService
+	emailService *RabbitMQService
 	logger       *slog.Logger
 	tokenSecret  []byte
 	baseURL      string
 }
 
-func NewHandler(db *dbsqlc.Queries, emailService EmailService, logger *slog.Logger, tokenSecret, baseURL string) Handler[Command, Result] {
+func NewHandler(db *dbsqlc.Queries, logger *slog.Logger, rbCfg *RabbitMqConfig, tokenSecret, baseURL string) Handler[Command, Result] {
+	rabbitService, err := ConnectAmqp[EmailMessage](*rbCfg)
+	if err != nil {
+		logger.Error("failed to connect to RabbitMQ", slog.Any("error", err))
+		panic(err)
+	}
+
 	return newValidator(handler{
 		db:           db,
-		emailService: emailService,
+		emailService: rabbitService,
 		logger:       logger,
 		tokenSecret:  []byte(tokenSecret),
 		baseURL:      baseURL,

@@ -16,10 +16,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
 	. "qn.expenditure/shared/database"
+	. "qn.expenditure/shared/messaging"
 
 	migrate "github.com/golang-migrate/migrate/v4"
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -42,10 +44,11 @@ const (
 	dbPassword = "postgres"
 )
 
-// testDB, testQueries, and testCache are shared across all tests in this package.
+// testDB, testQueries, testCache, and testRabbitMqCfg are shared across all tests in this package.
 var testDB *sql.DB
 var testQueries *generated.Queries
 var testCache *RedisService
+var testRabbitMqCfg RabbitMqConfig
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -63,12 +66,21 @@ func TestMain(m *testing.M) {
 	}
 	testCache = cache
 
+	rabbitCfg, rabbitCleanup, err := createTestRabbitMQ(ctx)
+	if err != nil {
+		panic(err)
+	}
+	testRabbitMqCfg = rabbitCfg
+
 	code := m.Run()
 
 	if err := dbCleanup(ctx); err != nil {
 		panic(err)
 	}
 	if err := redisCleanup(ctx); err != nil {
+		panic(err)
+	}
+	if err := rabbitCleanup(ctx); err != nil {
 		panic(err)
 	}
 
@@ -80,7 +92,16 @@ func TestMain(m *testing.M) {
 func newTestHandler() http.Handler {
 	mux := http.NewServeMux()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	controllers.NewAuthController(mux, testQueries, testCache, testJwtService, &mockEmailService{}, logger, "test-secret", "http://localhost", true)
+	cfg := Config{
+		RabbitMq: testRabbitMqCfg,
+		Application: struct {
+			Version  string
+			Endpoint string
+		}{
+			Endpoint: "http://localhost",
+		},
+	}
+	controllers.NewAuthController(mux, &cfg, testQueries, testCache, testJwtService, logger, "test-secret", true)
 	return middleware.Recover(logger, mux)
 }
 
@@ -184,4 +205,44 @@ func createTestRedis(ctx context.Context) (*RedisService, DBCleanupFunc, error) 
 		return testcontainers.TerminateContainer(ctr)
 	}
 	return svc, cleanup, nil
+}
+
+func createTestRabbitMQ(ctx context.Context) (RabbitMqConfig, DBCleanupFunc, error) {
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "rabbitmq:3-alpine",
+			ExposedPorts: []string{"5672/tcp"},
+			WaitingFor:   wait.ForListeningPort("5672/tcp"),
+		},
+		Started: true,
+	})
+	if err != nil {
+		return RabbitMqConfig{}, nil, err
+	}
+
+	host, err := ctr.Host(ctx)
+	if err != nil {
+		return RabbitMqConfig{}, nil, err
+	}
+	port, err := ctr.MappedPort(ctx, "5672/tcp")
+	if err != nil {
+		return RabbitMqConfig{}, nil, err
+	}
+
+	portNum, err := strconv.Atoi(port.Port())
+	if err != nil {
+		return RabbitMqConfig{}, nil, err
+	}
+
+	cfg := RabbitMqConfig{
+		Host:     host,
+		Username: "guest",
+		Password: "guest",
+		Port:     portNum,
+	}
+
+	cleanup := func(ctx context.Context) error {
+		return testcontainers.TerminateContainer(ctr)
+	}
+	return cfg, cleanup, nil
 }

@@ -37,6 +37,7 @@ bld/
 **/[Bb]in/
 **/bin\\Debug/
 **/internal/database/generated/
+/golang/emaildb/generated/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
