@@ -51,6 +51,8 @@ coverage-html:
 	@go test -coverprofile=coverage.out -coverpkg=./... ./cmd/controller_tests/...
 	@go tool cover -html=coverage.out
 
+POSTGRESQL_URL := postgres://admin:123456x%40X@localhost:5432/auth-test?sslmode=disable
+
 migrate-create:
 	@migrate create -ext sql -dir internal/database/migrations -seq $(n)
 
