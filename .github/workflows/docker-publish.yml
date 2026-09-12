@@ -255,6 +255,11 @@ jobs:
               -path /app/migrations \
               -database "postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@qex.postgres/auth?sslmode=disable" \
               up
+            docker run --rm --network=qex --entrypoint migrate \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${IMAGE_TAGS} \
+              -path /app/migrations \
+              -database "postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@qex.postgres/email?sslmode=disable" \
+              up
             docker compose -f docker-compose.yml up -d --remove-orphans
             docker image prune -a -f
             docker compose ps
