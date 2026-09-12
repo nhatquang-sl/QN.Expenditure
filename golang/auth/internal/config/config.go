@@ -52,7 +52,7 @@ func LoadJSONConfig() Config {
 		path = defaultConfigPath
 	}
 
-	cfg := sharedconfig.LoadJSON[Config](path, func(cfg *Config) {
+	cfg := sharedconfig.LoadJSON(path, func(cfg *Config) {
 		if cfg.TLSCertPath == "" {
 			cfg.TLSCertPath = defaultTLSCertPath
 		}
