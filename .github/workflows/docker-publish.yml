@@ -255,7 +255,7 @@ jobs:
               -path /app/migrations \
               -database "postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@qex.postgres/auth?sslmode=disable" \
               up
-            docker exec qex-qex.postgres-1 psql -U ${{ secrets.DB_USERNAME }} \
+            docker exec qex-qex.postgres-1 psql -U ${{ secrets.DB_USERNAME }} -d postgres \
               -c "SELECT 'CREATE DATABASE email' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'email')\gexec"
             docker run --rm --network=qex --entrypoint migrate \
               ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${IMAGE_TAGS} \
