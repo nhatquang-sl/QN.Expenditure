@@ -21,7 +21,11 @@ type RabbitMQService struct {
 
 func ConnectAmqp[T any](cfg RabbitMqConfig) (*RabbitMQService, error) {
 	queueName := reflect.TypeFor[T]().String()
-	address := fmt.Sprintf("amqp://%s:%s@%s:%d/", cfg.Username, cfg.Password, cfg.Host, cfg.Port)
+	port := cfg.Port
+	if port == 0 {
+		port = 5672
+	}
+	address := fmt.Sprintf("amqp://%s:%s@%s:%d/", cfg.Username, cfg.Password, cfg.Host, port)
 	conn, err := amqp.Dial(address)
 	if err != nil {
 		return nil, fmt.Errorf("rabbitmq connect: %w", err)
