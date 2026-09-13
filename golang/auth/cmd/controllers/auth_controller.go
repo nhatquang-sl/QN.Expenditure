@@ -43,7 +43,7 @@ func NewAuthController(mux *http.ServeMux, cfg *Config, db *dbsqlc.Queries, redi
 		confirmEmail: confirmemail.NewHandler(db, tokenSecret),
 		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
 		logout:       logout.NewHandler(db, jwtService, redisService),
-		getProfile:   getprofile.NewHandler(db, redisService),
+		getProfile:   getprofile.NewHandler(db, redisService, logger),
 		logger:       logger,
 		isDev:        isDev,
 	}

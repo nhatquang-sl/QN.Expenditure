@@ -52,10 +52,15 @@ func main() {
 	registerTicker := time.NewTicker(time.Duration(registerInterval) * time.Second)
 	defer registerTicker.Stop()
 
+	loginTicker := time.NewTicker(time.Duration(loginInterval) * time.Second)
+	defer loginTicker.Stop()
+
 	for {
 		select {
 		case <-registerTicker.C:
 			b.Register(ctx)
+		case <-loginTicker.C:
+			b.Login(ctx)
 		case <-ctx.Done():
 			logger.Info("auth_bot shutting down")
 			return

@@ -42,6 +42,118 @@ func (b *Bot) UserCount() int {
 	return len(b.users)
 }
 
+type loginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (b *Bot) Login(ctx context.Context) {
+	b.mu.Lock()
+	if len(b.users) == 0 {
+		b.mu.Unlock()
+		b.logger.WarnContext(ctx, "login: no registered users, skipping")
+		return
+	}
+	user := b.users[b.idx%len(b.users)]
+	b.idx++
+	b.mu.Unlock()
+
+	// Step 1: POST /login
+	body, _ := json.Marshal(loginRequest{Email: user.email, Password: user.password})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.baseURL+"/login", bytes.NewReader(body))
+	if err != nil {
+		b.logger.ErrorContext(ctx, "login: failed to build request", slog.Any("error", err))
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := b.httpClient.Do(req)
+	if err != nil {
+		b.logger.ErrorContext(ctx, "login: request failed", slog.Any("error", err))
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b.logger.WarnContext(ctx, "login: unexpected status",
+			slog.Int("status", resp.StatusCode),
+			slog.String("email", user.email),
+		)
+		return
+	}
+
+	var accessToken, refreshToken string
+	for _, c := range resp.Cookies() {
+		switch c.Name {
+		case "accessToken":
+			accessToken = c.Value
+		case "refreshToken":
+			refreshToken = c.Value
+		}
+	}
+	if accessToken == "" || refreshToken == "" {
+		b.logger.WarnContext(ctx, "login: missing tokens in response", slog.String("email", user.email))
+		return
+	}
+
+	// Step 2: POST /refresh-token
+	req, err = http.NewRequestWithContext(ctx, http.MethodPost, b.baseURL+"/refresh-token", nil)
+	if err != nil {
+		b.logger.ErrorContext(ctx, "refresh: failed to build request", slog.Any("error", err))
+		return
+	}
+	req.AddCookie(&http.Cookie{Name: "refreshToken", Value: refreshToken})
+
+	resp2, err := b.httpClient.Do(req)
+	if err != nil {
+		b.logger.ErrorContext(ctx, "refresh: request failed", slog.Any("error", err))
+		return
+	}
+	defer resp2.Body.Close()
+
+	if resp2.StatusCode != http.StatusOK {
+		b.logger.WarnContext(ctx, "refresh: unexpected status",
+			slog.Int("status", resp2.StatusCode),
+			slog.String("email", user.email),
+		)
+		return
+	}
+
+	for _, c := range resp2.Cookies() {
+		switch c.Name {
+		case "accessToken":
+			accessToken = c.Value
+		case "refreshToken":
+			refreshToken = c.Value
+		}
+	}
+
+	// Step 3: GET /profile
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, b.baseURL+"/profile", nil)
+	if err != nil {
+		b.logger.ErrorContext(ctx, "profile: failed to build request", slog.Any("error", err))
+		return
+	}
+	req.AddCookie(&http.Cookie{Name: "accessToken", Value: accessToken})
+
+	resp3, err := b.httpClient.Do(req)
+	if err != nil {
+		b.logger.ErrorContext(ctx, "profile: request failed", slog.Any("error", err))
+		return
+	}
+	defer resp3.Body.Close()
+
+	if resp3.StatusCode != http.StatusOK {
+		b.logger.WarnContext(ctx, "profile: unexpected status",
+			slog.Int("status", resp3.StatusCode),
+			slog.String("email", user.email),
+		)
+		return
+	}
+
+	b.logger.InfoContext(ctx, "login: cycle complete", slog.String("email", user.email))
+}
+
 type registerRequest struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`

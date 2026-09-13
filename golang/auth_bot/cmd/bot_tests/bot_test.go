@@ -18,9 +18,10 @@ import (
 )
 
 type capturedRequest struct {
-	method string
-	path   string
-	body   map[string]any
+	method  string
+	path    string
+	body    map[string]any
+	cookies map[string]string
 }
 
 type stubServer struct {
@@ -42,8 +43,13 @@ func (s *stubServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var body map[string]any
 	_ = json.Unmarshal(bodyBytes, &body)
 
+	cookies := make(map[string]string)
+	for _, c := range r.Cookies() {
+		cookies[c.Name] = c.Value
+	}
+
 	s.mu.Lock()
-	s.calls = append(s.calls, capturedRequest{method: r.Method, path: r.URL.Path, body: body})
+	s.calls = append(s.calls, capturedRequest{method: r.Method, path: r.URL.Path, body: body, cookies: cookies})
 	s.mu.Unlock()
 
 	key := r.Method + " " + r.URL.Path
@@ -118,4 +124,114 @@ func testRegisterNon201SkipsAccumulation(t *testing.T) {
 
 	require.Len(t, stub.captured(), 1)
 	assert.Equal(t, 0, b.UserCount())
+}
+
+func TestLogin(t *testing.T) {
+	t.Run("NoUsersSkips", testLoginNoUsersSkips)
+	t.Run("Success", testLoginSuccess)
+	t.Run("LoginFail", testLoginLoginFail)
+	t.Run("RefreshFail", testLoginRefreshFail)
+}
+
+// testLoginNoUsersSkips: no registered users → Login makes zero HTTP calls.
+func testLoginNoUsersSkips(t *testing.T) {
+	t.Helper()
+	stub, srv := newStubServer(t)
+	b := newBot(t, srv)
+
+	b.Login(context.Background())
+
+	assert.Empty(t, stub.captured())
+}
+
+// testLoginSuccess: full cycle — login → refresh → profile — all three calls made in order
+// with the correct cookies forwarded at each step.
+func testLoginSuccess(t *testing.T) {
+	t.Helper()
+	stub, srv := newStubServer(t)
+
+	stub.handlers["POST /register"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}
+	stub.handlers["POST /login"] = func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "accessToken", Value: "access-1"})
+		http.SetCookie(w, &http.Cookie{Name: "refreshToken", Value: "refresh-1"})
+		w.WriteHeader(http.StatusOK)
+	}
+	stub.handlers["POST /refresh-token"] = func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "accessToken", Value: "access-2"})
+		http.SetCookie(w, &http.Cookie{Name: "refreshToken", Value: "refresh-2"})
+		w.WriteHeader(http.StatusOK)
+	}
+	stub.handlers["GET /profile"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	b := newBot(t, srv)
+	b.Register(context.Background())
+	b.Login(context.Background())
+
+	calls := stub.captured()
+	require.Len(t, calls, 4) // register + login + refresh + profile
+
+	login := calls[1]
+	assert.Equal(t, "POST", login.method)
+	assert.Equal(t, "/login", login.path)
+
+	refresh := calls[2]
+	assert.Equal(t, "POST", refresh.method)
+	assert.Equal(t, "/refresh-token", refresh.path)
+	assert.Equal(t, "refresh-1", refresh.cookies["refreshToken"])
+
+	profile := calls[3]
+	assert.Equal(t, "GET", profile.method)
+	assert.Equal(t, "/profile", profile.path)
+	assert.Equal(t, "access-2", profile.cookies["accessToken"]) // uses refreshed token
+}
+
+// testLoginLoginFail: login returns non-200 → only one call made, no refresh or profile.
+func testLoginLoginFail(t *testing.T) {
+	t.Helper()
+	stub, srv := newStubServer(t)
+
+	stub.handlers["POST /register"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}
+	stub.handlers["POST /login"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}
+
+	b := newBot(t, srv)
+	b.Register(context.Background())
+	b.Login(context.Background())
+
+	calls := stub.captured()
+	require.Len(t, calls, 2) // register + login only
+	assert.Equal(t, "/login", calls[1].path)
+}
+
+// testLoginRefreshFail: login succeeds but refresh returns non-200 → no profile call.
+func testLoginRefreshFail(t *testing.T) {
+	t.Helper()
+	stub, srv := newStubServer(t)
+
+	stub.handlers["POST /register"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}
+	stub.handlers["POST /login"] = func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "accessToken", Value: "access-1"})
+		http.SetCookie(w, &http.Cookie{Name: "refreshToken", Value: "refresh-1"})
+		w.WriteHeader(http.StatusOK)
+	}
+	stub.handlers["POST /refresh-token"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}
+
+	b := newBot(t, srv)
+	b.Register(context.Background())
+	b.Login(context.Background())
+
+	calls := stub.captured()
+	require.Len(t, calls, 3) // register + login + refresh only
+	assert.Equal(t, "/refresh-token", calls[2].path)
 }
