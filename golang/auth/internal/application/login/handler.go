@@ -55,12 +55,24 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	user, err := h.db.GetUserByNormalizedEmail(ctx, strings.ToUpper(cmd.Email))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			h.logger.WarnContext(ctx, "login failed",
+				slog.String("email", cmd.Email),
+				slog.String("ipAddress", cmd.IPAddress),
+				slog.String("userAgent", cmd.UserAgent),
+				slog.String("reason", "user not found"),
+			)
 			return Result{}, NewUnauthorized("invalid credentials")
 		}
 		return Result{}, err
 	}
 
 	if !verifyPassword(cmd.Password, user.PasswordHash) {
+		h.logger.WarnContext(ctx, "login failed",
+			slog.String("email", cmd.Email),
+			slog.String("ipAddress", cmd.IPAddress),
+			slog.String("userAgent", cmd.UserAgent),
+			slog.String("reason", "wrong password"),
+		)
 		return Result{}, NewUnauthorized("invalid credentials")
 	}
 
@@ -104,6 +116,12 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	}); err != nil {
 		h.logger.ErrorContext(ctx, "failed to update user session tokens", slog.Any("error", err))
 	}
+
+	h.logger.InfoContext(ctx, "login success",
+		slog.String("email", user.Email),
+		slog.String("ipAddress", cmd.IPAddress),
+		slog.String("userAgent", cmd.UserAgent),
+	)
 
 	return Result{
 		Id:                  user.Id,
