@@ -10,6 +10,7 @@ import (
 
 	"auth/cmd/middleware"
 	"auth/cmd/respond"
+	confirmemail "auth/internal/application/confirm_email"
 	getprofile "auth/internal/application/get_profile"
 	"auth/internal/application/login"
 	"auth/internal/application/logout"
@@ -27,6 +28,7 @@ import (
 type AuthController struct {
 	login        Handler[login.Command, login.Result]
 	register     Handler[register.Command, register.Result]
+	confirmEmail Handler[confirmemail.Command, confirmemail.Result]
 	refreshToken Handler[refreshtoken.Command, refreshtoken.Result]
 	logout       Handler[logout.Command, logout.Result]
 	getProfile   Handler[getprofile.Query, getprofile.Result]
@@ -38,6 +40,7 @@ func NewAuthController(mux *http.ServeMux, cfg *Config, db *dbsqlc.Queries, redi
 	c := &AuthController{
 		login:        login.NewHandler(db, jwtService, logger),
 		register:     register.NewHandler(db, logger, &cfg.RabbitMq, tokenSecret, cfg.Application.Endpoint),
+		confirmEmail: confirmemail.NewHandler(db, tokenSecret),
 		refreshToken: refreshtoken.NewHandler(db, jwtService, logger),
 		logout:       logout.NewHandler(db, jwtService, redisService),
 		getProfile:   getprofile.NewHandler(db, redisService),
@@ -47,6 +50,7 @@ func NewAuthController(mux *http.ServeMux, cfg *Config, db *dbsqlc.Queries, redi
 	auth := middleware.Auth(jwtService, redisService, logger)
 	mux.HandleFunc("POST /login", c.handleLogin)
 	mux.HandleFunc("POST /register", c.handleRegister)
+	mux.HandleFunc("GET /confirm-email", c.handleConfirmEmail)
 	mux.HandleFunc("POST /refresh-token", c.handleRefreshToken)
 	mux.HandleFunc("POST /logout", auth(c.handleLogout))
 	mux.HandleFunc("GET /profile", auth(c.handleGetProfile))
@@ -155,6 +159,16 @@ func (c *AuthController) clearTokenCookies(w http.ResponseWriter) {
 			SameSite: sameSite,
 		})
 	}
+}
+
+func (c *AuthController) handleConfirmEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		respond.NewResponse(w, c.logger).JSON(http.StatusBadRequest, nil, NewBadRequest("missing token"))
+		return
+	}
+	_, err := c.confirmEmail.Handle(r.Context(), confirmemail.Command{Token: token})
+	respond.NewResponse(w, c.logger).JSON(http.StatusOK, nil, err)
 }
 
 func clientIP(r *http.Request) string {

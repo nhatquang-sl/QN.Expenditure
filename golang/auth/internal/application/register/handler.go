@@ -2,7 +2,6 @@ package register
 
 import (
 	"context"
-	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -10,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	. "auth/internal/application/shared"
 	dbsqlc "auth/internal/database/generated"
@@ -102,8 +100,8 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, err
 	}
 
-	token := generateConfirmToken(id, h.tokenSecret)
-	confirmURL := fmt.Sprintf("%s/api/auth/confirm-email?token=%s", h.baseURL, token)
+	token := GenerateConfirmToken(id, h.tokenSecret)
+	confirmURL := fmt.Sprintf("%s/confirm-email?token=%s", h.baseURL, token)
 
 	if err := h.emailService.Send(ctx, EmailMessage{
 		UserId:    id,
@@ -155,17 +153,3 @@ func hashPassword(password string) (string, error) {
 	return base64.StdEncoding.EncodeToString(buf), nil
 }
 
-// generateConfirmToken creates a stateless HMAC-SHA256 email confirmation token.
-// Format: base64url(payload) + "." + base64url(HMAC-SHA256(payload, secret))
-// Payload: "<userID>:<expiry_unix>" with a 24-hour expiry.
-func generateConfirmToken(userID string, secret []byte) string {
-	expiry := time.Now().UTC().Add(24 * time.Hour).Unix()
-	payload := fmt.Sprintf("%s:%d", userID, expiry)
-	payloadEnc := base64.RawURLEncoding.EncodeToString([]byte(payload))
-
-	mac := hmac.New(sha256.New, secret)
-	mac.Write([]byte(payloadEnc))
-	sig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-
-	return payloadEnc + "." + sig
-}

@@ -58,7 +58,7 @@ Each slice is an independent unit of work delivered in sequence:
 | 2 | Login | Command | ✅ Done |
 | 3 | RefreshToken | Command | ✅ Done |
 | 4 | Logout | Command | ✅ Done |
-| 5 | ConfirmEmail | Command | — |
+| 5 | ConfirmEmail | Command | ✅ Done |
 | 6 | ResendEmailConfirmation | Command | — |
 | 7 | ForgotPassword | Command | — |
 | 8 | ResetPassword | Command | — |
