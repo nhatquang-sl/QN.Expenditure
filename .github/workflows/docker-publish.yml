@@ -181,13 +181,44 @@ jobs:
           build-args: |
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
+  build-go-auth-bot:
+    if: ${{ !contains(github.ref_name, 'deploy') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_BOT }}
+      - name: ⚙️Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: 🔑Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: 🙏[go-auth-bot]Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          file: 'golang/auth_bot/Dockerfile'
+          provenance: false
+
   deploy-docker-to-vps:
     runs-on: ubuntu-latest
-    needs: [build-api, build-ui, build-go-auth-api, build-go-email-worker, build-go-email-consumer]
+    needs: [build-api, build-ui, build-go-auth-api, build-go-email-worker, build-go-email-consumer, build-go-auth-bot]
     # Run deploy in two cases:
     # 1) Tag contains 'deploy' (deploy-only tag; build job can be skipped)
     # 2) Non-deploy tag where all build jobs completed successfully
-    if: ${{ always() && (contains(github.ref_name, 'deploy') || (needs.build-api.result == 'success' && needs.build-ui.result == 'success' && needs.build-go-auth-api.result == 'success' && needs.build-go-email-worker.result == 'success' && needs.build-go-email-consumer.result == 'success')) }}
+    if: ${{ always() && (contains(github.ref_name, 'deploy') || (needs.build-api.result == 'success' && needs.build-ui.result == 'success' && needs.build-go-auth-api.result == 'success' && needs.build-go-email-worker.result == 'success' && needs.build-go-email-consumer.result == 'success' && needs.build-go-auth-bot.result == 'success')) }}
     steps:
       # Derive IMAGE_TAGS from pushed tag by removing 'deploy' marker.
       # Examples:
@@ -244,6 +275,7 @@ jobs:
             echo "GO_AUTH_API_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_API }}:${IMAGE_TAGS}" >> .env
             echo "GO_EMAIL_WORKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${IMAGE_TAGS}" >> .env
             echo "GO_EMAIL_CONSUMER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_CONSUMER }}:${IMAGE_TAGS}" >> .env
+            echo "GO_AUTH_BOT_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_BOT }}:${IMAGE_TAGS}" >> .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
