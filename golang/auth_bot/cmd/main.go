@@ -12,6 +12,8 @@ import (
 
 	"auth_bot/internal/bot"
 	"auth_bot/internal/config"
+
+	shareddb "qn.expenditure/shared/database"
 )
 
 func main() {
@@ -22,7 +24,7 @@ func main() {
 
 	registerInterval := cfg.AuthBot.RegisterIntervalSeconds
 	if registerInterval <= 0 {
-		registerInterval = 60
+		registerInterval = 450 // 450 s ≈ 7.5 min — maximises a 6,000-email/month quota without exceeding it in any calendar month
 	}
 	loginInterval := cfg.AuthBot.LoginIntervalSeconds
 	if loginInterval <= 0 {
@@ -45,6 +47,17 @@ func main() {
 		slog.Int("registerIntervalSeconds", registerInterval),
 		slog.Int("loginIntervalSeconds", loginInterval),
 	)
+
+	// Seed from DB so existing bot users survive restarts.
+	if cfg.AuthBot.PGAuthConnection != "" {
+		db, err := shareddb.OpenPostgres(cfg.AuthBot.PGAuthConnection)
+		if err != nil {
+			logger.Error("failed to connect to auth db for seeding", slog.Any("error", err))
+		} else {
+			b.Seed(ctx, db)
+			db.Close()
+		}
+	}
 
 	// Run one register immediately so at least one user is available for the login loop.
 	b.Register(ctx)

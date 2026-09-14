@@ -101,7 +101,7 @@ func testRegisterSuccess(t *testing.T) {
 
 		email, ok := c.body["email"].(string)
 		require.True(t, ok, "email field must be a string")
-		assert.True(t, strings.HasPrefix(email, "bot+"), "email should start with bot+")
+		assert.True(t, strings.HasPrefix(email, "bot"), "email should start with bot")
 		assert.True(t, strings.HasSuffix(email, "@yopmail.com"), "email should end with @yopmail.com")
 		assert.Equal(t, "TestP@ss123!", c.body["password"])
 		assert.Equal(t, "Bot", c.body["firstName"])
@@ -131,6 +131,7 @@ func TestLogin(t *testing.T) {
 	t.Run("Success", testLoginSuccess)
 	t.Run("LoginFail", testLoginLoginFail)
 	t.Run("RefreshFail", testLoginRefreshFail)
+	t.Run("MultiUser", testLoginMultiUser)
 }
 
 // testLoginNoUsersSkips: no registered users → Login makes zero HTTP calls.
@@ -210,7 +211,8 @@ func testLoginLoginFail(t *testing.T) {
 	assert.Equal(t, "/login", calls[1].path)
 }
 
-// testLoginRefreshFail: login succeeds but refresh returns non-200 → no profile call.
+// testLoginRefreshFail: login succeeds but refresh returns non-200 → profile still called with original access token.
+// User at index 0: 0%3==0 → refresh attempted; 0%2==0 → profile called regardless.
 func testLoginRefreshFail(t *testing.T) {
 	t.Helper()
 	stub, srv := newStubServer(t)
@@ -226,12 +228,72 @@ func testLoginRefreshFail(t *testing.T) {
 	stub.handlers["POST /refresh-token"] = func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}
+	stub.handlers["GET /profile"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
 
 	b := newBot(t, srv)
 	b.Register(context.Background())
 	b.Login(context.Background())
 
 	calls := stub.captured()
-	require.Len(t, calls, 3) // register + login + refresh only
+	require.Len(t, calls, 4) // register + login + refresh + profile
 	assert.Equal(t, "/refresh-token", calls[2].path)
+	assert.Equal(t, "/profile", calls[3].path)
+	assert.Equal(t, "access-1", calls[3].cookies["accessToken"]) // original token used (refresh failed)
+}
+
+// testLoginMultiUser: three users registered, one Login() call → all three receive /login,
+// index-based conditions determine which get /refresh-token and /profile.
+// i=0: 0%3==0 → refresh; 0%2==0 → profile
+// i=1: 1%3!=0 → no refresh; 1%2!=0 → no profile
+// i=2: 2%3!=0 → no refresh; 2%2==0 → profile
+func testLoginMultiUser(t *testing.T) {
+	t.Helper()
+	stub, srv := newStubServer(t)
+
+	stub.handlers["POST /register"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}
+	stub.handlers["POST /login"] = func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "accessToken", Value: "at"})
+		http.SetCookie(w, &http.Cookie{Name: "refreshToken", Value: "rt"})
+		w.WriteHeader(http.StatusOK)
+	}
+	stub.handlers["POST /refresh-token"] = func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "accessToken", Value: "at2"})
+		http.SetCookie(w, &http.Cookie{Name: "refreshToken", Value: "rt2"})
+		w.WriteHeader(http.StatusOK)
+	}
+	stub.handlers["GET /profile"] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	b := newBot(t, srv)
+	b.Register(context.Background())
+	b.Register(context.Background())
+	b.Register(context.Background())
+	require.Equal(t, 3, b.UserCount())
+
+	b.Login(context.Background())
+
+	calls := stub.captured()
+	// 3 registers + 3 logins + 1 refresh (i=0) + 2 profiles (i=0, i=2) = 9
+	require.Len(t, calls, 9)
+
+	var loginPaths, refreshPaths, profilePaths []capturedRequest
+	for _, c := range calls[3:] { // skip the 3 register calls
+		switch {
+		case c.path == "/login":
+			loginPaths = append(loginPaths, c)
+		case c.path == "/refresh-token":
+			refreshPaths = append(refreshPaths, c)
+		case c.path == "/profile":
+			profilePaths = append(profilePaths, c)
+		}
+	}
+
+	assert.Len(t, loginPaths, 3, "all 3 users should be logged in")
+	assert.Len(t, refreshPaths, 1, "only user at index 0 (0%%3==0) gets refresh")
+	assert.Len(t, profilePaths, 2, "users at index 0 and 2 (i%%2==0) get profile")
 }

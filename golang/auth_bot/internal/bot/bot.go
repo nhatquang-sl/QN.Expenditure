@@ -3,6 +3,7 @@ package bot
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -19,7 +20,6 @@ type botUser struct {
 type Bot struct {
 	mu         sync.Mutex
 	users      []botUser
-	idx        int
 	baseURL    string
 	password   string
 	httpClient *http.Client
@@ -49,28 +49,46 @@ type loginRequest struct {
 
 func (b *Bot) Login(ctx context.Context) {
 	b.mu.Lock()
-	if len(b.users) == 0 {
-		b.mu.Unlock()
+	users := make([]botUser, len(b.users))
+	copy(users, b.users)
+	b.mu.Unlock()
+
+	if len(users) == 0 {
 		b.logger.WarnContext(ctx, "login: no registered users, skipping")
 		return
 	}
-	user := b.users[b.idx%len(b.users)]
-	b.idx++
-	b.mu.Unlock()
 
-	// Step 1: POST /login
+	for i, user := range users {
+		accessToken, refreshToken := b.doLogin(ctx, user)
+		if accessToken == "" {
+			continue
+		}
+
+		if i%3 == 0 {
+			if newAccess, _ := b.doRefresh(ctx, user, refreshToken); newAccess != "" {
+				accessToken = newAccess
+			}
+		}
+
+		if i%2 == 0 {
+			b.doProfile(ctx, user, accessToken)
+		}
+	}
+}
+
+func (b *Bot) doLogin(ctx context.Context, user botUser) (accessToken, refreshToken string) {
 	body, _ := json.Marshal(loginRequest{Email: user.email, Password: user.password})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.baseURL+"/login", bytes.NewReader(body))
 	if err != nil {
 		b.logger.ErrorContext(ctx, "login: failed to build request", slog.Any("error", err))
-		return
+		return "", ""
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := b.httpClient.Do(req)
 	if err != nil {
 		b.logger.ErrorContext(ctx, "login: request failed", slog.Any("error", err))
-		return
+		return "", ""
 	}
 	defer resp.Body.Close()
 
@@ -79,10 +97,9 @@ func (b *Bot) Login(ctx context.Context) {
 			slog.Int("status", resp.StatusCode),
 			slog.String("email", user.email),
 		)
-		return
+		return "", ""
 	}
 
-	var accessToken, refreshToken string
 	for _, c := range resp.Cookies() {
 		switch c.Name {
 		case "accessToken":
@@ -91,67 +108,105 @@ func (b *Bot) Login(ctx context.Context) {
 			refreshToken = c.Value
 		}
 	}
+
 	if accessToken == "" || refreshToken == "" {
 		b.logger.WarnContext(ctx, "login: missing tokens in response", slog.String("email", user.email))
-		return
+		return "", ""
 	}
 
-	// Step 2: POST /refresh-token
-	req, err = http.NewRequestWithContext(ctx, http.MethodPost, b.baseURL+"/refresh-token", nil)
+	return accessToken, refreshToken
+}
+
+func (b *Bot) doRefresh(ctx context.Context, user botUser, refreshToken string) (accessToken, newRefreshToken string) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.baseURL+"/refresh-token", nil)
 	if err != nil {
 		b.logger.ErrorContext(ctx, "refresh: failed to build request", slog.Any("error", err))
-		return
+		return "", ""
 	}
 	req.AddCookie(&http.Cookie{Name: "refreshToken", Value: refreshToken})
 
-	resp2, err := b.httpClient.Do(req)
+	resp, err := b.httpClient.Do(req)
 	if err != nil {
 		b.logger.ErrorContext(ctx, "refresh: request failed", slog.Any("error", err))
-		return
+		return "", ""
 	}
-	defer resp2.Body.Close()
+	defer resp.Body.Close()
 
-	if resp2.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 		b.logger.WarnContext(ctx, "refresh: unexpected status",
-			slog.Int("status", resp2.StatusCode),
+			slog.Int("status", resp.StatusCode),
 			slog.String("email", user.email),
 		)
-		return
+		return "", ""
 	}
 
-	for _, c := range resp2.Cookies() {
+	for _, c := range resp.Cookies() {
 		switch c.Name {
 		case "accessToken":
 			accessToken = c.Value
 		case "refreshToken":
-			refreshToken = c.Value
+			newRefreshToken = c.Value
 		}
 	}
 
-	// Step 3: GET /profile
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, b.baseURL+"/profile", nil)
+	return accessToken, newRefreshToken
+}
+
+func (b *Bot) doProfile(ctx context.Context, user botUser, accessToken string) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, b.baseURL+"/profile", nil)
 	if err != nil {
 		b.logger.ErrorContext(ctx, "profile: failed to build request", slog.Any("error", err))
 		return
 	}
 	req.AddCookie(&http.Cookie{Name: "accessToken", Value: accessToken})
 
-	resp3, err := b.httpClient.Do(req)
+	resp, err := b.httpClient.Do(req)
 	if err != nil {
 		b.logger.ErrorContext(ctx, "profile: request failed", slog.Any("error", err))
 		return
 	}
-	defer resp3.Body.Close()
+	defer resp.Body.Close()
 
-	if resp3.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 		b.logger.WarnContext(ctx, "profile: unexpected status",
-			slog.Int("status", resp3.StatusCode),
+			slog.Int("status", resp.StatusCode),
 			slog.String("email", user.email),
 		)
 		return
 	}
 
 	b.logger.InfoContext(ctx, "login: cycle complete", slog.String("email", user.email))
+}
+
+// Seed pre-populates the user list from the database with existing bot accounts
+// (email LIKE 'bot+%@yopmail.com'). Called once on startup so the login loop
+// has users available immediately, even after a restart.
+func (b *Bot) Seed(ctx context.Context, db *sql.DB) {
+	rows, err := db.QueryContext(ctx, `SELECT "Email" FROM "Users" WHERE "Email" LIKE 'bot%@yopmail.com'`)
+	if err != nil {
+		b.logger.ErrorContext(ctx, "seed: failed to query bot users", slog.Any("error", err))
+		return
+	}
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		var email string
+		if err := rows.Scan(&email); err != nil {
+			b.logger.ErrorContext(ctx, "seed: failed to scan email", slog.Any("error", err))
+			continue
+		}
+		b.mu.Lock()
+		b.users = append(b.users, botUser{email: email, password: b.password})
+		b.mu.Unlock()
+		count++
+	}
+
+	if err := rows.Err(); err != nil {
+		b.logger.ErrorContext(ctx, "seed: row iteration error", slog.Any("error", err))
+	}
+
+	b.logger.InfoContext(ctx, "seed: loaded bot users from db", slog.Int("count", count))
 }
 
 type registerRequest struct {
@@ -162,7 +217,7 @@ type registerRequest struct {
 }
 
 func (b *Bot) Register(ctx context.Context) {
-	email := fmt.Sprintf("bot+%d@yopmail.com", time.Now().UnixMilli())
+	email := fmt.Sprintf("bot%d@yopmail.com", time.Now().UnixNano())
 	body, _ := json.Marshal(registerRequest{
 		Email:     email,
 		Password:  b.password,
