@@ -1,20 +1,44 @@
 package database
 
 import (
+	"context"
 	"database/sql"
+	"database/sql/driver"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/XSAM/otelsql"
 	_ "github.com/lib/pq"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
+
+// sqlcOperationName extracts the operation name from sqlc-generated SQL.
+// sqlc always prepends: -- name: <OpName> :one/:exec/etc.
+func sqlcOperationName(query string) string {
+	const prefix = "-- name: "
+	if !strings.HasPrefix(query, prefix) {
+		return ""
+	}
+	rest := query[len(prefix):]
+	if i := strings.IndexByte(rest, ' '); i > 0 {
+		return rest[:i]
+	}
+	return ""
+}
 
 func OpenPostgres(connectionString string) (*sql.DB, error) {
 	conn, err := otelsql.Open("postgres", connectionString,
 		otelsql.WithAttributes(semconv.DBSystemPostgreSQL),
 		otelsql.WithSpanOptions(otelsql.SpanOptions{
 			OmitConnResetSession: true,
+		}),
+		otelsql.WithAttributesGetter(func(_ context.Context, _ otelsql.Method, query string, _ []driver.NamedValue) []attribute.KeyValue {
+			if name := sqlcOperationName(query); name != "" {
+				return []attribute.KeyValue{attribute.String("db.sqlc.operation", name)}
+			}
+			return nil
 		}),
 	)
 	if err != nil {
