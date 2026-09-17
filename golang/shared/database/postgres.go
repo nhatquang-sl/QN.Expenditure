@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/XSAM/otelsql"
 	_ "github.com/lib/pq"
@@ -19,6 +20,18 @@ func OpenPostgres(connectionString string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Connection pool limits — shared Postgres has max_connections=100 across 4 services.
+	// 4 services × 25 = 100 theoretical max; in practice they never all peak simultaneously.
+	//
+	// SetMaxOpenConns  25   caps connections per service; prevents unbounded bursts under load
+	// SetMaxIdleConns   5   keeps a small warm pool without holding all 25 open when quiet
+	// ConnMaxLifetime  30m  recycles connections periodically; prevents silent stale connections
+	// ConnMaxIdleTime   5m  releases connections when load drops (important for bursty bot traffic)
+	conn.SetMaxOpenConns(25)
+	conn.SetMaxIdleConns(5)
+	conn.SetConnMaxLifetime(30 * time.Minute)
+	conn.SetConnMaxIdleTime(5 * time.Minute)
 
 	if err = conn.Ping(); err != nil {
 		return nil, err
