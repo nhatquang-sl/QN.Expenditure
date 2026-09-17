@@ -13,8 +13,7 @@ import (
 )
 
 type botUser struct {
-	email    string
-	password string
+	email string
 }
 
 type Bot struct {
@@ -58,26 +57,32 @@ func (b *Bot) Login(ctx context.Context) {
 		return
 	}
 
+	var wg sync.WaitGroup
 	for i, user := range users {
-		accessToken, refreshToken := b.doLogin(ctx, user)
-		if accessToken == "" {
-			continue
-		}
-
-		if i%3 == 0 {
-			if newAccess, _ := b.doRefresh(ctx, user, refreshToken); newAccess != "" {
-				accessToken = newAccess
+		wg.Add(1)
+		go func(i int, user botUser) {
+			defer wg.Done()
+			accessToken, refreshToken := b.doLogin(ctx, user)
+			if accessToken == "" {
+				return
 			}
-		}
 
-		if i%2 == 0 {
-			b.doProfile(ctx, user, accessToken)
-		}
+			if i%3 == 0 {
+				if newAccess, _ := b.doRefresh(ctx, user, refreshToken); newAccess != "" {
+					accessToken = newAccess
+				}
+			}
+
+			if i%2 == 0 {
+				b.doProfile(ctx, user, accessToken)
+			}
+		}(i, user)
 	}
+	wg.Wait()
 }
 
 func (b *Bot) doLogin(ctx context.Context, user botUser) (accessToken, refreshToken string) {
-	body, _ := json.Marshal(loginRequest{Email: user.email, Password: user.password})
+	body, _ := json.Marshal(loginRequest{Email: user.email, Password: b.password})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.baseURL+"/login", bytes.NewReader(body))
 	if err != nil {
 		b.logger.ErrorContext(ctx, "login: failed to build request", slog.Any("error", err))
@@ -197,7 +202,7 @@ func (b *Bot) Seed(ctx context.Context, db *sql.DB) {
 			continue
 		}
 		b.mu.Lock()
-		b.users = append(b.users, botUser{email: email, password: b.password})
+		b.users = append(b.users, botUser{email: email})
 		b.mu.Unlock()
 		count++
 	}
@@ -248,7 +253,7 @@ func (b *Bot) Register(ctx context.Context) {
 	}
 
 	b.mu.Lock()
-	b.users = append(b.users, botUser{email: email, password: b.password})
+	b.users = append(b.users, botUser{email: email})
 	b.mu.Unlock()
 
 	b.logger.InfoContext(ctx, "register: success", slog.String("email", email))
