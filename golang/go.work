@@ -7,4 +7,5 @@ use (
 	./email_worker
 	./emaildb
 	./shared
+	./trading_bot
 )

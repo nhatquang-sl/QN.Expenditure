@@ -264,6 +264,22 @@ When reviewing or writing code, check:
 4. Create controller endpoint in WebAPI
 5. Regenerate TypeScript API client: `npm run generate-api-client`
 
+### Creating a New Go Service (qex.goapi, qex.auth-bot, etc.)
+
+Every Go service that calls `OpenPostgres` (`golang/shared/database/postgres.go`) draws from the shared Postgres connection budget:
+
+```
+Postgres max_connections = number_of_services × SetMaxOpenConns + headroom
+```
+
+Current values: `SetMaxOpenConns=25` per service, `max_connections=200` in docker-compose.
+
+**When adding a new Go service:**
+1. Count total services that call `OpenPostgres` (currently: `qex.goapi`, `qex.auth-bot`, `qex.email-consumer`, `qex.email-worker`)
+2. Verify: `new_total × 25 ≤ max_connections - 10` (keep at least 10 for headroom/superuser)
+3. If the budget is exceeded, raise `max_connections` in `credentials/qex/docker-compose.yml` under `qex.postgres → command: postgres -c max_connections=N`
+4. Update the comment in that file with the new service count
+
 ## Anti-Patterns to Avoid
 
 ### React
