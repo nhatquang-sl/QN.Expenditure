@@ -23,7 +23,7 @@ func main() {
 	cfg := config.LoadJSONConfig()
 
 	registerInterval := cfg.AuthBot.RegisterIntervalSeconds
-	if registerInterval <= 0 {
+	if registerInterval == 0 {
 		registerInterval = 450 // 450 s ≈ 7.5 min — maximises a 6,000-email/month quota without exceeding it in any calendar month
 	}
 	loginInterval := cfg.AuthBot.LoginIntervalSeconds
@@ -32,7 +32,7 @@ func main() {
 	}
 
 	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 25 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // internal Docker network, self-signed cert
 		},
@@ -59,18 +59,21 @@ func main() {
 		}
 	}
 
-	// Run one register immediately so at least one user is available for the login loop.
-	b.Register(ctx)
-
-	registerTicker := time.NewTicker(time.Duration(registerInterval) * time.Second)
-	defer registerTicker.Stop()
+	// Register ticker — nil channel never fires, so register is effectively disabled when registerInterval < 0.
+	var registerC <-chan time.Time
+	if registerInterval > 0 {
+		b.Register(ctx) // one immediate registration before the ticker starts
+		t := time.NewTicker(time.Duration(registerInterval) * time.Second)
+		defer t.Stop()
+		registerC = t.C
+	}
 
 	loginTicker := time.NewTicker(time.Duration(loginInterval) * time.Second)
 	defer loginTicker.Stop()
 
 	for {
 		select {
-		case <-registerTicker.C:
+		case <-registerC:
 			b.Register(ctx)
 		case <-loginTicker.C:
 			b.Login(ctx)
