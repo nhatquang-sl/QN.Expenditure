@@ -76,8 +76,26 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, NewUnauthorized("invalid credentials")
 	}
 
+	// Decouple session writes from the inbound request context.
+	//
+	// Background: a companion load-generator (qex.auth-bot) fires ~777 logins
+	// simultaneously every 30 s. The bot's HTTP client has a 25 s timeout that
+	// starts the moment the request is sent — not when the server begins
+	// processing it. Under the burst, all goroutines compete for CPU to run
+	// PBKDF2 (deliberately expensive: ~300 ms per call in isolation, but much
+	// longer when hundreds run concurrently). A late-queue request may not
+	// finish PBKDF2 until t≈22 s; the bot's 25 s timeout fires before the
+	// subsequent DB writes complete, the TCP connection is reset, and Go's
+	// net/http immediately cancels r.Context(). The session row is then aborted
+	// with context.Canceled even though the user was fully authenticated.
+	//
+	// Fix: once credentials are verified, switch to an independent context so a
+	// client disconnect cannot abort an already-successful auth's session write.
+	writeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	// Insert first to obtain the DB-generated Id, which is embedded as TokenId in the JWT.
-	historyId, err := h.db.CreateUserSession(ctx, dbsqlc.CreateUserSessionParams{
+	historyId, err := h.db.CreateUserSession(writeCtx, dbsqlc.CreateUserSessionParams{
 		UserId:       user.Id,
 		IpAddress:    cmd.IPAddress,
 		UserAgent:    cmd.UserAgent,
@@ -90,7 +108,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		h.logger.ErrorContext(ctx, "failed to create user session", slog.Any("error", err))
 	}
 
-	roles, err := h.db.GetUserRoles(ctx, user.Id)
+	roles, err := h.db.GetUserRoles(writeCtx, user.Id)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "failed to fetch user roles", slog.Any("error", err))
 		roles = []string{}
@@ -109,7 +127,7 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, err
 	}
 
-	if err := h.db.UpdateUserSessionTokens(ctx, dbsqlc.UpdateUserSessionTokensParams{
+	if err := h.db.UpdateUserSessionTokens(writeCtx, dbsqlc.UpdateUserSessionTokensParams{
 		Id:           historyId,
 		AccessToken:  tokens.AccessToken,
 		RefreshToken: tokens.RefreshToken,
