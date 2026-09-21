@@ -27,7 +27,7 @@ func main() {
 		registerInterval = 450 // 450 s ≈ 7.5 min — maximises a 6,000-email/month quota without exceeding it in any calendar month
 	}
 	loginInterval := cfg.AuthBot.LoginIntervalSeconds
-	if loginInterval <= 0 {
+	if loginInterval == 0 {
 		loginInterval = 30
 	}
 
@@ -68,14 +68,20 @@ func main() {
 		registerC = t.C
 	}
 
-	loginTicker := time.NewTicker(time.Duration(loginInterval) * time.Second)
-	defer loginTicker.Stop()
+	// Login ticker — nil channel never fires, so login is effectively disabled when loginInterval < 0.
+	var loginC <-chan time.Time
+	if loginInterval > 0 {
+		b.Login(ctx) // one immediate login before the ticker starts
+		lt := time.NewTicker(time.Duration(loginInterval) * time.Second)
+		defer lt.Stop()
+		loginC = lt.C
+	}
 
 	for {
 		select {
 		case <-registerC:
 			b.Register(ctx)
-		case <-loginTicker.C:
+		case <-loginC:
 			b.Login(ctx)
 		case <-ctx.Done():
 			logger.Info("auth_bot shutting down")
