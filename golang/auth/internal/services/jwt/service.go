@@ -78,12 +78,10 @@ func (s *Service) ValidateRefreshToken(tokenStr string) (*UserClaims, error) {
 
 func (s *Service) sign(user UserClaims, secret string, expires time.Time, rte int64, tokenType string, roles []string) (string, error) {
 	claims := authClaims{
-		RegisteredClaims: RegisteredClaims{
-			Issuer:    s.cfg.Issuer,
-			Audience:  ClaimStrings{s.cfg.Audience},
-			ExpiresAt: NewNumericDate(expires),
-			IssuedAt:  NewNumericDate(time.Now().UTC()),
-		},
+		Issuer:    s.cfg.Issuer,
+		Audience:  ClaimStrings{s.cfg.Audience},
+		ExpiresAt: NewNumericDate(expires),
+		IssuedAt:  NewNumericDate(time.Now().UTC()),
 		Id:             user.Id,
 		Email:          user.Email,
 		FirstName:      user.FirstName,
