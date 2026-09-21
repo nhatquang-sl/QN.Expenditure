@@ -91,7 +91,9 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	//
 	// Fix: once credentials are verified, switch to an independent context so a
 	// client disconnect cannot abort an already-successful auth's session write.
-	writeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// WithoutCancel preserves the parent's values (OTEL trace span, etc.) while
+	// detaching the cancellation signal.
+	writeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 
 	// Insert first to obtain the DB-generated Id, which is embedded as TokenId in the JWT.
