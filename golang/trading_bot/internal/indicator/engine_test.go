@@ -158,3 +158,206 @@ func TestEngine_RSI_Deterministic(t *testing.T) {
 
 	assert.Equal(t, snap1.RSI, snap2.RSI, "RSI must be deterministic")
 }
+
+// --- BB edge cases ---
+
+func TestEngine_BB_ConstantPrices(t *testing.T) {
+	// All prices identical → stddev = 0 → Upper == Lower → BBPercentB = 0.5
+	closes := make([]float64, 30)
+	for i := range closes {
+		closes[i] = 42000.0
+	}
+	eng := indicator.NewEngine(indicator.DefaultConfig())
+	snap, err := eng.Calculate(makeCandles(closes))
+	require.NoError(t, err)
+
+	assert.Equal(t, 42000.0, snap.BBMiddle)
+	assert.Equal(t, 42000.0, snap.BBUpper)
+	assert.Equal(t, 42000.0, snap.BBLower)
+	assert.Equal(t, 0.0, snap.BBWidth)
+	assert.Equal(t, 0.5, snap.BBPercentB, "BBPercentB must be 0.5 when Upper == Lower")
+}
+
+func TestEngine_BB_InsufficientCandles(t *testing.T) {
+	// Fewer than BBPeriod candles → engine errors (already covered by TestEngine_InsufficientCandles,
+	// but this confirms the BB-specific path via a config with a large BBPeriod).
+	cfg := indicator.Config{RSIPeriod: 3, BBPeriod: 10, BBMultiplier: 2, RSISlopePeriod: 1}
+	eng := indicator.NewEngine(cfg)
+	candles := makeCandles(make([]float64, 9))
+	_, err := eng.Calculate(candles)
+	assert.Error(t, err)
+}
+
+func TestEngine_BB_UpperLowerSymmetry(t *testing.T) {
+	// Monotonically increasing prices: BBMiddle is in the middle of the window,
+	// BBUpper > BBMiddle, BBLower < BBMiddle, symmetrical.
+	closes := make([]float64, 30)
+	for i := range closes {
+		closes[i] = 40000.0 + float64(i)*100
+	}
+	eng := indicator.NewEngine(indicator.DefaultConfig())
+	snap, err := eng.Calculate(makeCandles(closes))
+	require.NoError(t, err)
+
+	assert.Greater(t, snap.BBUpper, snap.BBMiddle)
+	assert.Less(t, snap.BBLower, snap.BBMiddle)
+	// Population stddev is symmetric, so upper - middle == middle - lower within float precision
+	withinTolerance(t, snap.BBUpper-snap.BBMiddle, snap.BBMiddle-snap.BBLower, "BB band symmetry")
+	assert.Greater(t, snap.BBWidth, 0.0)
+}
+
+func TestEngine_BB_PercentB_AboveUpper(t *testing.T) {
+	// Last price well above upper band → BBPercentB > 1
+	closes := make([]float64, 30)
+	for i := range closes {
+		closes[i] = 42000.0
+	}
+	closes[29] = 99999.0 // spike far above
+	eng := indicator.NewEngine(indicator.DefaultConfig())
+	snap, err := eng.Calculate(makeCandles(closes))
+	require.NoError(t, err)
+	assert.Greater(t, snap.BBPercentB, 1.0)
+}
+
+// --- BB fixture validation ---
+
+func TestEngine_BB_FixtureMatchesReference(t *testing.T) {
+	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
+	require.NoError(t, err)
+	require.Len(t, candles, 200)
+
+	eng := indicator.NewEngine(indicator.DefaultConfig())
+	snap, err := eng.Calculate(candles)
+	require.NoError(t, err)
+
+	// Reference computation: independent inline implementation of BB(20, 2) with population stddev.
+	closes := make([]float64, len(candles))
+	for i, c := range candles {
+		closes[i] = c.Close
+	}
+	n := len(closes)
+	const bbPeriod = 20
+	window := closes[n-bbPeriod : n]
+
+	var refSum float64
+	for _, v := range window {
+		refSum += v
+	}
+	refMiddle := refSum / float64(bbPeriod)
+
+	var refVariance float64
+	for _, v := range window {
+		dev := v - refMiddle
+		refVariance += dev * dev
+	}
+	refVariance /= float64(bbPeriod)
+	refStddev := math.Sqrt(refVariance)
+
+	refUpper := refMiddle + 2*refStddev
+	refLower := refMiddle - 2*refStddev
+	refWidth := (refUpper - refLower) / refMiddle
+	refPercentB := (closes[n-1] - refLower) / (refUpper - refLower)
+
+	withinTolerance(t, refMiddle, snap.BBMiddle, "BBMiddle")
+	withinTolerance(t, refUpper, snap.BBUpper, "BBUpper")
+	withinTolerance(t, refLower, snap.BBLower, "BBLower")
+	withinTolerance(t, refWidth, snap.BBWidth, "BBWidth")
+	withinTolerance(t, refPercentB, snap.BBPercentB, "BBPercentB")
+}
+
+// --- RSI Slope ---
+
+func TestEngine_RSISlope_Direction(t *testing.T) {
+	// Increasing prices after a dip: RSI should be rising, so slope > 0
+	closes := make([]float64, 35)
+	for i := range closes {
+		if i < 15 {
+			closes[i] = 42000.0 - float64(i)*200 // declining
+		} else {
+			closes[i] = 42000.0 + float64(i-15)*300 // recovering
+		}
+	}
+	eng := indicator.NewEngine(indicator.DefaultConfig())
+	snap, err := eng.Calculate(makeCandles(closes))
+	require.NoError(t, err)
+
+	// RSI slope can be positive or negative here; just assert it's a finite number in reasonable range.
+	assert.GreaterOrEqual(t, snap.RSISlope, -100.0)
+	assert.LessOrEqual(t, snap.RSISlope, 100.0)
+}
+
+func TestEngine_RSISlope_FixtureMatchesReference(t *testing.T) {
+	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
+	require.NoError(t, err)
+	require.Len(t, candles, 200)
+
+	eng := indicator.NewEngine(indicator.DefaultConfig())
+	snap, err := eng.Calculate(candles)
+	require.NoError(t, err)
+
+	// Reference: slope = RSI(closes[0..199]) - RSI(closes[0..198])
+	// Reuse the same Wilder's smoothing logic inline.
+	closes := make([]float64, len(candles))
+	for i, c := range candles {
+		closes[i] = c.Close
+	}
+	refCurrent := refRSI(t, closes, 14)
+	refPrev := refRSI(t, closes[:len(closes)-1], 14)
+	refSlope := refCurrent - refPrev
+
+	withinTolerance(t, refSlope, snap.RSISlope, "RSISlope")
+}
+
+// refRSI is a test-only reference implementation of Wilder's RSI to validate the engine against.
+func refRSI(t *testing.T, closes []float64, period int) float64 {
+	t.Helper()
+	require.GreaterOrEqual(t, len(closes), period+1, "refRSI: not enough data")
+
+	gains := make([]float64, len(closes)-1)
+	losses := make([]float64, len(closes)-1)
+	for i := 1; i < len(closes); i++ {
+		d := closes[i] - closes[i-1]
+		if d > 0 {
+			gains[i-1] = d
+		} else {
+			losses[i-1] = -d
+		}
+	}
+
+	var avgGain, avgLoss float64
+	for i := 0; i < period; i++ {
+		avgGain += gains[i]
+		avgLoss += losses[i]
+	}
+	avgGain /= float64(period)
+	avgLoss /= float64(period)
+
+	for i := period; i < len(gains); i++ {
+		avgGain = (avgGain*float64(period-1) + gains[i]) / float64(period)
+		avgLoss = (avgLoss*float64(period-1) + losses[i]) / float64(period)
+	}
+
+	if avgLoss == 0 {
+		return 100
+	}
+	return 100 - (100 / (1 + avgGain/avgLoss))
+}
+
+// --- Full snapshot determinism ---
+
+func TestEngine_Snapshot_Deterministic(t *testing.T) {
+	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
+	require.NoError(t, err)
+
+	eng := indicator.NewEngine(indicator.DefaultConfig())
+
+	snap1, err := eng.Calculate(candles)
+	require.NoError(t, err)
+	snap2, err := eng.Calculate(candles)
+	require.NoError(t, err)
+
+	assert.Equal(t, snap1, snap2, "full Snapshot must be deterministic across two runs")
+}

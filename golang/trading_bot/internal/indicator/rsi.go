@@ -52,3 +52,21 @@ func calculateRSI(closes []float64, period int) (float64, error) {
 	rs := avgGain / avgLoss
 	return 100 - (100 / (1 + rs)), nil
 }
+
+// calculateRSISlope returns RSI[n] - RSI[n-slopePeriod], measuring the direction
+// of RSI over the last slopePeriod candles.
+// Requires len(closes) >= rsiPeriod + 1 + slopePeriod.
+func calculateRSISlope(closes []float64, rsiPeriod, slopePeriod int) (float64, error) {
+	if len(closes) < rsiPeriod+1+slopePeriod {
+		return 0, fmt.Errorf("RSI slope requires at least %d closes, got %d", rsiPeriod+1+slopePeriod, len(closes))
+	}
+	current, err := calculateRSI(closes, rsiPeriod)
+	if err != nil {
+		return 0, err
+	}
+	prev, err := calculateRSI(closes[:len(closes)-slopePeriod], rsiPeriod)
+	if err != nil {
+		return 0, err
+	}
+	return current - prev, nil
+}

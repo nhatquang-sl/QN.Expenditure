@@ -429,3 +429,7 @@ golang/go.work.sum
 
 # sqlc generated code
 golang/**/internal/database/generated/
+
+# Local planning and idea files
+golang/idea/
+golang/issues/

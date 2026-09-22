@@ -34,8 +34,23 @@ func (e *engine) Calculate(candles []marketdata.Candle) (Snapshot, error) {
 		return Snapshot{}, err
 	}
 
+	bb, err := calculateBB(closes, e.cfg.BBPeriod, e.cfg.BBMultiplier)
+	if err != nil {
+		return Snapshot{}, err
+	}
+
+	rsiSlope, err := calculateRSISlope(closes, e.cfg.RSIPeriod, e.cfg.RSISlopePeriod)
+	if err != nil {
+		return Snapshot{}, err
+	}
+
 	return Snapshot{
-		RSI: rsi,
-		// BB fields populated in Slice 3
+		RSI:        rsi,
+		BBUpper:    bb.upper,
+		BBMiddle:   bb.middle,
+		BBLower:    bb.lower,
+		BBWidth:    bb.width,
+		BBPercentB: bb.percentB,
+		RSISlope:   rsiSlope,
 	}, nil
 }
