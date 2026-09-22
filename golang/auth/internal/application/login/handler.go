@@ -18,6 +18,8 @@ import (
 	. "qn.expenditure/shared/app"
 	. "qn.expenditure/shared/apperror"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -75,6 +77,8 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		)
 		return Result{}, NewUnauthorized("invalid credentials")
 	}
+
+	trace.SpanFromContext(ctx).SetAttributes(attribute.String("user.email", user.Email))
 
 	// Decouple session writes from the inbound request context.
 	//
