@@ -21,7 +21,7 @@ import (
 )
 
 func Setup(ctx context.Context, serviceName, version string) (slog.Handler, func(context.Context) error, error) {
-	textHandler := slog.NewTextHandler(os.Stdout, nil)
+	textHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true})
 	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
 		return textHandler, func(context.Context) error { return nil }, nil
 	}
@@ -80,7 +80,7 @@ func Setup(ctx context.Context, serviceName, version string) (slog.Handler, func
 
 	handler := &multiHandler{handlers: []slog.Handler{
 		textHandler,
-		otelslog.NewHandler(serviceName),
+		otelslog.NewHandler(serviceName, otelslog.WithSource(true)),
 	}}
 
 	shutdown := func(ctx context.Context) error {
