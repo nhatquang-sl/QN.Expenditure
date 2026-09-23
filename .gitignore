@@ -431,5 +431,5 @@ golang/go.work.sum
 golang/**/internal/database/generated/
 
 # Local planning and idea files
-golang/idea/
-golang/issues/
+# golang/idea/
+# golang/issues/
