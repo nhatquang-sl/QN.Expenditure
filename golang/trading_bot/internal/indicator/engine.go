@@ -29,10 +29,11 @@ func (e *engine) Calculate(candles []marketdata.Candle) (Snapshot, error) {
 		closes[i] = c.Close
 	}
 
-	rsi, err := calculateRSI(closes, e.cfg.RSIPeriod)
+	rsiSeries, err := calculateRSISeries(closes, e.cfg.RSIPeriod)
 	if err != nil {
 		return Snapshot{}, err
 	}
+	rsi := rsiSeries[len(rsiSeries)-1]
 
 	bb, err := calculateBB(closes, e.cfg.BBPeriod, e.cfg.BBMultiplier)
 	if err != nil {
@@ -44,13 +45,16 @@ func (e *engine) Calculate(candles []marketdata.Candle) (Snapshot, error) {
 		return Snapshot{}, err
 	}
 
+	divType := calculateDivergence(candles, rsiSeries, e.cfg.Divergence)
+
 	return Snapshot{
-		RSI:        rsi,
-		BBUpper:    bb.upper,
-		BBMiddle:   bb.middle,
-		BBLower:    bb.lower,
-		BBWidth:    bb.width,
-		BBPercentB: bb.percentB,
-		RSISlope:   rsiSlope,
+		RSI:            rsi,
+		BBUpper:        bb.upper,
+		BBMiddle:       bb.middle,
+		BBLower:        bb.lower,
+		BBWidth:        bb.width,
+		BBPercentB:     bb.percentB,
+		RSISlope:       rsiSlope,
+		DivergenceType: divType,
 	}, nil
 }

@@ -17,6 +17,9 @@ const (
 	ReasonRSISlopeRising     = "RSI_SLOPE_RISING"
 	ReasonRSISlopeFalling    = "RSI_SLOPE_FALLING"
 	ReasonBBWidthSqueeze     = "BB_WIDTH_SQUEEZE"
+
+	ReasonRSIBullishDivergence = "RSI_BULLISH_DIVERGENCE"
+	ReasonRSIBearishDivergence = "RSI_BEARISH_DIVERGENCE"
 )
 
 // Signal is the output of a strategy evaluation when gate conditions are met.

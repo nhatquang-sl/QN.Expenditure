@@ -12,4 +12,6 @@ type Snapshot struct {
 	BBPercentB float64
 
 	RSISlope float64
+
+	DivergenceType DivergenceType
 }
