@@ -11,12 +11,8 @@ const (
 // Reason constants provide human-readable, machine-parseable explanations
 // for individual scoring contributions included in a Signal.
 const (
-	ReasonRSIOversold        = "RSI_OVERSOLD"
-	ReasonRSIExtremeOversold = "RSI_EXTREME_OVERSOLD"
-	ReasonPriceBelowBBLower  = "PRICE_BELOW_BB_LOWER"
-	ReasonRSISlopeRising     = "RSI_SLOPE_RISING"
-	ReasonRSISlopeFalling    = "RSI_SLOPE_FALLING"
-	ReasonBBWidthSqueeze     = "BB_WIDTH_SQUEEZE"
+	ReasonRSISlopeRising  = "RSI_SLOPE_RISING"
+	ReasonRSISlopeFalling = "RSI_SLOPE_FALLING"
 
 	ReasonRSIBullishDivergence = "RSI_BULLISH_DIVERGENCE"
 	ReasonRSIBearishDivergence = "RSI_BEARISH_DIVERGENCE"
