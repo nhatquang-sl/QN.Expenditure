@@ -187,7 +187,7 @@ func (b *Bot) doProfile(ctx context.Context, user botUser, accessToken string) {
 // (email LIKE 'bot+%@yopmail.com'). Called once on startup so the login loop
 // has users available immediately, even after a restart.
 func (b *Bot) Seed(ctx context.Context, db *sql.DB) {
-	rows, err := db.QueryContext(ctx, `SELECT "Email" FROM "Users" WHERE "Email" LIKE 'bot%@yopmail.com' LIMIT 600`)
+	rows, err := db.QueryContext(ctx, `SELECT "Email" FROM "Users" WHERE "Email" LIKE 'bot%@yopmail.com' LIMIT 700`)
 	if err != nil {
 		b.logger.ErrorContext(ctx, "seed: failed to query bot users", slog.Any("error", err))
 		return
