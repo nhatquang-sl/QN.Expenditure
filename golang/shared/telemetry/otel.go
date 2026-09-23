@@ -80,7 +80,7 @@ func Setup(ctx context.Context, serviceName, version string) (slog.Handler, func
 
 	handler := &multiHandler{handlers: []slog.Handler{
 		textHandler,
-		otelslog.NewHandler(serviceName),
+		otelslog.NewHandler(serviceName, otelslog.WithSource(true)),
 	}}
 
 	shutdown := func(ctx context.Context) error {
