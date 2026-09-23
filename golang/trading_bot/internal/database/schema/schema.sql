@@ -1,0 +1,22 @@
+CREATE TABLE candidate_trades (
+    id               TEXT        NOT NULL PRIMARY KEY,
+    symbol           TEXT        NOT NULL,
+    timeframe        TEXT        NOT NULL,
+    side             TEXT        NOT NULL,
+    entry_price      DOUBLE PRECISION NOT NULL,
+    strategy_name    TEXT        NOT NULL,
+    strategy_version TEXT        NOT NULL,
+    rsi              DOUBLE PRECISION NOT NULL,
+    bb_upper         DOUBLE PRECISION NOT NULL,
+    bb_middle        DOUBLE PRECISION NOT NULL,
+    bb_lower         DOUBLE PRECISION NOT NULL,
+    bb_width         DOUBLE PRECISION NOT NULL,
+    bb_percent_b     DOUBLE PRECISION NOT NULL,
+    rsi_slope        DOUBLE PRECISION NOT NULL,
+    divergence_type  INTEGER     NOT NULL,
+    score            INTEGER     NOT NULL,
+    reasons          TEXT[]      NOT NULL,
+    idempotency_key  TEXT        NOT NULL,
+    created_at       TIMESTAMPTZ NOT NULL,
+    UNIQUE (idempotency_key)
+);
