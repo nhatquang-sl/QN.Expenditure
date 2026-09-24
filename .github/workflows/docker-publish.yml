@@ -21,10 +21,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Find previous tag
+        id: prev-tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          echo "tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
       - name: Detect changed paths
         id: filter
         uses: dorny/paths-filter@v3
         with:
+          base: ${{ steps.prev-tag.outputs.tag }}
           filters: |
             go-auth-bot:
               - 'golang/auth_bot/**'
