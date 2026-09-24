@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -93,17 +94,23 @@ func runPipeline(
 	factory *trade.Factory,
 	repo *trade.Repository,
 ) {
+	var wg sync.WaitGroup
 	for _, symbol := range cfg.Symbols {
 		for _, timeframe := range cfg.Timeframes {
-			if err := processPair(ctx, logger, symbol, timeframe, candleRepo, eng, strat, factory, repo); err != nil {
-				logger.ErrorContext(ctx, "pipeline error",
-					slog.String("symbol", symbol),
-					slog.String("timeframe", timeframe),
-					slog.Any("error", err),
-				)
-			}
+			wg.Add(1)
+			go func(sym, tf string) {
+				defer wg.Done()
+				if err := processPair(ctx, logger, sym, tf, candleRepo, eng, strat, factory, repo); err != nil {
+					logger.ErrorContext(ctx, "pipeline error",
+						slog.String("symbol", sym),
+						slog.String("timeframe", tf),
+						slog.Any("error", err),
+					)
+				}
+			}(symbol, timeframe)
 		}
 	}
+	wg.Wait()
 }
 
 func processPair(

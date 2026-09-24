@@ -58,5 +58,42 @@ func loadConfig() (AppConfig, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return AppConfig{}, fmt.Errorf("parsing config: %w", err)
 	}
+	cfg.applyDefaults()
 	return cfg, nil
+}
+
+func (c *AppConfig) applyDefaults() {
+	if len(c.Symbols) == 0 {
+		c.Symbols = []string{"BTCUSDT"}
+	}
+	if len(c.Timeframes) == 0 {
+		c.Timeframes = []string{"1hour", "4hour"}
+	}
+	if c.PollIntervalSeconds == 0 {
+		c.PollIntervalSeconds = 300
+	}
+	if c.KuCoinBaseURL == "" {
+		c.KuCoinBaseURL = "https://api.kucoin.com"
+	}
+	if c.Indicator.RSIPeriod == 0 {
+		c.Indicator.RSIPeriod = 14
+	}
+	if c.Indicator.BBPeriod == 0 {
+		c.Indicator.BBPeriod = 20
+	}
+	if c.Indicator.BBMultiplier == 0 {
+		c.Indicator.BBMultiplier = 2.0
+	}
+	if c.Indicator.RSISlopePeriod == 0 {
+		c.Indicator.RSISlopePeriod = 1
+	}
+	if c.Indicator.Divergence.PeakThreshold == 0 {
+		c.Indicator.Divergence.PeakThreshold = 68.0
+	}
+	if c.Indicator.Divergence.TroughThreshold == 0 {
+		c.Indicator.Divergence.TroughThreshold = 32.0
+	}
+	if c.Indicator.Divergence.LookbackCandles == 0 {
+		c.Indicator.Divergence.LookbackCandles = 20
+	}
 }
