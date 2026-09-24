@@ -78,8 +78,6 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, NewUnauthorized("invalid credentials")
 	}
 
-	trace.SpanFromContext(ctx).SetAttributes(attribute.String("user.email", user.Email))
-
 	// Insert first to obtain the DB-generated Id, which is embedded as TokenId in the JWT.
 	historyId, err := h.db.CreateUserSession(ctx, dbsqlc.CreateUserSessionParams{
 		UserId:       user.Id,
@@ -126,6 +124,8 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		slog.String("ipAddress", cmd.IPAddress),
 		slog.String("userAgent", cmd.UserAgent),
 	)
+
+	trace.SpanFromContext(ctx).SetAttributes(attribute.String("user.email", user.Email))
 
 	return Result{
 		Id:                  user.Id,
