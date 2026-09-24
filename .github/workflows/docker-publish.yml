@@ -33,6 +33,10 @@ jobs:
   build-go-auth-bot:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.go-auth-bot == 'true' && !contains(github.ref_name, 'deploy') }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     uses: ./.github/workflows/_build-go-auth-bot.yml
     secrets: inherit
 
