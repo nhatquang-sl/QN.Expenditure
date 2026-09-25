@@ -119,13 +119,13 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		h.logger.ErrorContext(ctx, "failed to update user session tokens", slog.Any("error", err))
 	}
 
+	trace.SpanFromContext(ctx).SetAttributes(attribute.String("user.email", user.Email))
+
 	h.logger.InfoContext(ctx, "login success",
 		slog.String("email", user.Email),
 		slog.String("ipAddress", cmd.IPAddress),
 		slog.String("userAgent", cmd.UserAgent),
 	)
-
-	trace.SpanFromContext(ctx).SetAttributes(attribute.String("user.email", user.Email))
 
 	return Result{
 		Id:                  user.Id,
