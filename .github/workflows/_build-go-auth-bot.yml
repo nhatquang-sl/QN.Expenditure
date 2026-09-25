@@ -36,8 +36,14 @@ jobs:
           if ${{ inputs.changed }}; then
             echo "tag=${{ steps.meta.outputs.version }}" >> "$GITHUB_OUTPUT"
           else
-            commit=$(git log --format="%H" -- golang/auth_bot golang/shared | head -1)
-            echo "tag=$(git describe --tags --abbrev=0 "$commit" 2>/dev/null)" >> "$GITHUB_OUTPUT"
+            TOKEN=$(curl -s -X POST \
+              -H "Content-Type: application/json" \
+              -d '{"username":"${{ secrets.DOCKERHUB_USERNAME }}","password":"${{ secrets.DOCKERHUB_TOKEN }}"}' \
+              https://hub.docker.com/v2/users/login | jq -r .token)
+            LATEST=$(curl -s -H "Authorization: JWT $TOKEN" \
+              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_BOT }}/tags?ordering=last_updated&page_size=1" \
+              | jq -r '[.results[] | select(.name != "latest")] | .[0].name')
+            echo "tag=$LATEST" >> "$GITHUB_OUTPUT"
           fi
       - name: ⚙️Set up Docker Buildx
         if: inputs.changed
