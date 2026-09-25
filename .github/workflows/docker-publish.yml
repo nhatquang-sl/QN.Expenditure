@@ -21,6 +21,8 @@ jobs:
       go-email-consumer: ${{ steps.filter.outputs.go-email-consumer }}
       go-email-worker: ${{ steps.filter.outputs.go-email-worker }}
       go-auth-api: ${{ steps.filter.outputs.go-auth-api }}
+      ui: ${{ steps.filter.outputs.ui }}
+      api: ${{ steps.filter.outputs.api }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -51,115 +53,81 @@ jobs:
             go-auth-api:
               - 'golang/auth/**'
               - 'golang/shared/**'
+            ui:
+              - 'src/WebUI.React/**'
+            api:
+              - 'src/WebAPI/**'
 
   build-go-auth-bot:
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.go-auth-bot == 'true' && !contains(github.ref_name, 'deploy') }}
+    if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
       contents: read
       packages: write
       id-token: write
     uses: ./.github/workflows/_build-go-auth-bot.yml
+    with:
+      changed: ${{ needs.detect-changes.outputs.go-auth-bot }}
     secrets: inherit
 
   build-api:
+    needs: detect-changes
     if: ${{ !contains(github.ref_name, 'deploy') }}
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          ssh-key: ${{ secrets.SUB_CREDENTIALS }}
-          submodules: true
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}
-      - name: ⚙️Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-      - name: 🔑Login to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: 🙏[api]Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          file: 'src/WebAPI/Dockerfile'
-          provenance: false
-          build-args: |
-            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+    uses: ./.github/workflows/_build-api.yml
+    with:
+      changed: ${{ needs.detect-changes.outputs.api }}
+    secrets: inherit
 
   build-ui:
+    needs: detect-changes
     if: ${{ !contains(github.ref_name, 'deploy') }}
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          ssh-key: ${{ secrets.SUB_CREDENTIALS }}
-          submodules: true
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}
-      - name: ⚙️Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-      - name: 🔑Login to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: 🙏[ui]Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          file: 'src/WebUI.React/Dockerfile'
-          provenance: false
+    uses: ./.github/workflows/_build-ui.yml
+    with:
+      changed: ${{ needs.detect-changes.outputs.ui }}
+    secrets: inherit
 
   build-go-auth-api:
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.go-auth-api == 'true' && !contains(github.ref_name, 'deploy') }}
+    if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
       contents: read
       packages: write
       id-token: write
     uses: ./.github/workflows/_build-go-auth-api.yml
+    with:
+      changed: ${{ needs.detect-changes.outputs.go-auth-api }}
     secrets: inherit
 
   build-go-email-worker:
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.go-email-worker == 'true' && !contains(github.ref_name, 'deploy') }}
+    if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
       contents: read
       packages: write
       id-token: write
     uses: ./.github/workflows/_build-go-email-worker.yml
+    with:
+      changed: ${{ needs.detect-changes.outputs.go-email-worker }}
     secrets: inherit
 
   build-go-email-consumer:
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.go-email-consumer == 'true' && !contains(github.ref_name, 'deploy') }}
+    if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
       contents: read
       packages: write
       id-token: write
     uses: ./.github/workflows/_build-go-email-consumer.yml
+    with:
+      changed: ${{ needs.detect-changes.outputs.go-email-consumer }}
     secrets: inherit
 
   deploy-docker-to-vps:
@@ -168,7 +136,7 @@ jobs:
     # Run deploy in two cases:
     # 1) Tag contains 'deploy' (deploy-only tag; build jobs are skipped)
     # 2) Non-deploy tag where all build jobs completed successfully or were skipped (no changes detected)
-    if: ${{ always() && (contains(github.ref_name, 'deploy') || (needs.build-api.result == 'success' && needs.build-ui.result == 'success' && (needs.build-go-auth-api.result == 'success' || needs.build-go-auth-api.result == 'skipped') && (needs.build-go-email-worker.result == 'success' || needs.build-go-email-worker.result == 'skipped') && (needs.build-go-email-consumer.result == 'success' || needs.build-go-email-consumer.result == 'skipped') && (needs.build-go-auth-bot.result == 'success' || needs.build-go-auth-bot.result == 'skipped'))) }}
+    if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     steps:
       # Derive IMAGE_TAGS from pushed tag by removing 'deploy' marker.
       # Examples:
@@ -180,6 +148,31 @@ jobs:
           IMAGE_TAGS="${IMAGE_TAGS#-}"
           IMAGE_TAGS="${IMAGE_TAGS#_}"
           echo "IMAGE_TAGS=$IMAGE_TAGS" >> "$GITHUB_ENV"
+
+          # For deploy-only tags all build jobs are skipped (outputs are empty); use IMAGE_TAGS directly.
+          # For regular tags each reusable workflow outputs the tag it used (built or last known).
+          if [[ "$GITHUB_REF_NAME" == *deploy* ]]; then
+            API_TAG="$IMAGE_TAGS"
+            UI_TAG="$IMAGE_TAGS"
+            GO_AUTH_BOT_TAG="$IMAGE_TAGS"
+            GO_AUTH_API_TAG="$IMAGE_TAGS"
+            GO_EMAIL_WORKER_TAG="$IMAGE_TAGS"
+            GO_EMAIL_CONSUMER_TAG="$IMAGE_TAGS"
+          else
+            API_TAG="${{ needs.build-api.outputs.image_tag }}"
+            UI_TAG="${{ needs.build-ui.outputs.image_tag }}"
+            GO_AUTH_BOT_TAG="${{ needs.build-go-auth-bot.outputs.image_tag }}"
+            GO_AUTH_API_TAG="${{ needs.build-go-auth-api.outputs.image_tag }}"
+            GO_EMAIL_WORKER_TAG="${{ needs.build-go-email-worker.outputs.image_tag }}"
+            GO_EMAIL_CONSUMER_TAG="${{ needs.build-go-email-consumer.outputs.image_tag }}"
+          fi
+
+          echo "API_TAG=$API_TAG" >> "$GITHUB_ENV"
+          echo "UI_TAG=$UI_TAG" >> "$GITHUB_ENV"
+          echo "GO_AUTH_BOT_TAG=$GO_AUTH_BOT_TAG" >> "$GITHUB_ENV"
+          echo "GO_AUTH_API_TAG=$GO_AUTH_API_TAG" >> "$GITHUB_ENV"
+          echo "GO_EMAIL_WORKER_TAG=$GO_EMAIL_WORKER_TAG" >> "$GITHUB_ENV"
+          echo "GO_EMAIL_CONSUMER_TAG=$GO_EMAIL_CONSUMER_TAG" >> "$GITHUB_ENV"
       - run: echo "$IMAGE_TAGS"
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -220,12 +213,12 @@ jobs:
 
             cd "$TARGET_DIR"
             ls -la
-            echo "WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${IMAGE_TAGS}" >> .env
-            echo "UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${IMAGE_TAGS}" >> .env
-            echo "GO_AUTH_API_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_API }}:${IMAGE_TAGS}" >> .env
-            echo "GO_EMAIL_WORKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${IMAGE_TAGS}" >> .env
-            echo "GO_EMAIL_CONSUMER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_CONSUMER }}:${IMAGE_TAGS}" >> .env
-            echo "GO_AUTH_BOT_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_BOT }}:${IMAGE_TAGS}" >> .env
+            echo "WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{ env.API_TAG }}" >> .env
+            echo "UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${{ env.UI_TAG }}" >> .env
+            echo "GO_AUTH_API_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_API }}:${{ env.GO_AUTH_API_TAG }}" >> .env
+            echo "GO_EMAIL_WORKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${{ env.GO_EMAIL_WORKER_TAG }}" >> .env
+            echo "GO_EMAIL_CONSUMER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_CONSUMER }}:${{ env.GO_EMAIL_CONSUMER_TAG }}" >> .env
+            echo "GO_AUTH_BOT_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_BOT }}:${{ env.GO_AUTH_BOT_TAG }}" >> .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
@@ -233,14 +226,14 @@ jobs:
             chmod 600 .env.pulumi
             docker compose -f docker-compose.yml up -d --wait qex.postgres
             docker run --rm --network=qex --entrypoint migrate \
-              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_API }}:${IMAGE_TAGS} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_API }}:${{ env.GO_AUTH_API_TAG }} \
               -path /app/migrations \
               -database "postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@qex.postgres/auth?sslmode=disable" \
               up
             docker exec qex-qex.postgres-1 psql -U ${{ secrets.DB_USERNAME }} -d postgres \
               -c "CREATE DATABASE email" || true
             docker run --rm --network=qex --entrypoint migrate \
-              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${IMAGE_TAGS} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${{ env.GO_EMAIL_WORKER_TAG }} \
               -path /app/migrations \
               -database "postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@qex.postgres/email?sslmode=disable" \
               up
