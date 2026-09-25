@@ -9,10 +9,10 @@ on:
     outputs:
       image_tag:
         description: "Docker image tag used (newly built or last known)"
-        value: ${{ jobs.build-go-auth-bot.outputs.image_tag }}
+        value: ${{ jobs.build.outputs.image_tag }}
 
 jobs:
-  build-go-auth-bot:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read

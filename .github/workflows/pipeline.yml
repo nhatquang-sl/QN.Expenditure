@@ -58,7 +58,7 @@ jobs:
             api:
               - 'src/WebAPI/**'
 
-  build-go-auth-bot:
+  go-auth-bot:
     needs: detect-changes
     if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
@@ -70,7 +70,7 @@ jobs:
       changed: ${{ needs.detect-changes.outputs.go-auth-bot == 'true' }}
     secrets: inherit
 
-  build-api:
+  api:
     needs: detect-changes
     if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
@@ -82,7 +82,7 @@ jobs:
       changed: ${{ needs.detect-changes.outputs.api == 'true' }}
     secrets: inherit
 
-  build-ui:
+  ui:
     needs: detect-changes
     if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
@@ -94,7 +94,7 @@ jobs:
       changed: ${{ needs.detect-changes.outputs.ui == 'true' }}
     secrets: inherit
 
-  build-go-auth-api:
+  go-auth-api:
     needs: detect-changes
     if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
@@ -106,7 +106,7 @@ jobs:
       changed: ${{ needs.detect-changes.outputs.go-auth-api == 'true' }}
     secrets: inherit
 
-  build-go-email-worker:
+  go-email-worker:
     needs: detect-changes
     if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
@@ -118,7 +118,7 @@ jobs:
       changed: ${{ needs.detect-changes.outputs.go-email-worker == 'true' }}
     secrets: inherit
 
-  build-go-email-consumer:
+  go-email-consumer:
     needs: detect-changes
     if: ${{ !contains(github.ref_name, 'deploy') }}
     permissions:
@@ -132,7 +132,7 @@ jobs:
 
   deploy-docker-to-vps:
     runs-on: ubuntu-latest
-    needs: [detect-changes, build-go-auth-bot, build-api, build-ui, build-go-auth-api, build-go-email-worker, build-go-email-consumer]
+    needs: [detect-changes, go-auth-bot, api, ui, go-auth-api, go-email-worker, go-email-consumer]
     # Run deploy in two cases:
     # 1) Tag contains 'deploy' (deploy-only tag; build jobs are skipped)
     # 2) Non-deploy tag where all build jobs completed successfully or were skipped (no changes detected)
@@ -159,12 +159,12 @@ jobs:
             GO_EMAIL_WORKER_TAG="$IMAGE_TAGS"
             GO_EMAIL_CONSUMER_TAG="$IMAGE_TAGS"
           else
-            API_TAG="${{ needs.build-api.outputs.image_tag }}"
-            UI_TAG="${{ needs.build-ui.outputs.image_tag }}"
-            GO_AUTH_BOT_TAG="${{ needs.build-go-auth-bot.outputs.image_tag }}"
-            GO_AUTH_API_TAG="${{ needs.build-go-auth-api.outputs.image_tag }}"
-            GO_EMAIL_WORKER_TAG="${{ needs.build-go-email-worker.outputs.image_tag }}"
-            GO_EMAIL_CONSUMER_TAG="${{ needs.build-go-email-consumer.outputs.image_tag }}"
+            API_TAG="${{ needs.api.outputs.image_tag }}"
+            UI_TAG="${{ needs.ui.outputs.image_tag }}"
+            GO_AUTH_BOT_TAG="${{ needs.go-auth-bot.outputs.image_tag }}"
+            GO_AUTH_API_TAG="${{ needs.go-auth-api.outputs.image_tag }}"
+            GO_EMAIL_WORKER_TAG="${{ needs.go-email-worker.outputs.image_tag }}"
+            GO_EMAIL_CONSUMER_TAG="${{ needs.go-email-consumer.outputs.image_tag }}"
           fi
 
           echo "API_TAG=$API_TAG" >> "$GITHUB_ENV"
