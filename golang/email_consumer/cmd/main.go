@@ -57,7 +57,7 @@ func handleDelivery(ctx context.Context, d amqp.Delivery, handler Handler[insert
 func main() {
 	cfg := config.LoadJSONConfig()
 
-	slogHandler, shutdown, err := telemetry.Setup(context.Background(), telemetry.ServiceName(), cfg.Application.Version)
+	slogHandler, shutdown, err := telemetry.Setup(context.Background(), cfg.Application.Version)
 	if err != nil {
 		slog.Error("failed to set up telemetry", slog.Any("error", err))
 		os.Exit(1)
