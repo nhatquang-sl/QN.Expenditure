@@ -7,7 +7,8 @@ name: Docker
 
 on:
   push:
-    # branches: [ "main" ]
+    branches:
+      - main
     tags:
       - '*'
 
@@ -66,7 +67,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/_build-go-auth-bot.yml
     with:
-      changed: ${{ needs.detect-changes.outputs.go-auth-bot == 'true' }}
+      changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-auth-bot == 'true' }}
     secrets: inherit
 
   api:
@@ -77,7 +78,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/_build-api.yml
     with:
-      changed: ${{ needs.detect-changes.outputs.api == 'true' }}
+      changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.api == 'true' }}
     secrets: inherit
 
   ui:
@@ -88,7 +89,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/_build-ui.yml
     with:
-      changed: ${{ needs.detect-changes.outputs.ui == 'true' }}
+      changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.ui == 'true' }}
     secrets: inherit
 
   go-auth-api:
@@ -99,7 +100,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/_build-go-auth-api.yml
     with:
-      changed: ${{ needs.detect-changes.outputs.go-auth-api == 'true' }}
+      changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-auth-api == 'true' }}
     secrets: inherit
 
   go-email-worker:
@@ -110,7 +111,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/_build-go-email-worker.yml
     with:
-      changed: ${{ needs.detect-changes.outputs.go-email-worker == 'true' }}
+      changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-email-worker == 'true' }}
     secrets: inherit
 
   go-email-consumer:
@@ -121,7 +122,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/_build-go-email-consumer.yml
     with:
-      changed: ${{ needs.detect-changes.outputs.go-email-consumer == 'true' }}
+      changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-email-consumer == 'true' }}
     secrets: inherit
 
   deploy-docker-to-vps:
