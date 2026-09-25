@@ -67,66 +67,66 @@ jobs:
     needs: detect-changes
     permissions:
       contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/_build-go-auth-bot.yml
+    uses: ./.github/workflows/_build.yml
     with:
       changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-auth-bot == 'true' }}
+      repo_name: goauthbot
+      dockerfile: golang/auth_bot/Dockerfile
     secrets: inherit
 
   api:
     needs: detect-changes
     permissions:
       contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/_build-api.yml
+    uses: ./.github/workflows/_build.yml
     with:
       changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.api == 'true' }}
+      repo_name: qex.api
+      dockerfile: src/WebAPI/Dockerfile
     secrets: inherit
 
   ui:
     needs: detect-changes
     permissions:
       contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/_build-ui.yml
+    uses: ./.github/workflows/_build.yml
     with:
       changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.ui == 'true' }}
+      repo_name: qex.ui
+      dockerfile: src/WebUI.React/Dockerfile
     secrets: inherit
 
   go-auth-api:
     needs: detect-changes
     permissions:
       contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/_build-go-auth-api.yml
+    uses: ./.github/workflows/_build.yml
     with:
       changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-auth-api == 'true' }}
+      repo_name: goauthapi
+      dockerfile: golang/auth/Dockerfile
     secrets: inherit
 
   go-email-worker:
     needs: detect-changes
     permissions:
       contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/_build-go-email-worker.yml
+    uses: ./.github/workflows/_build.yml
     with:
       changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-email-worker == 'true' }}
+      repo_name: goemailworker
+      dockerfile: golang/email_worker/Dockerfile
     secrets: inherit
 
   go-email-consumer:
     needs: detect-changes
     permissions:
       contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/_build-go-email-consumer.yml
+    uses: ./.github/workflows/_build.yml
     with:
       changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-email-consumer == 'true' }}
+      repo_name: goemailconsumer
+      dockerfile: golang/email_consumer/Dockerfile
     secrets: inherit
 
   deploy-docker-to-vps:
@@ -180,12 +180,12 @@ jobs:
 
             cd "$TARGET_DIR"
             ls -la
-            echo "WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY }}:${{ env.API_TAG }}" >> .env
-            echo "UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_UI }}:${{ env.UI_TAG }}" >> .env
-            echo "GO_AUTH_API_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_API }}:${{ env.GO_AUTH_API_TAG }}" >> .env
-            echo "GO_EMAIL_WORKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${{ env.GO_EMAIL_WORKER_TAG }}" >> .env
-            echo "GO_EMAIL_CONSUMER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_CONSUMER }}:${{ env.GO_EMAIL_CONSUMER_TAG }}" >> .env
-            echo "GO_AUTH_BOT_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_BOT }}:${{ env.GO_AUTH_BOT_TAG }}" >> .env
+            echo "WEBAPI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/qex.api:${{ env.API_TAG }}" >> .env
+            echo "UI_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/qex.ui:${{ env.UI_TAG }}" >> .env
+            echo "GO_AUTH_API_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/goauthapi:${{ env.GO_AUTH_API_TAG }}" >> .env
+            echo "GO_EMAIL_WORKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/goemailworker:${{ env.GO_EMAIL_WORKER_TAG }}" >> .env
+            echo "GO_EMAIL_CONSUMER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/goemailconsumer:${{ env.GO_EMAIL_CONSUMER_TAG }}" >> .env
+            echo "GO_AUTH_BOT_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/goauthbot:${{ env.GO_AUTH_BOT_TAG }}" >> .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
@@ -193,14 +193,14 @@ jobs:
             chmod 600 .env.pulumi
             docker compose -f docker-compose.yml up -d --wait qex.postgres
             docker run --rm --network=qex --entrypoint migrate \
-              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_AUTH_API }}:${{ env.GO_AUTH_API_TAG }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/goauthapi:${{ env.GO_AUTH_API_TAG }} \
               -path /app/migrations \
               -database "postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@qex.postgres/auth?sslmode=disable" \
               up
             docker exec qex-qex.postgres-1 psql -U ${{ secrets.DB_USERNAME }} -d postgres \
               -c "CREATE DATABASE email" || true
             docker run --rm --network=qex --entrypoint migrate \
-              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPOSITORY_GO_EMAIL_WORKER }}:${{ env.GO_EMAIL_WORKER_TAG }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/goemailworker:${{ env.GO_EMAIL_WORKER_TAG }} \
               -path /app/migrations \
               -database "postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@qex.postgres/email?sslmode=disable" \
               up
