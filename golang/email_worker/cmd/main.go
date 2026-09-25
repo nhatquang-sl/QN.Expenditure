@@ -10,6 +10,7 @@ import (
 
 	"email_worker/internal/config"
 	emailsvc "email_worker/internal/services/email"
+	"email_worker/internal/telemetry"
 	"email_worker/internal/worker"
 
 	emaildb "qn.expenditure/emaildb/generated"
@@ -18,7 +19,15 @@ import (
 
 func main() {
 	cfg := config.LoadJSONConfig()
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	slogHandler, shutdown, err := telemetry.Setup(context.Background(), telemetry.ServiceName(), cfg.Application.Version)
+	if err != nil {
+		slog.Error("failed to set up telemetry", slog.Any("error", err))
+		os.Exit(1)
+	}
+	defer shutdown(context.Background())
+
+	logger := slog.New(slogHandler)
 	slog.SetDefault(logger)
 
 	db, err := shareddb.OpenPostgres(cfg.ConnectionStrings.PGEmail)

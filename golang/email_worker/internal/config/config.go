@@ -17,6 +17,9 @@ type Config struct {
 	ConnectionStrings struct {
 		PGEmail string
 	}
+	Application struct {
+		Version string
+	}
 	Email struct {
 		ApiKeyPublic  string
 		ApiKeyPrivate string
@@ -32,6 +35,9 @@ func LoadJSONConfig() Config {
 	}
 
 	return sharedconfig.LoadJSON(path, func(cfg *Config) {
+		if v := os.Getenv("VERSION"); v != "" {
+			cfg.Application.Version = v
+		}
 		if v := os.Getenv("PG_EMAIL_CONNECTION"); v != "" {
 			cfg.ConnectionStrings.PGEmail = v
 		}

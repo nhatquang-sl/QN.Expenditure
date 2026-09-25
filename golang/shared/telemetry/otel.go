@@ -8,9 +8,9 @@ import (
 
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
@@ -41,7 +41,7 @@ func Setup(ctx context.Context, serviceName, version string) (slog.Handler, func
 
 	var shutdowns []func(context.Context) error
 
-	traceExp, err := otlptracehttp.New(ctx)
+	traceExp, err := otlptracegrpc.New(ctx)
 	if err != nil {
 		return textHandler, nil, err
 	}
@@ -56,7 +56,7 @@ func Setup(ctx context.Context, serviceName, version string) (slog.Handler, func
 	))
 	shutdowns = append(shutdowns, tp.Shutdown)
 
-	metricExp, err := otlpmetrichttp.New(ctx)
+	metricExp, err := otlpmetricgrpc.New(ctx)
 	if err != nil {
 		return textHandler, nil, err
 	}
@@ -67,7 +67,7 @@ func Setup(ctx context.Context, serviceName, version string) (slog.Handler, func
 	otel.SetMeterProvider(mp)
 	shutdowns = append(shutdowns, mp.Shutdown)
 
-	logExp, err := otlploghttp.New(ctx)
+	logExp, err := otlploggrpc.New(ctx)
 	if err != nil {
 		return textHandler, nil, err
 	}

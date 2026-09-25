@@ -17,6 +17,9 @@ type AuthBotConfig struct {
 }
 
 type Config struct {
+	Application struct {
+		Version string
+	}
 	AuthBot AuthBotConfig
 }
 
@@ -27,6 +30,9 @@ func LoadJSONConfig() Config {
 	}
 
 	return sharedconfig.LoadJSON(path, func(cfg *Config) {
+		if v := os.Getenv("VERSION"); v != "" {
+			cfg.Application.Version = v
+		}
 		if v := os.Getenv("AUTH_BASE_URL"); v != "" {
 			cfg.AuthBot.AuthBaseUrl = v
 		}

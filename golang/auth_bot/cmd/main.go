@@ -12,15 +12,23 @@ import (
 
 	"auth_bot/internal/bot"
 	"auth_bot/internal/config"
+	"auth_bot/internal/telemetry"
 
 	shareddb "qn.expenditure/shared/database"
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	cfg := config.LoadJSONConfig()
+
+	slogHandler, shutdown, err := telemetry.Setup(context.Background(), telemetry.ServiceName(), cfg.Application.Version)
+	if err != nil {
+		slog.Error("failed to set up telemetry", slog.Any("error", err))
+		os.Exit(1)
+	}
+	defer shutdown(context.Background())
+
+	logger := slog.New(slogHandler)
+	slog.SetDefault(logger)
 
 	registerInterval := cfg.AuthBot.RegisterIntervalSeconds
 	if registerInterval == 0 {

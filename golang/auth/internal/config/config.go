@@ -62,6 +62,9 @@ func LoadJSONConfig() Config {
 		if v := os.Getenv("PG_AUTH_CONNECTION"); v != "" {
 			cfg.ConnectionStrings.PGAuth = v
 		}
+		if v := os.Getenv("VERSION"); v != "" {
+			cfg.Application.Version = v
+		}
 		if v := os.Getenv("APPLICATION_ENDPOINT"); v != "" {
 			cfg.Application.Endpoint = v
 		}

@@ -13,6 +13,9 @@ type Config struct {
 	ConnectionStrings struct {
 		PGEmail string
 	}
+	Application struct {
+		Version string
+	}
 	RabbitMq RabbitMqConfig
 }
 
@@ -23,6 +26,9 @@ func LoadJSONConfig() Config {
 	}
 
 	return sharedconfig.LoadJSON(path, func(cfg *Config) {
+		if v := os.Getenv("VERSION"); v != "" {
+			cfg.Application.Version = v
+		}
 		if v := os.Getenv("PG_EMAIL_CONNECTION"); v != "" {
 			cfg.ConnectionStrings.PGEmail = v
 		}

@@ -23,7 +23,7 @@ func main() {
 	ctx := context.Background()
 	cfg := config.LoadJSONConfig()
 
-	slogHandler, shutdown, err := telemetry.Setup(ctx, "qex-go-auth-api", cfg.Application.Version)
+	slogHandler, shutdown, err := telemetry.Setup(ctx, telemetry.ServiceName(), cfg.Application.Version)
 	if err != nil {
 		slog.Error("failed to set up telemetry", slog.Any("error", err))
 		os.Exit(1)
@@ -60,7 +60,7 @@ func main() {
 	serverAddr := fmt.Sprintf(":%d", cfg.GoServerPort)
 	srv := &http.Server{
 		Addr:    serverAddr,
-		Handler: otelhttp.NewHandler(middleware.Recover(logger, mux), "qex-go-auth-api"),
+		Handler: otelhttp.NewHandler(middleware.Recover(logger, mux), telemetry.ServiceName()),
 	}
 
 	if cfg.TLSCertPath != "" && cfg.TLSKeyPath != "" {
