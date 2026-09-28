@@ -7,10 +7,6 @@ import (
 	sharedtelemetry "qn.expenditure/shared/telemetry"
 )
 
-func Setup(ctx context.Context, serviceName, version string) (slog.Handler, func(context.Context) error, error) {
-	return sharedtelemetry.Setup(ctx, serviceName, version)
-}
-
-func ServiceName() string {
-	return sharedtelemetry.ServiceName()
+func Setup(ctx context.Context, version string) (slog.Handler, func(context.Context) error, error) {
+	return sharedtelemetry.Setup(ctx, version)
 }

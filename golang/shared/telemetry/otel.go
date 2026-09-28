@@ -20,18 +20,18 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
-func Setup(ctx context.Context, serviceName, version string) (slog.Handler, func(context.Context) error, error) {
+func Setup(ctx context.Context, version string) (slog.Handler, func(context.Context) error, error) {
 	textHandler := slog.NewTextHandler(os.Stdout, nil)
 	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
 		return textHandler, func(context.Context) error { return nil }, nil
 	}
+	serviceName := os.Getenv("OTEL_SERVICE_NAME")
 
 	res, err := resource.New(ctx,
 		resource.WithFromEnv(),
 		resource.WithProcess(),
 		resource.WithOS(),
 		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
 			semconv.ServiceVersion(version),
 		),
 	)

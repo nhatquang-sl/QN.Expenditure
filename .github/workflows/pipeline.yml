@@ -192,11 +192,6 @@ jobs:
             pulumi env open ${{ secrets.PULUMI_ORG }}/qn-expenditure/prod --format dotenv > .env.pulumi
             chmod 600 .env.pulumi
             docker compose -f docker-compose.yml up -d --wait qex.postgres
-            docker run --rm --network=qex --entrypoint migrate \
-              ${{ secrets.DOCKERHUB_USERNAME }}/goauthapi:${{ env.GO_AUTH_API_TAG }} \
-              -path /app/migrations \
-              -database "postgres://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@qex.postgres/auth?sslmode=disable" \
-              up
             docker exec qex-qex.postgres-1 psql -U ${{ secrets.DB_USERNAME }} -d postgres \
               -c "CREATE DATABASE email" || true
             docker run --rm --network=qex --entrypoint migrate \
