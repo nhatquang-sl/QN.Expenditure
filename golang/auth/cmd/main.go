@@ -1,6 +1,14 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"time"
+
+	sessioncleaner "auth/internal/application/session_cleaner"
 	"auth/cmd/controllers"
 	"auth/cmd/middleware"
 	"auth/internal/config"
@@ -8,11 +16,6 @@ import (
 	"auth/internal/services/jwt"
 	redisservice "auth/internal/services/redis"
 	"auth/internal/telemetry"
-	"context"
-	"fmt"
-	"log/slog"
-	"net/http"
-	"os"
 
 	. "qn.expenditure/shared/database"
 
@@ -42,6 +45,22 @@ func main() {
 	}
 	defer db.Close()
 	queries := dbsqlc.New(db)
+
+	// start session cleaner: runs immediately on startup, then every hour
+	cleaner := sessioncleaner.NewHandler(queries, logger)
+	go func() {
+		cleaner.Handle(ctx, sessioncleaner.Command{})
+		ticker := time.NewTicker(time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				cleaner.Handle(ctx, sessioncleaner.Command{})
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 
 	// 1. set up HTTP server
 	mux := http.NewServeMux()
