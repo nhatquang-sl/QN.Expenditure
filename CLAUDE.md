@@ -9,6 +9,10 @@ QN.Expenditure is a cryptocurrency expenditure tracking application with:
 - **Frontend**: React + TypeScript + Material-UI + Vite
 - **Database**: SQLite with Entity Framework Core
 
+## Git Workflow
+
+Never run `git commit` or `git push` (or any command that commits or pushes to a remote). Stage changes with `git add` and show the diff, then stop — the user handles all commits and pushes.
+
 ## Communication Style
 
 When suggesting, reviewing, or explaining anything — approach it as a **senior software engineer**: be opinionated, pragmatic, and focused on correctness and long-term maintainability. Avoid wishy-washy suggestions. If there is a clearly better approach, say so directly and explain why.
