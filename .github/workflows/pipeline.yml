@@ -148,7 +148,33 @@ jobs:
         with:
           ssh-key: ${{ secrets.SUB_CREDENTIALS }}
           submodules: true
+      - name: 🔧Ensure swap on VPS
+        run: |
+          mkdir -p $HOME/.ssh
+          echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
+          chmod 600 $HOME/.ssh/ssh.key
+          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key \
+            -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
+            if [ -f /swapfile ]; then
+              echo "Swap already configured — skipping."
+              swapon --show
+            else
+              echo "Creating 4 GB swapfile..."
+              fallocate -l 4G /swapfile
+              chmod 600 /swapfile
+              mkswap /swapfile
+              swapon /swapfile
+              grep -qxF '/swapfile none swap sw 0 0' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+              sysctl vm.swappiness=10
+              grep -qxF 'vm.swappiness=10' /etc/sysctl.conf || echo 'vm.swappiness=10' >> /etc/sysctl.conf
+              echo "Swap enabled:"
+              swapon --show
+              free -h
+            fi
+          ENDSSH
+
       - name: 🚀Deploy Docker to VPS
+        timeout-minutes: 20
         run: |
           mkdir -p $HOME/.ssh
           echo "${{ secrets.VPS_IDENTITY }}" > $HOME/.ssh/ssh.key
@@ -171,7 +197,8 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} \
             'which pulumi || (curl -fsSL https://get.pulumi.com | sh)'
 
-          ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
+          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+            -i $HOME/.ssh/ssh.key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
             set -euo pipefail
 
             TARGET_DIR="workspace/qex"
