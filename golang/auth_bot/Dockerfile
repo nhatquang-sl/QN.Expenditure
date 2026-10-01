@@ -1,5 +1,5 @@
-# docker build . --no-cache --progress plain -t qex.auth-bot:local -f golang/auth_bot/Dockerfile
-# docker run --rm --env-file credentials/qex/.env qex.auth-bot:local
+# docker build . --no-cache --progress plain -t go-auth-bot:local -f golang/auth_bot/Dockerfile
+# docker run --rm --env-file credentials/qex/.env go-auth-bot:local
 
 FROM golang:1.27-alpine3.24 AS build
 WORKDIR /workspace

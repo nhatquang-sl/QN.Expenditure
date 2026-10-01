@@ -1,5 +1,5 @@
-# docker build . --no-cache --progress plain -t qex.email-worker:local -f golang/email_worker/Dockerfile
-# docker run --rm --env-file credentials/qex/.env qex.email-worker:local
+# docker build . --no-cache --progress plain -t go-email-worker:local -f golang/email_worker/Dockerfile
+# docker run --rm --env-file credentials/qex/.env go-email-worker:local
 
 FROM golang:1.27-alpine3.24 AS build
 WORKDIR /workspace

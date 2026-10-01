@@ -257,7 +257,7 @@ Each slice is independently deployable and testable. Later slices depend on earl
 - Implement the RabbitMQ `EmailService`: marshal data to JSON, declare durable exchange + queue, publish with routing key `email.notify`
 - Wire in `cmd/main.go`; fail fast (`os.Exit(1)`) if RabbitMQ is unreachable at startup
 - Add `RABBITMQ_HOST`, `RABBITMQ_USERNAME`, `RABBITMQ_PASSWORD` env var overrides to `config.go`
-- Add RabbitMQ env vars and `depends_on: rabbitmq: service_healthy` to `qex.goapi` in `docker-compose.yml`
+- Add RabbitMQ env vars and `depends_on: rabbitmq: service_healthy` to `goauthapi` in `docker-compose.yml`
 - On publish error: log and return — no fallback
 
 **Done when**: registering a user causes a message to appear in the `email.queue` RabbitMQ queue (verifiable via the RabbitMQ management UI).

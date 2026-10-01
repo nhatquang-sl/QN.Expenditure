@@ -1,6 +1,6 @@
-# docker build . --no-cache --progress plain -t qex.goapi:0.0.2 -f golang/auth/Dockerfile
-# docker build . -t qex.goapi:0.0.2 -f golang/auth/Dockerfile
-# docker run -it --rm -p 5002:5002 qex.goapi:0.0.2
+# docker build . --no-cache --progress plain -t goauthapi:0.0.2 -f golang/auth/Dockerfile
+# docker build . -t goauthapi:0.0.2 -f golang/auth/Dockerfile
+# docker run -it --rm -p 5002:5002 goauthapi:0.0.2
 # http://localhost:5002/api/weatherforecast
 # Build stage
 FROM golang:1.27-alpine3.24 AS build
