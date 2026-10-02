@@ -47,21 +47,27 @@ jobs:
             go-auth-bot:
               - 'golang/auth_bot/**'
               - 'golang/shared/**'
+              - 'credentials/**'
             go-email-consumer:
               - 'golang/email_consumer/**'
               - 'golang/shared/**'
               - 'golang/emaildb/**'
+              - 'credentials/**'
             go-email-worker:
               - 'golang/email_worker/**'
               - 'golang/shared/**'
               - 'golang/emaildb/**'
+              - 'credentials/**'
             go-auth-api:
               - 'golang/auth/**'
               - 'golang/shared/**'
+              - 'credentials/**'
             ui:
               - 'src/WebUI.React/**'
+              - 'credentials/**'
             api:
               - 'src/WebAPI/**'
+              - 'credentials/**'
 
   go-auth-bot:
     needs: detect-changes
