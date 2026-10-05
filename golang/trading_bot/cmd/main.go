@@ -23,6 +23,9 @@ import (
 	"trading_bot/internal/strategy/divergence"
 	"trading_bot/internal/trade"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+
 	shareddb "qn.expenditure/shared/database"
 	sharedtelemetry "qn.expenditure/shared/telemetry"
 )
@@ -135,6 +138,17 @@ func processPair(
 	factory *trade.Factory,
 	repo *trade.Repository,
 ) error {
+	ctx, span := otel.Tracer(serviceName).Start(ctx, "processPair")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("symbol", symbol),
+		attribute.String("timeframe", timeframe),
+		attribute.Int("candle_limit", candleLimit),
+	)
+
+	logger = logger.With(slog.String("symbol", symbol), slog.String("timeframe", timeframe))
+	logger.InfoContext(ctx, "processing pair", slog.Int("candle_limit", candleLimit))
+
 	candles, err := candleRepo.GetClosedCandles(ctx, symbol, timeframe, candleLimit)
 	if err != nil {
 		return err
