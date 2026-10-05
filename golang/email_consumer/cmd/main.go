@@ -11,10 +11,10 @@ import (
 
 	insertemailqueue "email_consumer/internal/application/email_queue/insert_email_queue"
 	"email_consumer/internal/config"
-	"email_consumer/internal/telemetry"
 
 	emaildb "qn.expenditure/emaildb/generated"
 	shareddb "qn.expenditure/shared/database"
+	sharedtelemetry "qn.expenditure/shared/telemetry"
 
 	. "qn.expenditure/shared/app"
 	. "qn.expenditure/shared/apperror"
@@ -57,15 +57,12 @@ func handleDelivery(ctx context.Context, d amqp.Delivery, handler Handler[insert
 func main() {
 	cfg := config.LoadJSONConfig()
 
-	slogHandler, shutdown, err := telemetry.Setup(context.Background(), cfg.Application.Version)
+	logger, shutdown, err := sharedtelemetry.Setup(context.Background(), cfg.Application.Version)
 	if err != nil {
 		slog.Error("failed to set up telemetry", slog.Any("error", err))
 		os.Exit(1)
 	}
 	defer shutdown(context.Background())
-
-	logger := slog.New(slogHandler)
-	slog.SetDefault(logger)
 
 	db, err := shareddb.OpenPostgres(cfg.ConnectionStrings.PGEmail)
 	if err != nil {

@@ -45,8 +45,8 @@ func OpenPostgres(connectionString string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Connection pool limits — shared Postgres has max_connections=100 across 4 services.
-	// 4 services × 25 = 100 theoretical max; in practice they never all peak simultaneously.
+	// Connection pool limits — shared Postgres has max_connections=200 across 5 services.
+	// 5 services × 25 = 125 theoretical max; well within 200 − 10 headroom for superuser/admin.
 	//
 	// SetMaxOpenConns  25   caps connections per service; prevents unbounded bursts under load
 	// SetMaxIdleConns   5   keeps a small warm pool without holding all 25 open when quiet

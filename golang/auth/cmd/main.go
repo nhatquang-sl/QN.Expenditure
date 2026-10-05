@@ -17,12 +17,12 @@ import (
 	dbsqlc "auth/internal/database/generated"
 	"auth/internal/services/jwt"
 	redisservice "auth/internal/services/redis"
-	"auth/internal/telemetry"
 
 	migrate "github.com/golang-migrate/migrate/v4"
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	. "qn.expenditure/shared/database"
+	shareddb "qn.expenditure/shared/database"
+	sharedtelemetry "qn.expenditure/shared/telemetry"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
@@ -31,19 +31,17 @@ func main() {
 	ctx := context.Background()
 	cfg := config.LoadJSONConfig()
 
-	slogHandler, shutdown, err := telemetry.Setup(ctx, cfg.Application.Version)
+	logger, shutdown, err := sharedtelemetry.Setup(ctx, cfg.Application.Version)
 	if err != nil {
 		slog.Error("failed to set up telemetry", slog.Any("error", err))
 		os.Exit(1)
 	}
 	defer shutdown(ctx)
 
-	logger := slog.New(slogHandler)
-	slog.SetDefault(logger)
 	logger.Info("config loaded", slog.String("endpoint", cfg.Application.Endpoint), slog.String("version", cfg.Application.Version))
 
 	// connect to database
-	db, err := OpenPostgres(cfg.ConnectionStrings.PGAuth)
+	db, err := shareddb.OpenPostgres(cfg.ConnectionStrings.PGAuth)
 	if err != nil {
 		logger.Error("failed to connect to database", slog.Any("error", err))
 		os.Exit(1)

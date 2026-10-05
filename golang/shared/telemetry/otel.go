@@ -20,10 +20,12 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
-func Setup(ctx context.Context, version string) (slog.Handler, func(context.Context) error, error) {
+func Setup(ctx context.Context, version string) (*slog.Logger, func(context.Context) error, error) {
 	textHandler := slog.NewTextHandler(os.Stdout, nil)
 	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
-		return textHandler, func(context.Context) error { return nil }, nil
+		logger := slog.New(textHandler)
+		slog.SetDefault(logger)
+		return logger, func(context.Context) error { return nil }, nil
 	}
 	serviceName := os.Getenv("OTEL_SERVICE_NAME")
 
@@ -36,14 +38,14 @@ func Setup(ctx context.Context, version string) (slog.Handler, func(context.Cont
 		),
 	)
 	if err != nil {
-		return textHandler, nil, err
+		return slog.New(textHandler), nil, err
 	}
 
 	var shutdowns []func(context.Context) error
 
 	traceExp, err := otlptracegrpc.New(ctx)
 	if err != nil {
-		return textHandler, nil, err
+		return slog.New(textHandler), nil, err
 	}
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(traceExp),
@@ -58,7 +60,7 @@ func Setup(ctx context.Context, version string) (slog.Handler, func(context.Cont
 
 	metricExp, err := otlpmetricgrpc.New(ctx)
 	if err != nil {
-		return textHandler, nil, err
+		return slog.New(textHandler), nil, err
 	}
 	mp := sdkmetric.NewMeterProvider(
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExp)),
@@ -69,7 +71,7 @@ func Setup(ctx context.Context, version string) (slog.Handler, func(context.Cont
 
 	logExp, err := otlploggrpc.New(ctx)
 	if err != nil {
-		return textHandler, nil, err
+		return slog.New(textHandler), nil, err
 	}
 	lp := sdklog.NewLoggerProvider(
 		sdklog.WithProcessor(sdklog.NewBatchProcessor(logExp)),
@@ -91,7 +93,9 @@ func Setup(ctx context.Context, version string) (slog.Handler, func(context.Cont
 		return errors.Join(errs...)
 	}
 
-	return handler, shutdown, nil
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+	return logger, shutdown, nil
 }
 
 type multiHandler struct {

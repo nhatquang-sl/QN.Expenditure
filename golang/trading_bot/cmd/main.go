@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,17 +10,21 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/lib/pq"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	migrate "github.com/golang-migrate/migrate/v4"
+	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 
+	"trading_bot/internal/config"
+	tradingbotdb "trading_bot/internal/database"
 	"trading_bot/internal/indicator"
 	"trading_bot/internal/kucoin"
 	"trading_bot/internal/marketdata"
 	"trading_bot/internal/strategy"
 	"trading_bot/internal/strategy/divergence"
 	"trading_bot/internal/trade"
+
+	shareddb "qn.expenditure/shared/database"
+	sharedtelemetry "qn.expenditure/shared/telemetry"
 )
 
 const (
@@ -34,37 +37,46 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	cfg, err := loadConfig()
-	if err != nil {
-		log.Fatalf("config: %v", err)
+	cfg := config.LoadJSONConfig()
+
+	version := cfg.Application.Version
+	if version == "" {
+		version = serviceVersion
 	}
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-	db, err := openDB(cfg.DBDSN)
+	logger, shutdown, err := sharedtelemetry.Setup(ctx, version)
 	if err != nil {
-		log.Fatalf("db: %v", err)
+		slog.Error("failed to set up telemetry", slog.Any("error", err))
+		os.Exit(1)
+	}
+	defer shutdown(context.Background())
+
+	db, err := shareddb.OpenPostgres(cfg.ConnectionStrings.PGTrading)
+	if err != nil {
+		logger.Error("failed to connect to database", slog.Any("error", err))
+		os.Exit(1)
 	}
 	defer db.Close()
 
-	if err := runMigrations(db, cfg.DBDSN); err != nil {
-		log.Fatalf("migrations: %v", err)
+	if err := runMigrations(db); err != nil {
+		logger.Error("failed to run migrations", slog.Any("error", err))
+		os.Exit(1)
 	}
 
-	indCfg := cfg.indicatorConfig()
+	indCfg := cfg.IndicatorConfig()
 	eng := indicator.NewEngine(indCfg)
 	strat := divergence.New()
 	factory := trade.NewFactory()
 	repo := trade.NewRepository(db, logger)
-	candleRepo := marketdata.CandleRepository(kucoin.NewAdapter(cfg.KuCoinBaseURL))
+	candleRepo := marketdata.CandleRepository(kucoin.NewAdapter("https://api.kucoin.com"))
 
-	interval := time.Duration(cfg.PollIntervalSeconds) * time.Second
+	interval := time.Duration(cfg.TradingBot.PollIntervalSeconds) * time.Second
 	logger.Info("trading bot started",
 		slog.String("service", serviceName),
-		slog.String("version", serviceVersion),
+		slog.String("version", version),
 		slog.Duration("poll_interval", interval),
-		slog.Any("symbols", cfg.Symbols),
-		slog.Any("timeframes", cfg.Timeframes),
+		slog.Any("symbols", cfg.TradingBot.Symbols),
+		slog.Any("timeframes", cfg.TradingBot.Timeframes),
 	)
 
 	tick := time.NewTicker(interval)
@@ -87,7 +99,7 @@ func main() {
 func runPipeline(
 	ctx context.Context,
 	logger *slog.Logger,
-	cfg AppConfig,
+	cfg config.AppConfig,
 	candleRepo marketdata.CandleRepository,
 	eng indicator.Engine,
 	strat strategy.Strategy,
@@ -95,8 +107,8 @@ func runPipeline(
 	repo *trade.Repository,
 ) {
 	var wg sync.WaitGroup
-	for _, symbol := range cfg.Symbols {
-		for _, timeframe := range cfg.Timeframes {
+	for _, symbol := range cfg.TradingBot.Symbols {
+		for _, timeframe := range cfg.TradingBot.Timeframes {
 			wg.Add(1)
 			go func(sym, tf string) {
 				defer wg.Done()
@@ -153,27 +165,16 @@ func processPair(
 	return repo.Save(ctx, ct)
 }
 
-func openDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, err
-	}
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(30 * time.Minute)
-	db.SetConnMaxIdleTime(5 * time.Minute)
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
-func runMigrations(db *sql.DB, dsn string) error {
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
+func runMigrations(db *sql.DB) error {
+	src, err := iofs.New(tradingbotdb.MigrationsFS, "migrations")
 	if err != nil {
 		return err
 	}
-	m, err := migrate.NewWithDatabaseInstance("file://internal/database/migrations", "postgres", driver)
+	driver, err := migratepostgres.WithInstance(db, &migratepostgres.Config{})
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithInstance("iofs", src, "postgres", driver)
 	if err != nil {
 		return err
 	}
