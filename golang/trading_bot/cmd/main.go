@@ -147,7 +147,6 @@ func processPair(
 	)
 
 	logger = logger.With(slog.String("symbol", symbol), slog.String("timeframe", timeframe))
-	logger.InfoContext(ctx, "processing pair", slog.Int("candle_limit", candleLimit))
 
 	candles, err := candleRepo.GetClosedCandles(ctx, symbol, timeframe, candleLimit)
 	if err != nil {
@@ -161,6 +160,7 @@ func processPair(
 	if err != nil {
 		return err
 	}
+	span.SetAttributes(attribute.Float64("rsi", snap.RSI))
 
 	lastCandle := candles[len(candles)-1]
 	sig, err := strat.Evaluate(strategy.MarketContext{Candle: lastCandle, Indicators: snap})
