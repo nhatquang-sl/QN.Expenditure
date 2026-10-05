@@ -26,6 +26,7 @@ jobs:
       go-email-consumer: ${{ steps.filter.outputs.go-email-consumer }}
       go-email-worker: ${{ steps.filter.outputs.go-email-worker }}
       go-auth-api: ${{ steps.filter.outputs.go-auth-api }}
+      go-trading-bot: ${{ steps.filter.outputs.go-trading-bot }}
       ui: ${{ steps.filter.outputs.ui }}
       api: ${{ steps.filter.outputs.api }}
     steps:
@@ -57,6 +58,9 @@ jobs:
               - 'golang/emaildb/**'
             go-auth-api:
               - 'golang/auth/**'
+              - 'golang/shared/**'
+            go-trading-bot:
+              - 'golang/trading_bot/**'
               - 'golang/shared/**'
             ui:
               - 'src/WebUI.React/**'
@@ -107,6 +111,17 @@ jobs:
       dockerfile: golang/auth/Dockerfile
     secrets: inherit
 
+  go-trading-bot:
+    needs: detect-changes
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_build.yml
+    with:
+      changed: ${{ github.ref_type == 'tag' && needs.detect-changes.outputs.go-trading-bot == 'true' }}
+      repo_name: gotradingbot
+      dockerfile: golang/trading_bot/Dockerfile
+    secrets: inherit
+
   go-email-worker:
     needs: detect-changes
     permissions:
@@ -131,7 +146,7 @@ jobs:
 
   deploy-docker-to-vps:
     runs-on: ubuntu-latest
-    needs: [detect-changes, go-auth-bot, api, ui, go-auth-api, go-email-worker, go-email-consumer]
+    needs: [detect-changes, go-auth-bot, api, ui, go-auth-api, go-email-worker, go-email-consumer, go-trading-bot]
     # Run deploy when all build jobs completed successfully or were skipped (no changes detected)
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     steps:
@@ -143,6 +158,7 @@ jobs:
           echo "GO_AUTH_API_TAG=${{ needs.go-auth-api.outputs.image_tag }}" >> "$GITHUB_ENV"
           echo "GO_EMAIL_WORKER_TAG=${{ needs.go-email-worker.outputs.image_tag }}" >> "$GITHUB_ENV"
           echo "GO_EMAIL_CONSUMER_TAG=${{ needs.go-email-consumer.outputs.image_tag }}" >> "$GITHUB_ENV"
+          echo "GO_TRADING_BOT_TAG=${{ needs.go-trading-bot.outputs.image_tag }}" >> "$GITHUB_ENV"
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
@@ -213,6 +229,7 @@ jobs:
             echo "GO_EMAIL_WORKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/goemailworker:${{ env.GO_EMAIL_WORKER_TAG }}" >> .env
             echo "GO_EMAIL_CONSUMER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/goemailconsumer:${{ env.GO_EMAIL_CONSUMER_TAG }}" >> .env
             echo "GO_AUTH_BOT_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/goauthbot:${{ env.GO_AUTH_BOT_TAG }}" >> .env
+            echo "GO_TRADING_BOT_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/gotradingbot:${{ env.GO_TRADING_BOT_TAG }}" >> .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
@@ -221,6 +238,8 @@ jobs:
             docker compose -f docker-compose.yml up -d --wait qex.postgres
             docker exec qex-qex.postgres-1 psql -U ${{ secrets.DB_USERNAME }} -d postgres \
               -c "CREATE DATABASE email" || true
+            docker exec qex-qex.postgres-1 psql -U ${{ secrets.DB_USERNAME }} -d postgres \
+              -c "CREATE DATABASE trading" || true
             docker run --rm --network=qex --entrypoint migrate \
               ${{ secrets.DOCKERHUB_USERNAME }}/goemailworker:${{ env.GO_EMAIL_WORKER_TAG }} \
               -path /app/migrations \

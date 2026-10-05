@@ -20,6 +20,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
+// Setup initializes OpenTelemetry tracing, metrics, and logging based on environment variables.
 func Setup(ctx context.Context, version string) (*slog.Logger, func(context.Context) error, error) {
 	textHandler := slog.NewTextHandler(os.Stdout, nil)
 	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
