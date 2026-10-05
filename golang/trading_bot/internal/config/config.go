@@ -50,7 +50,7 @@ func LoadJSONConfig() AppConfig {
 			cfg.TradingBot.Symbols = []string{"BTCUSDT"}
 		}
 		if len(cfg.TradingBot.Timeframes) == 0 {
-			cfg.TradingBot.Timeframes = []string{"1hour", "4hour"}
+			cfg.TradingBot.Timeframes = []string{"15min", "30min", "1hour", "4hour"}
 		}
 		if cfg.TradingBot.PollIntervalSeconds == 0 {
 			cfg.TradingBot.PollIntervalSeconds = 300
