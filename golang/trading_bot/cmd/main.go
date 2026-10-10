@@ -14,18 +14,16 @@ import (
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 
+	"trading_bot/internal/application/candidatetrade/find"
 	"trading_bot/internal/config"
 	tradingbotdb "trading_bot/internal/database"
+	"trading_bot/internal/database/generated"
 	"trading_bot/internal/indicator"
-	"trading_bot/internal/kucoin"
-	"trading_bot/internal/marketdata"
-	"trading_bot/internal/strategy"
+	"trading_bot/internal/services/kucoin"
 	"trading_bot/internal/strategy/divergence"
 	"trading_bot/internal/trade"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-
+	app "qn.expenditure/shared/app"
 	shareddb "qn.expenditure/shared/database"
 	sharedtelemetry "qn.expenditure/shared/telemetry"
 )
@@ -70,8 +68,10 @@ func main() {
 	eng := indicator.NewEngine(indCfg)
 	strat := divergence.New()
 	factory := trade.NewFactory()
-	repo := trade.NewRepository(db, logger)
-	candleRepo := marketdata.CandleRepository(kucoin.NewAdapter("https://api.kucoin.com"))
+	queries := generated.New(db)
+	kucoinSvc := kucoin.NewService("https://api.kucoin.com")
+
+	h := findcandidatetrade.NewHandler(kucoinSvc, eng, strat, factory, queries, logger)
 
 	interval := time.Duration(cfg.TradingBot.PollIntervalSeconds) * time.Second
 	logger.Info("trading bot started",
@@ -86,12 +86,12 @@ func main() {
 	defer tick.Stop()
 
 	// Run immediately on startup, then on each tick.
-	runPipeline(ctx, logger, cfg, candleRepo, eng, strat, factory, repo)
+	runPipeline(ctx, logger, cfg, h)
 
 	for {
 		select {
 		case <-tick.C:
-			runPipeline(ctx, logger, cfg, candleRepo, eng, strat, factory, repo)
+			runPipeline(ctx, logger, cfg, h)
 		case <-ctx.Done():
 			logger.Info("shutting down")
 			return
@@ -103,11 +103,7 @@ func runPipeline(
 	ctx context.Context,
 	logger *slog.Logger,
 	cfg config.AppConfig,
-	candleRepo marketdata.CandleRepository,
-	eng indicator.Engine,
-	strat strategy.Strategy,
-	factory *trade.Factory,
-	repo *trade.Repository,
+	h app.Handler[findcandidatetrade.Command, findcandidatetrade.Result],
 ) {
 	var wg sync.WaitGroup
 	for _, symbol := range cfg.TradingBot.Symbols {
@@ -115,7 +111,11 @@ func runPipeline(
 			wg.Add(1)
 			go func(sym, tf string) {
 				defer wg.Done()
-				if err := processPair(ctx, logger, sym, tf, candleRepo, eng, strat, factory, repo); err != nil {
+				if _, err := h.Handle(ctx, findcandidatetrade.Command{
+					Symbol:      sym,
+					Timeframe:   tf,
+					CandleLimit: candleLimit,
+				}); err != nil {
 					logger.ErrorContext(ctx, "pipeline error",
 						slog.String("symbol", sym),
 						slog.String("timeframe", tf),
@@ -126,57 +126,6 @@ func runPipeline(
 		}
 	}
 	wg.Wait()
-}
-
-func processPair(
-	ctx context.Context,
-	logger *slog.Logger,
-	symbol, timeframe string,
-	candleRepo marketdata.CandleRepository,
-	eng indicator.Engine,
-	strat strategy.Strategy,
-	factory *trade.Factory,
-	repo *trade.Repository,
-) error {
-	ctx, span := otel.Tracer(serviceName).Start(ctx, "processPair")
-	defer span.End()
-	span.SetAttributes(
-		attribute.String("symbol", symbol),
-		attribute.String("timeframe", timeframe),
-		attribute.Int("candle_limit", candleLimit),
-	)
-
-	logger = logger.With(slog.String("symbol", symbol), slog.String("timeframe", timeframe))
-
-	candles, err := candleRepo.GetClosedCandles(ctx, symbol, timeframe, candleLimit)
-	if err != nil {
-		return err
-	}
-	if len(candles) == 0 {
-		return nil
-	}
-
-	snap, err := eng.Calculate(candles)
-	if err != nil {
-		return err
-	}
-	span.SetAttributes(attribute.Float64("rsi", snap.RSI))
-
-	lastCandle := candles[len(candles)-1]
-	sig, err := strat.Evaluate(strategy.MarketContext{Candle: lastCandle, Indicators: snap})
-	if err != nil {
-		return err
-	}
-	if sig == nil {
-		return nil
-	}
-
-	ct := factory.Create(lastCandle, snap, sig, divergence.StrategyName, divergence.StrategyVersion)
-	if ct == nil {
-		return nil // in-memory duplicate within this process run
-	}
-
-	return repo.Save(ctx, ct)
 }
 
 func runMigrations(db *sql.DB) error {

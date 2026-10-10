@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"trading_bot/internal/indicator"
-	"trading_bot/internal/marketdata"
 	"trading_bot/internal/strategy"
 	"trading_bot/internal/strategy/divergence"
 	"trading_bot/internal/trade"
+	"trading_bot/tests/testutil"
 )
 
 func fixturesDir() string {
@@ -25,7 +25,7 @@ func fixturesDir() string {
 func runPipeline(t *testing.T) (*strategy.Signal, *trade.CandidateTrade, indicator.Snapshot) {
 	t.Helper()
 
-	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	repo := testutil.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
 	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
 	require.NoError(t, err)
 	require.NotEmpty(t, candles)
@@ -78,7 +78,7 @@ func TestSeam3_DivergenceStrategy_Pipeline(t *testing.T) {
 // TestSeam3_InMemoryIdempotency verifies that calling Create twice with the same candle
 // returns a trade only on the first call and nil on the second.
 func TestSeam3_InMemoryIdempotency(t *testing.T) {
-	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	repo := testutil.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
 	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
 	require.NoError(t, err)
 

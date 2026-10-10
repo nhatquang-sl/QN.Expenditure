@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"trading_bot/internal/indicator"
 	"trading_bot/internal/marketdata"
+	"trading_bot/tests/testutil"
 )
 
 const tolerance = 0.0001
@@ -132,7 +133,7 @@ func TestEngine_RSI_FixtureMatchesReference(t *testing.T) {
 	// against the synthetic BTCUSDT_1h_200.json fixture (seed=42 random walk).
 	const expectedRSI = 68.7260393200
 
-	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	repo := testutil.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
 	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
 	require.NoError(t, err)
 	require.Len(t, candles, 200)
@@ -145,7 +146,7 @@ func TestEngine_RSI_FixtureMatchesReference(t *testing.T) {
 }
 
 func TestEngine_RSI_Deterministic(t *testing.T) {
-	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	repo := testutil.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
 	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
 	require.NoError(t, err)
 
@@ -222,7 +223,7 @@ func TestEngine_BB_PercentB_AboveUpper(t *testing.T) {
 // --- BB fixture validation ---
 
 func TestEngine_BB_FixtureMatchesReference(t *testing.T) {
-	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	repo := testutil.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
 	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
 	require.NoError(t, err)
 	require.Len(t, candles, 200)
@@ -288,7 +289,7 @@ func TestEngine_RSISlope_Direction(t *testing.T) {
 }
 
 func TestEngine_RSISlope_FixtureMatchesReference(t *testing.T) {
-	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	repo := testutil.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
 	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
 	require.NoError(t, err)
 	require.Len(t, candles, 200)
@@ -348,7 +349,7 @@ func refRSI(t *testing.T, closes []float64, period int) float64 {
 // --- Full snapshot determinism ---
 
 func TestEngine_Snapshot_Deterministic(t *testing.T) {
-	repo := marketdata.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
+	repo := testutil.NewFileCandleRepository(filepath.Join(fixturesDir(), "BTCUSDT_1h_200.json"))
 	candles, err := repo.GetClosedCandles(context.Background(), "BTCUSDT", "1hour", 1000)
 	require.NoError(t, err)
 

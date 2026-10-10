@@ -1,4 +1,4 @@
-package marketdata
+package testutil
 
 import (
 	"context"
@@ -6,16 +6,11 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"trading_bot/internal/marketdata"
 )
 
-// CandleRepository is the source of closed candle data.
-type CandleRepository interface {
-	// GetClosedCandles returns up to limit closed candles for the given symbol and timeframe,
-	// ordered oldest-first.
-	GetClosedCandles(ctx context.Context, symbol, timeframe string, limit int) ([]Candle, error)
-}
-
-// fixtureCandle mirrors Candle with JSON tags for fixture files.
+// fixtureCandle mirrors marketdata.Candle with JSON tags for fixture files.
 type fixtureCandle struct {
 	Symbol    string    `json:"symbol"`
 	Timeframe string    `json:"timeframe"`
@@ -39,7 +34,7 @@ func NewFileCandleRepository(path string) *FileCandleRepository {
 	return &FileCandleRepository{path: path}
 }
 
-func (r *FileCandleRepository) GetClosedCandles(ctx context.Context, symbol, timeframe string, limit int) ([]Candle, error) {
+func (r *FileCandleRepository) GetClosedCandles(ctx context.Context, symbol, timeframe string, limit int) ([]marketdata.Candle, error) {
 	data, err := os.ReadFile(r.path)
 	if err != nil {
 		return nil, fmt.Errorf("reading fixture file %q: %w", r.path, err)
@@ -50,10 +45,10 @@ func (r *FileCandleRepository) GetClosedCandles(ctx context.Context, symbol, tim
 		return nil, fmt.Errorf("parsing fixture file %q: %w", r.path, err)
 	}
 
-	var candles []Candle
+	var candles []marketdata.Candle
 	for _, fc := range raw {
 		if fc.Symbol == symbol && fc.Timeframe == timeframe && fc.IsClosed {
-			candles = append(candles, Candle{
+			candles = append(candles, marketdata.Candle{
 				Symbol:    fc.Symbol,
 				Timeframe: fc.Timeframe,
 				OpenTime:  fc.OpenTime,

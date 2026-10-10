@@ -268,6 +268,27 @@ When reviewing or writing code, check:
 4. Create controller endpoint in WebAPI
 5. Regenerate TypeScript API client: `npm run generate-api-client`
 
+### Go Development
+
+#### Naming Conventions
+- **Id fields**: Always use `Id`, never `ID` — applies to Go struct fields, parameters, variables, and documentation (e.g., `struct { Id string }`, `CandidateId`, `RiskContextId`, not `CandidateID`, `RiskContextID`).
+
+```go
+// ✅ Correct
+type RiskDecision struct {
+    Id            string
+    CandidateId   string
+    RiskContextId string
+}
+
+// ❌ Incorrect
+type RiskDecision struct {
+    ID            string
+    CandidateID   string
+    RiskContextID string
+}
+```
+
 ### Creating a New Go Service (goauthapi, go-auth-bot, etc.)
 
 Every Go service that calls `OpenPostgres` (`golang/shared/database/postgres.go`) draws from the shared Postgres connection budget:

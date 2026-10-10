@@ -12,17 +12,17 @@ import (
 	"trading_bot/internal/marketdata"
 )
 
-// Adapter implements marketdata.CandleRepository backed by the KuCoin REST API.
+// Service calls the KuCoin REST API to fetch market data.
 // It normalizes domain symbols (BTCUSDT) to KuCoin format (BTC-USDT) at the boundary,
 // reverses the newest-first response to oldest-first, and marks all returned candles
 // as closed (REST candles are always fully closed).
-type Adapter struct {
+type Service struct {
 	baseURL    string
 	httpClient *http.Client
 }
 
-func NewAdapter(baseURL string) *Adapter {
-	return &Adapter{
+func NewService(baseURL string) *Service {
+	return &Service{
 		baseURL:    strings.TrimRight(baseURL, "/"),
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
@@ -30,16 +30,16 @@ func NewAdapter(baseURL string) *Adapter {
 
 // GetClosedCandles fetches up to limit closed candles for symbol+timeframe from KuCoin,
 // returned oldest-first. symbol must be in canonical form (e.g. "BTCUSDT").
-func (a *Adapter) GetClosedCandles(ctx context.Context, symbol, timeframe string, limit int) ([]marketdata.Candle, error) {
+func (s *Service) GetClosedCandles(ctx context.Context, symbol, timeframe string, limit int) ([]marketdata.Candle, error) {
 	kuCoinSymbol := toKuCoinSymbol(symbol)
-	url := fmt.Sprintf("%s/api/v1/market/candles?type=%s&symbol=%s", a.baseURL, timeframe, kuCoinSymbol)
+	url := fmt.Sprintf("%s/api/v1/market/candles?type=%s&symbol=%s", s.baseURL, timeframe, kuCoinSymbol)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("kucoin: building request: %w", err)
 	}
 
-	resp, err := a.httpClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("kucoin: fetching candles for %s %s: %w", symbol, timeframe, err)
 	}
