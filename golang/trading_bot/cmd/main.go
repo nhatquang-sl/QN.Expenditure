@@ -21,7 +21,6 @@ import (
 	"trading_bot/internal/indicator"
 	"trading_bot/internal/services/kucoin"
 	"trading_bot/internal/strategy/divergence"
-	"trading_bot/internal/trade"
 
 	app "qn.expenditure/shared/app"
 	shareddb "qn.expenditure/shared/database"
@@ -67,11 +66,10 @@ func main() {
 	indCfg := cfg.IndicatorConfig()
 	eng := indicator.NewEngine(indCfg)
 	strat := divergence.New()
-	factory := trade.NewFactory()
 	queries := generated.New(db)
 	kucoinSvc := kucoin.NewService("https://api.kucoin.com")
 
-	h := findcandidatetrade.NewHandler(kucoinSvc, eng, strat, factory, queries, logger)
+	h := findcandidatetrade.NewHandler(kucoinSvc, eng, strat, queries, logger)
 
 	interval := time.Duration(cfg.TradingBot.PollIntervalSeconds) * time.Second
 	logger.Info("trading bot started",

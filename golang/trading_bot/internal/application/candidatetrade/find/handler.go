@@ -2,7 +2,11 @@ package findcandidatetrade
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"log/slog"
+	"sync"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -12,7 +16,6 @@ import (
 	"trading_bot/internal/services/kucoin"
 	"trading_bot/internal/strategy"
 	"trading_bot/internal/strategy/divergence"
-	"trading_bot/internal/trade"
 
 	app "qn.expenditure/shared/app"
 )
@@ -35,9 +38,11 @@ type handler struct {
 	kucoinSvc *kucoin.Service
 	eng       indicator.Engine
 	strat     strategy.Strategy
-	factory   *trade.Factory
 	queries   *generated.Queries
 	logger    *slog.Logger
+
+	mu   sync.Mutex
+	seen map[string]struct{}
 }
 
 // NewHandler returns a Handler[Command, Result] with all dependencies injected.
@@ -45,7 +50,6 @@ func NewHandler(
 	kucoinSvc *kucoin.Service,
 	eng indicator.Engine,
 	strat strategy.Strategy,
-	factory *trade.Factory,
 	queries *generated.Queries,
 	logger *slog.Logger,
 ) app.Handler[Command, Result] {
@@ -53,9 +57,9 @@ func NewHandler(
 		kucoinSvc: kucoinSvc,
 		eng:       eng,
 		strat:     strat,
-		factory:   factory,
 		queries:   queries,
 		logger:    logger,
+		seen:      make(map[string]struct{}),
 	}
 }
 
@@ -91,31 +95,49 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 		return Result{}, nil
 	}
 
-	ct := h.factory.Create(lastCandle, snap, sig, divergence.StrategyName, divergence.StrategyVersion)
-	if ct == nil {
+	// Idempotency key: Symbol:Timeframe:CloseTime:StrategyName:StrategyVersion
+	key := fmt.Sprintf("%s:%s:%s:%s:%s",
+		lastCandle.Symbol,
+		lastCandle.Timeframe,
+		lastCandle.CloseTime.UTC().Format(time.RFC3339),
+		divergence.StrategyName,
+		divergence.StrategyVersion,
+	)
+
+	h.mu.Lock()
+	_, duplicate := h.seen[key]
+	if !duplicate {
+		h.seen[key] = struct{}{}
+	}
+	h.mu.Unlock()
+
+	if duplicate {
 		return Result{}, nil // in-memory duplicate within this process run
 	}
 
+	id := newUUID()
+	now := time.Now().UTC()
+
 	result, err := h.queries.InsertCandidateTrade(ctx, generated.InsertCandidateTradeParams{
-		Id:              ct.Id,
-		Symbol:          ct.Symbol,
-		Timeframe:       ct.Timeframe,
-		Side:            string(ct.Side),
-		EntryPrice:      ct.EntryPrice,
-		StrategyName:    ct.StrategyName,
-		StrategyVersion: ct.StrategyVersion,
-		Rsi:             ct.Indicators.RSI,
-		BbUpper:         ct.Indicators.BBUpper,
-		BbMiddle:        ct.Indicators.BBMiddle,
-		BbLower:         ct.Indicators.BBLower,
-		BbWidth:         ct.Indicators.BBWidth,
-		BbPercentB:      ct.Indicators.BBPercentB,
-		RsiSlope:        ct.Indicators.RSISlope,
-		DivergenceType:  int32(ct.Indicators.DivergenceType),
-		Score:           int32(ct.Score),
-		Reasons:         ct.Reasons,
-		IdempotencyKey:  ct.IdempotencyKey,
-		CreatedAt:       ct.CreatedAt,
+		Id:              id,
+		Symbol:          lastCandle.Symbol,
+		Timeframe:       lastCandle.Timeframe,
+		Side:            string(sig.Side),
+		EntryPrice:      lastCandle.Close,
+		StrategyName:    divergence.StrategyName,
+		StrategyVersion: divergence.StrategyVersion,
+		Rsi:             snap.RSI,
+		BbUpper:         snap.BBUpper,
+		BbMiddle:        snap.BBMiddle,
+		BbLower:         snap.BBLower,
+		BbWidth:         snap.BBWidth,
+		BbPercentB:      snap.BBPercentB,
+		RsiSlope:        snap.RSISlope,
+		DivergenceType:  int32(snap.DivergenceType),
+		Score:           int32(sig.Score),
+		Reasons:         sig.Reasons,
+		IdempotencyKey:  key,
+		CreatedAt:       now,
 	})
 	if err != nil {
 		return Result{}, err
@@ -128,16 +150,24 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 
 	if affected == 1 {
 		h.logger.InfoContext(ctx, "candidate_trade_created",
-			slog.String("id", ct.Id),
-			slog.String("symbol", ct.Symbol),
-			slog.String("timeframe", ct.Timeframe),
-			slog.String("side", string(ct.Side)),
-			slog.String("strategy_name", ct.StrategyName),
-			slog.String("strategy_version", ct.StrategyVersion),
-			slog.String("idempotency_key", ct.IdempotencyKey),
-			slog.Int("score", ct.Score),
+			slog.String("id", id),
+			slog.String("symbol", lastCandle.Symbol),
+			slog.String("timeframe", lastCandle.Timeframe),
+			slog.String("side", string(sig.Side)),
+			slog.String("strategy_name", divergence.StrategyName),
+			slog.String("strategy_version", divergence.StrategyVersion),
+			slog.String("idempotency_key", key),
+			slog.Int("score", sig.Score),
 		)
 	}
 
-	return Result{TradeId: ct.Id}, nil
+	return Result{TradeId: id}, nil
+}
+
+func newUUID() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	b[6] = (b[6] & 0x0f) | 0x40 // version 4
+	b[8] = (b[8] & 0x3f) | 0x80 // variant bits
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
