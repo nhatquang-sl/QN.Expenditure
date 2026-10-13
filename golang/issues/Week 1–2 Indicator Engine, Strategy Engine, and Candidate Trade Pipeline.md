@@ -19,8 +19,8 @@ Build a deterministic, testable signal pipeline as a new `trading_bot` Go module
 ## User Stories
 
 1. As a developer, I want a `Candle` domain model independent of any exchange format, so that the indicator and strategy engines are not coupled to KuCoin's API response structure.
-2. As a developer, I want a `CandleRepository` interface with a file-based implementation, so that indicator and strategy tests run offline against fixture data without hitting KuCoin.
-3. As a developer, I want a KuCoin REST adapter that fetches closed candles and normalizes symbols from `BTC-USDT` to `BTCUSDT`, so that the domain layer is exchange-agnostic.
+2. As a developer, I want a `testutil` helper that loads fixture candles from a JSON file into a `[]Candle` slice, so that indicator and strategy tests run offline against fixture data without hitting KuCoin.
+3. As a developer, I want a KuCoin REST adapter that fetches closed candles and normalizes symbols from `BTC-USDT` to `BTCUSDT`, so that the live pipeline works with the canonical symbol format used throughout the system.
 4. As a developer, I want RSI(14) calculated using Wilder's smoothing (RMA), so that the output matches TradingView's RSI values within ±0.0001.
 5. As a developer, I want Bollinger Bands(20, 2) calculated using population standard deviation, so that the output matches TradingView's BB values within ±0.0001.
 6. As a developer, I want BB Width, BB %B, and RSI Slope calculated alongside Bollinger Bands, so that all indicator features are available to the strategy in a single `IndicatorSnapshot`.
@@ -34,13 +34,13 @@ Build a deterministic, testable signal pipeline as a new `trading_bot` Go module
 14. As a developer, I want `Reasons` to contain named constants (e.g. `RSI_BULLISH_DIVERGENCE`, `RSI_BEARISH_DIVERGENCE`), so that decision context is human-readable and machine-parseable.
 15. As a developer, I want a `CandidateTrade` struct that captures the full decision snapshot (symbol, timeframe, side, entry price, strategy name, strategy version, all indicator values, score, reasons, idempotency key), so that any future consumer can reconstruct why the trade was proposed.
 16. As a developer, I want `EntryPrice` set to the close price of the triggering candle, so that the value is deterministic and requires no additional API call.
-17. As a developer, I want a `CandidateTradeFactory` that generates a UUID and idempotency key from `Symbol:Timeframe:CloseTime:StrategyName:StrategyVersion`, so that duplicate detection is built into the creation contract.
+17. As a developer, I want the handler to generate a UUID and idempotency key inline when a signal is produced, so that trade creation requires no separate factory abstraction.
 18. As a developer, I want the pipeline to only evaluate the strategy on closed candles, so that signal repainting and duplicate signals from in-progress candles are prevented.
 19. As a developer, I want `CandidateTrade` records persisted to a `trading_bot` PostgreSQL database with a `UNIQUE` constraint on the idempotency key, so that duplicate signals are prevented across process restarts.
 20. As a developer, I want the `INSERT` to use `ON CONFLICT (idempotency_key) DO NOTHING`, so that idempotent re-processing is safe without error-handling overhead.
 21. As a developer, I want a structured `slog` log event emitted only when a new (non-duplicate) `CandidateTrade` is created, so that observability is accurate without excessive noise.
 22. As a developer, I want the polling loop to run every 5 minutes, fetching 1000 closed candles per symbol per timeframe from KuCoin, so that the pipeline is stateless and RSI is always sufficiently warm.
-23. As a developer, I want both `1hour` and `4hour` timeframes active from day one, so that the pipeline produces signals across multiple market contexts.
+23. As a developer, I want `15min`, `30min`, `1hour`, and `4hour` timeframes active from day one, so that the pipeline produces signals across multiple market contexts.
 24. As a developer, I want the list of monitored symbols to be configurable (default: `["BTCUSDT"]`), so that adding new symbols requires only a config change.
 25. As a developer, I want all indicator configuration (RSI period, BB period, BB multiplier, RSI slope period) to be part of a versioned config struct, so that backtests are reproducible by replaying the same config.
 26. As a developer, I want every `CandidateTrade` to store `StrategyName` and `StrategyVersion` (e.g. `RSI_DIVERGENCE`, `1.0.0`), so that backtests can attribute each trade to an exact strategy version.
@@ -57,7 +57,7 @@ Build a deterministic, testable signal pipeline as a new `trading_bot` Go module
 37. As a developer, I want divergence scoring to use a base of +50 with RSI Slope contributing ±15 (confirming direction +15, counter direction -15), so that signal strength reflects both the divergence structure and momentum confirmation.
 38. As a developer, I want `RSI_BULLISH_DIVERGENCE` and `RSI_BEARISH_DIVERGENCE` as named reason constants, so that downstream consumers can identify divergence-sourced signals programmatically.
 39. As a developer, I want `calculateDivergence()` edge cases tested with synthetic RSI series (no divergence, bearish pattern, bullish pattern, prior peak/trough outside lookback window, RSI exactly at threshold), so that divergence detection correctness is independently verifiable without relying on the fixture candle set containing a divergence.
-40. As a developer, I want a Seam 3 integration test for `DivergenceStrategy`, wiring `FileCandleRepository → IndicatorEngine → DivergenceStrategy → CandidateTradeFactory`, so that the end-to-end pipeline is verified.
+40. As a developer, I want a Seam 3 integration test for `DivergenceStrategy`, calling `handler.Handle()` with a stubbed `kucoin.Service` that returns fixture candles, so that the end-to-end pipeline is verified.
 41. As a developer, I want the RSI Divergence strategy versioned as `StrategyName = "RSI_DIVERGENCE"`, `StrategyVersion = "1.0.0"`, so that its `CandidateTrade` records are attributable to this exact strategy implementation.
 
 ---
@@ -65,6 +65,10 @@ Build a deterministic, testable signal pipeline as a new `trading_bot` Go module
 ## Implementation Decisions
 
 - **New Go module**: `trading_bot` added to the existing `go.work` workspace. It does not share a module with `auth`, `email_consumer`, or other services.
+
+- **No `CandleRepository` interface**: `handler.go` calls `kucoin.Service.GetClosedCandles()` directly. Tests inject `[]Candle` slices via `tests/testutil/candles.go` — no repository interface is needed.
+
+- **Inline trade creation**: UUID (crypto/rand v4, via private `newUUID()`) and idempotency key (`Symbol:Timeframe:CloseTime:StrategyName:StrategyVersion`) are built directly in `handler.go`. There is no `CandidateTradeFactory` type — the handler builds `InsertCandidateTradeParams` directly from the `Signal` + `Candle`.
 
 - **PostgreSQL connection budget**: The `trading_bot` module will call `OpenPostgres` from `golang/shared/database/postgres.go`. Before wiring it up, verify that `(existing_service_count + 1) × 25 ≤ max_connections - 10` and adjust `max_connections` in `credentials/qex/docker-compose.yml` if needed. Currently 4 services × 25 = 100; adding `trading_bot` = 5 × 25 = 125, within the 200 limit.
 
@@ -96,7 +100,7 @@ Build a deterministic, testable signal pipeline as a new `trading_bot` Go module
 
 - **`EntryPrice`**: Set to `Candle.Close` of the candle that triggered the signal. No additional API call required.
 
-- **Polling**: Stateless. Every 5 minutes, fetch the last 1000 closed candles from KuCoin per symbol × timeframe. The full 1000-candle history is re-fetched each time; no incremental state is maintained in memory.
+- **Polling**: Stateless. Every 5 minutes, `runPipeline()` in `cmd/main.go` spawns one goroutine per symbol × timeframe, each calling `handler.Handle()`. The full 1000-candle history is re-fetched from KuCoin each time; no incremental candle state is maintained in memory.
 
 - **Post-creation action**: `INSERT ... ON CONFLICT DO NOTHING`. If rows affected = 1, emit a structured `slog` event. If rows affected = 0, it is a duplicate — skip silently.
 
@@ -121,11 +125,11 @@ A good test verifies observable contracts at the right seam — not internal mat
 - Required cases: `DivergenceNone` → nil; `DivergenceBullish` + slope > 0 → BUY, score=65, `RSI_BULLISH_DIVERGENCE`; `DivergenceBullish` + slope ≤ 0 → BUY, score=35; `DivergenceBearish` + slope < 0 → SELL, score=65, `RSI_BEARISH_DIVERGENCE`; `DivergenceBearish` + slope ≥ 0 → SELL, score=35.
 - Determinism sub-test: same `MarketContext` input twice → identical `Side`, `Score`, `Reasons`.
 
-**Seam 3 — Full pipeline integration (DivergenceStrategy, via fake `CandleRepository`)**
-- Uses a `FileCandleRepository` that loads fixture candles from disk. No real KuCoin call. No real database.
-- Wires: `FileCandleRepository` → `IndicatorEngine` → `DivergenceStrategy` → `CandidateTradeFactory`.
-- If fixture candles do not produce a divergence on the last candle: assert `nil` signal and no `CandidateTrade` created.
-- Determinism sub-test: run same fixture twice, assert `DivergenceType`, `Side`, `EntryPrice`, `StrategyName`, `StrategyVersion`, `Score`, `Reasons` are identical. Exclude `Id` and `CreatedAt`.
+**Seam 3 — Full pipeline integration (`handler.Handle()` with stubbed KuCoin)**
+- Calls `handler.Handle(Command{...})` with a stubbed `kucoin.Service` that returns fixture candles loaded from disk. No real KuCoin call. No real database.
+- The handler wires: candle fetch (stub) → `IndicatorEngine` → `DivergenceStrategy` → inline dedup → `InsertCandidateTrade` (skipped when no DB; verified via `Result.TradeId`).
+- If fixture candles do not produce a divergence on the last candle: assert `Result.TradeId == ""` (no trade created).
+- Determinism sub-test: call `handler.Handle()` twice with same fixture; assert `DivergenceType`, `Side`, `EntryPrice`, `StrategyName`, `StrategyVersion`, `Score`, `Reasons` are identical. Second call returns empty `Result{}` due to in-memory dedup. Exclude `Id` and `CreatedAt`.
 
 Prior art: `auth_bot` uses `httptest.Server` stubs and `testify` assertions. Seam 3 requires no DB so `testcontainers` is not needed.
 
@@ -150,12 +154,12 @@ Each slice is independently deliverable, has a clear done condition, and leaves 
 
 ### Slice 1 — Module scaffold + Candle model
 
-Deliverable: `trading_bot` Go module exists in `go.work`, with a `Candle` struct, a `CandleRepository` interface, and a `FileCandleRepository` that loads fixture candles from a JSON file.
+Deliverable: `trading_bot` Go module exists in `go.work`, with a `Candle` struct in `internal/marketdata` and a `testutil` helper that loads fixture candles from a JSON file into a `[]Candle` slice.
 
 Done when:
 - `go build ./...` passes with zero errors
 - A fixture JSON file exists with at least 200 BTCUSDT 1h candles
-- `FileCandleRepository.GetClosedCandles()` returns those candles correctly
+- `testutil.LoadCandles()` (or equivalent) returns those candles correctly
 
 No indicator logic. No strategy. No database.
 
@@ -216,15 +220,16 @@ Done when:
 
 ---
 
-### Slice 6 — CandidateTrade + factory + in-memory idempotency
+### Slice 6 — CandidateTrade inline creation + in-memory idempotency
 
-Deliverable: `CandidateTradeFactory.Create()` produces a `CandidateTrade` from a `Signal` + `Candle` + `IndicatorSnapshot`, with UUID, idempotency key, and all fields populated. An in-memory map prevents duplicate creation within a single process run.
+Deliverable: `handler.Handle()` builds the idempotency key and UUID inline when a signal is produced, persists the candidate trade, and prevents duplicate creation within a single process run.
 
 Done when:
-- Idempotency key is `Symbol:Timeframe:CloseTime:StrategyName:StrategyVersion`
-- Calling factory twice with same inputs returns the trade only once (second call returns nil)
+- Idempotency key is `Symbol:Timeframe:CloseTime:StrategyName:StrategyVersion`, built inline in the handler
+- UUID generated by private `newUUID()` (crypto/rand v4) in the handler
+- In-memory `seen map[string]struct{}` guarded by `sync.Mutex` — second call with same inputs returns empty `Result{}`, no DB insert attempted
 - Full Seam 3 integration test passes (DivergenceStrategy)
-- Determinism sub-test passes (same fixture → same meaningful fields twice)
+- Determinism sub-test passes (same fixture → same meaningful fields twice; second call returns empty result)
 
 ---
 
@@ -242,13 +247,13 @@ Done when:
 
 ### Slice 8 — KuCoin REST adapter
 
-Deliverable: `KuCoinAdapter` implements `CandleRepository`, fetches the last 1000 closed candles for a given symbol + timeframe, and normalizes `BTC-USDT` → `BTCUSDT`.
+Deliverable: `kucoin.Service.GetClosedCandles()` fetches the last 1000 closed candles for a given symbol + timeframe and normalizes `BTC-USDT` → `BTCUSDT`.
 
 Done when:
 - Symbol normalization is applied at the adapter boundary
 - Response is parsed correctly (KuCoin returns newest-first; adapter reverses to oldest-first)
 - `IsClosed` is set correctly (only fully closed candles are returned)
-- Adapter can be replaced by `FileCandleRepository` in tests with no other code changes
+- Tests stub the KuCoin service by passing fixture `[]Candle` slices directly to the engine
 
 ---
 

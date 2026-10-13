@@ -67,7 +67,7 @@ func main() {
 	eng := indicator.NewEngine(indCfg)
 	strat := divergence.New()
 	queries := generated.New(db)
-	kucoinSvc := kucoin.NewService("https://api.kucoin.com")
+	kucoinSvc := kucoin.NewService(cfg.KuCoin)
 
 	h := findcandidatetrade.NewHandler(kucoinSvc, eng, strat, queries, logger)
 

@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"trading_bot/internal/indicator"
+	"trading_bot/internal/services/kucoin"
 
 	sharedconfig "qn.expenditure/shared/config"
 )
@@ -15,6 +16,7 @@ type AppConfig struct {
 	ConnectionStrings struct {
 		PGTrading string
 	}
+	KuCoin kucoin.Config
 	TradingBot struct {
 		Symbols             []string
 		Timeframes          []string
