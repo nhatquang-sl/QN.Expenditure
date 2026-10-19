@@ -14,3 +14,9 @@ sql:
         emit_db_tags: false
         rename:
           id: "Id"
+          candidate_id: "CandidateId"
+          portfolio_snapshot_id: "PortfolioSnapshotId"
+          risk_context_id: "RiskContextId"
+          risk_decision_id: "RiskDecisionId"
+          paper_order_id: "PaperOrderId"
+          paper_fill_id: "PaperFillId"

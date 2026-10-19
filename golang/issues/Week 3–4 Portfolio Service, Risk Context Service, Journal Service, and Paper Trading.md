@@ -12,7 +12,7 @@ The trading system can generate `CandidateTrade` records, but nothing happens af
 
 ## Solution
 
-Extend the `trading_bot` binary with five new internal packages: `portfolio`, `risk`, `journal`, `papertrading`, and `pipeline`. When a `CandidateTrade` is created by the Strategy Engine, a `CandidatePipeline` orchestrates: portfolio snapshot retrieval, risk context assembly, hard risk rule evaluation, and (on approval) paper trade execution with full journal persistence. All of this runs in paper trading mode — no real orders, no real money — producing a realistic lifecycle record that will feed the AI Risk Manager and RAG service in later weeks.
+Extend the `trading_bot` binary with two new internal packages (`risk`, `portfolio`) plus a new `processcandidatetrade` application handler. When a `CandidateTrade` is created by the Strategy Engine, `processcandidatetrade.handler` orchestrates: portfolio snapshot retrieval, risk context assembly, hard risk rule evaluation, and (on approval) paper trade execution with full journal persistence. All of this runs in paper trading mode — no real orders, no real money — producing a realistic lifecycle record that will feed the AI Risk Manager and RAG service in later weeks.
 
 ---
 
@@ -31,26 +31,18 @@ package "cmd/main.go" {
   [runPipeline]
 }
 
-package "pipeline" {
-  [CandidatePipeline]
+package "application/candidatetrade" {
+  [find.handler]
+  [process.handler]
 }
 
 package "application/portfolio" {
   [sync.handler]
-  [getsnapshot.handler]
 }
 
-package "risk" {
+package "internal/risk" {
   [RiskContextService]
   [HardRiskGate] <<pure function>>
-}
-
-package "papertrading" {
-  [PaperTradingEngine]
-}
-
-package "journal" {
-  [JournalRepository]
 }
 
 package "PostgreSQL" {
@@ -71,39 +63,30 @@ cloud "KuCoin REST API" {
 }
 
 ' Pipeline orchestration
-[runPipeline] --> [handler.Handle()] : Handle(ctx, Command{})
-[handler.Handle()] --> CT : InsertCandidateTrade (ON CONFLICT DO NOTHING)
-[runPipeline] --> [CandidatePipeline] : Process(ctx, TradeId) [only when TradeId != ""]
+[runPipeline] --> [find.handler] : Handle(ctx, Command{})
+[find.handler] --> CT : InsertCandidateTrade (ON CONFLICT DO NOTHING)
+[runPipeline] --> [process.handler] : Handle(ctx, Command{TradeId}) [only when TradeId != ""]
 
-[CandidatePipeline] --> [PortfolioService] : GetSnapshot()
-[CandidatePipeline] --> [RiskContextService] : Build()
-[CandidatePipeline] --> [HardRiskGate] : Evaluate()
-[CandidatePipeline] --> [PaperTradingEngine] : Execute() [APPROVE only]
-[CandidatePipeline] --> [JournalRepository] : SaveRiskDecision()
+[process.handler] --> AB : GetAccountBalances (via generated.Queries)
+[process.handler] --> POS : GetOpenPositions (via generated.Queries)
+[process.handler] --> [RiskContextService] : Build()
+[process.handler] --> [HardRiskGate] : Evaluate()
+[process.handler] --> RD : InsertRiskDecision (via generated.Queries)
+[process.handler] --> PO : InsertPaperOrder / UpdateStatus [APPROVE only]
+[process.handler] --> PF : InsertPaperFill [APPROVE only]
+[process.handler] --> POS : UpsertPosition [APPROVE only]
 
 ' Portfolio sync (startup)
 [sync.handler] --> [kucoin.Service] : GetBalances() / GetOpenOrders() [startup]
 [kucoin.Service] --> [GET /api/v1/accounts] : V2 Signature auth (kucoin.Config)
 [kucoin.Service] --> [GET /api/v1/orders] : V2 Signature auth (kucoin.Config)
 [sync.handler] --> AB : delete + upsert
-[getsnapshot.handler] --> AB : read
-[getsnapshot.handler] --> POS : read
 
 ' Risk context assembly
-[RiskContextService] --> PS : read snapshot
+[RiskContextService] --> POS : read (symbol exposure)
 [RiskContextService] --> TO : read (TradingHistoryContext)
-[RiskContextService] --> [JournalRepository] : SaveRiskContext()
-
-' Journal writes
-[JournalRepository] --> RC : INSERT (immutable)
-[JournalRepository] --> RD : INSERT (immutable)
-[JournalRepository] --> PO : INSERT / UPDATE
-[JournalRepository] --> PF : INSERT (immutable)
-[JournalRepository] --> POS : INSERT / UPDATE
-[JournalRepository] --> TO : INSERT (immutable)
-
-' Paper trading
-[PaperTradingEngine] --> [JournalRepository] : write full lifecycle
+[RiskContextService] --> RC : INSERT risk_context (via generated.Queries)
+[RiskContextService] --> PS : INSERT portfolio_snapshot (via generated.Queries)
 
 @enduml
 ```
@@ -111,34 +94,32 @@ cloud "KuCoin REST API" {
 ### Pipeline Sequence Diagram
 
 ```plantuml
-@startuml CandidatePipeline Sequence
+@startuml ProcessCandidateTrade Sequence
 
 participant "runPipeline" as PP
-participant "handler.Handle()" as H
-participant "CandidatePipeline" as CP
-participant "PortfolioService" as PS
+participant "find.handler" as H
+participant "process.handler" as CP
 participant "RiskContextService" as RCS
 participant "HardRiskGate\n<<pure function>>" as HRG
-participant "PaperTradingEngine" as PTE
-participant "JournalRepository" as JR
-database "PostgreSQL" as DB
+database "PostgreSQL\n(generated.Queries)" as DB
 
 PP -> H : Handle(ctx, Command{})
 H -> DB : InsertCandidateTrade (ON CONFLICT DO NOTHING)
 H --> PP : Result{TradeId}
-PP -> CP : Process(ctx, TradeId) [only when TradeId != ""]
+PP -> CP : Handle(ctx, Command{TradeId}) [only when TradeId != ""]
 
 group Portfolio Snapshot
-  CP -> PS : GetSnapshot(ctx)
-  PS -> DB : read account_balances, positions
-  PS --> CP : PortfolioSnapshot
+  CP -> DB : GetAccountBalances()
+  CP -> DB : GetOpenPositions()
+  CP -> CP : computeSnapshotInput() [pure function]
 end
 
 group Risk Context Assembly
-  CP -> RCS : Build(ctx, candidate, snapshot)
-  RCS -> DB : read trade_outcomes\n(DailyPnL, ConsecutiveLosses)
-  RCS -> JR : SaveRiskContext()
-  JR -> DB : INSERT risk_contexts
+  CP -> RCS : Build(ctx, candidate, snapshotInput)
+  RCS -> DB : read positions (symbol exposure)
+  RCS -> DB : read trade_outcomes (DailyPnL, ConsecutiveLosses)
+  RCS -> DB : INSERT portfolio_snapshots
+  RCS -> DB : INSERT risk_contexts
   RCS --> CP : RiskContext
   CP -> CP : log risk_context_created
 end
@@ -147,27 +128,21 @@ group Hard Risk Gate
   CP -> HRG : Evaluate(riskContext)
   note right of HRG : No DB or network calls\nPure function
   HRG --> CP : RiskDecision (APPROVE / REJECT)
-  CP -> JR : SaveRiskDecision()
-  JR -> DB : INSERT risk_decisions
+  CP -> DB : INSERT risk_decisions
   CP -> CP : log risk_decision_created
 end
 
 alt RiskDecision == APPROVE
-  group Paper Trade Execution
-    CP -> PTE : Execute(ctx, decision, candidate)
-    PTE -> JR : SaveOrder() [OPEN]
-    JR -> DB : INSERT paper_orders
-    PTE -> JR : UpdateOrder() [FILLED]
-    JR -> DB : UPDATE paper_orders
-    PTE -> JR : SaveFill()
-    JR -> DB : INSERT paper_fills
-    PTE -> JR : UpsertPosition()
-    JR -> DB : INSERT / UPDATE positions
-    PTE -> PTE : log paper_order_filled
+  group Paper Trade Execution (process.handler.executePaperTrade)
+    CP -> DB : INSERT paper_orders [OPEN]
+    CP -> DB : UPDATE paper_orders [FILLED]
+    CP -> DB : INSERT paper_fills
+    CP -> DB : INSERT / UPDATE positions
+    CP -> CP : log paper_order_filled
   end
 else RiskDecision == REJECT
   CP -> CP : log risk_decision_rejected
-  note right : PaperTradingEngine\nnot called
+  note right : executePaperTrade\nnot called
 end
 
 @enduml
@@ -283,6 +258,137 @@ PF ||--o{ TO : "paper_fill_id"
 @enduml
 ```
 
+### Full Component Relationship — Entry Point Overview
+
+The diagram below shows every component, its dependencies, and the two trigger points that start the flow: the **startup sync** (runs once on binary launch) and the **poll ticker** (runs every `PollIntervalSeconds`).
+
+```plantuml
+@startuml Week3-4 Full Component Relationships
+
+skinparam componentStyle rectangle
+skinparam packageStyle frame
+skinparam linetype ortho
+skinparam defaultFontSize 11
+skinparam ArrowColor #555555
+
+' ─────────────────────────────────────────
+' ENTRY POINTS
+' ─────────────────────────────────────────
+actor "OS / Process Start" as OS <<entry point>>
+actor "time.Ticker\n(PollIntervalSeconds)" as TICK <<entry point>>
+
+' ─────────────────────────────────────────
+' cmd/main.go
+' ─────────────────────────────────────────
+package "cmd/main.go" {
+  [startup wiring] <<once>>
+  [runPipeline\n(goroutine per symbol×timeframe)] <<loop>>
+}
+
+' ─────────────────────────────────────────
+' Application handlers
+' ─────────────────────────────────────────
+package "application/portfolio" {
+  [sync.handler]
+}
+
+package "application/candidatetrade" {
+  [find.handler]
+  [process.handler]
+}
+
+' ─────────────────────────────────────────
+' Domain / service packages
+' ─────────────────────────────────────────
+package "internal/services/kucoin" {
+  [kucoin.Service\n(config, balance, open_order, service)]
+}
+
+package "internal/indicator" {
+  [indicator.Engine]
+}
+
+package "internal/strategy/divergence" {
+  [strategy.Strategy]
+}
+
+package "internal/risk" {
+  [RiskContextService]
+  [HardRiskGate\n<<pure function>>]
+}
+
+' ─────────────────────────────────────────
+' Data stores
+' ─────────────────────────────────────────
+database "PostgreSQL" {
+  [account_balances]
+  [candidate_trades]
+  [portfolio_snapshots]
+  [risk_contexts]
+  [risk_decisions]
+  [paper_orders]
+  [paper_fills]
+  [positions]
+  [trade_outcomes]
+}
+
+cloud "KuCoin REST API" {
+  [/api/v1/accounts\n(balances)]
+  [/api/v1/orders\n(open orders)]
+  [/api/v3/market/candles\n(closed candles)]
+}
+
+' ─────────────────────────────────────────
+' TRIGGER FLOWS
+' ─────────────────────────────────────────
+OS --> [startup wiring] : binary start
+[startup wiring] --> [sync.handler] : Handle(Command{}) — non-fatal
+
+TICK --> [runPipeline\n(goroutine per symbol×timeframe)] : every tick\n+ once on startup
+
+' ─────────────────────────────────────────
+' PIPELINE: find leg
+' ─────────────────────────────────────────
+[runPipeline\n(goroutine per symbol×timeframe)] --> [find.handler] : Handle(Command{Symbol, Timeframe, CandleLimit})
+[find.handler] --> [kucoin.Service\n(config, balance, open_order, service)] : GetClosedCandles()
+[kucoin.Service\n(config, balance, open_order, service)] --> [/api/v3/market/candles\n(closed candles)]
+[find.handler] --> [indicator.Engine] : Calculate([]Candle)
+[find.handler] --> [strategy.Strategy] : Evaluate(MarketContext)
+[find.handler] --> [candidate_trades] : InsertCandidateTrade\n(ON CONFLICT DO NOTHING)
+[find.handler] --> [runPipeline\n(goroutine per symbol×timeframe)] : Result{TradeId}
+
+' ─────────────────────────────────────────
+' PIPELINE: process leg (TradeId != "" only)
+' ─────────────────────────────────────────
+[runPipeline\n(goroutine per symbol×timeframe)] --> [process.handler] : Handle(Command{TradeId})\n[only when TradeId != ""]
+
+[process.handler] --> [account_balances] : GetAccountBalances (via generated.Queries)
+[process.handler] --> [positions] : GetOpenPositions (via generated.Queries)
+[process.handler] --> [process.handler] : computeSnapshotInput() [pure]
+
+[process.handler] --> [RiskContextService] : Build(ctx, candidate, snapshotInput)
+[RiskContextService] --> [positions] : read (symbol exposure)
+[RiskContextService] --> [trade_outcomes] : read (DailyPnL, ConsecutiveLosses)
+[RiskContextService] --> [portfolio_snapshots] : INSERT (immutable)
+[RiskContextService] --> [risk_contexts] : INSERT (immutable)
+
+[process.handler] --> [HardRiskGate\n<<pure function>>] : Evaluate(RiskContext)\n[no DB / no network]
+[process.handler] --> [risk_decisions] : INSERT (immutable)\n[always — APPROVE and REJECT]
+[process.handler] --> [paper_orders] : INSERT / UPDATE\n[APPROVE only — executePaperTrade]
+[process.handler] --> [paper_fills] : INSERT (immutable)\n[APPROVE only]
+[process.handler] --> [positions] : INSERT / UPDATE\n[APPROVE only]
+
+' ─────────────────────────────────────────
+' STARTUP: portfolio sync leg
+' ─────────────────────────────────────────
+[sync.handler] --> [kucoin.Service\n(config, balance, open_order, service)] : GetBalances()\nGetOpenOrders()
+[kucoin.Service\n(config, balance, open_order, service)] --> [/api/v1/accounts\n(balances)] : V2 Signature auth
+[kucoin.Service\n(config, balance, open_order, service)] --> [/api/v1/orders\n(open orders)] : V2 Signature auth
+[sync.handler] --> [account_balances] : DELETE + upsert
+
+@enduml
+```
+
 ---
 
 ## User Stories
@@ -309,7 +415,7 @@ PF ||--o{ TO : "paper_fill_id"
 20. As a developer, I want the `HardRiskGate` to run both before and after the LLM Risk Manager (double-gate), so that the LLM cannot override hard limits even if it returns APPROVE on a disqualified candidate.
 21. As a developer, I want a `RiskDecision` record persisted to the journal as an immutable insert immediately after the `HardRiskGate` evaluates, so that every decision — including REJECTs — is traceable.
 22. As a developer, I want `RiskDecision.Reasons` to contain named string constants (e.g. `DAILY_LOSS_LIMIT_EXCEEDED`, `INSUFFICIENT_BALANCE`), so that rejection reasons are human-readable and machine-parseable.
-23. As a developer, I want a `PaperTradingEngine` that generates a synthetic `OrderFilled` at the candidate's entry price when a candidate is APPROVED, so that the full journal lifecycle can be tested and exercised without placing real orders on KuCoin.
+23. As a developer, I want paper trade execution (`executePaperTrade` — a private method on `process.handler`) to generate a synthetic `OrderFilled` at the candidate's entry price when a candidate is APPROVED, so that the full journal lifecycle can be tested and exercised without placing real orders on KuCoin.
 24. As a developer, I want the paper trading engine to write a synthetic order, fill, and portfolio position update to the journal tables, so that trade history statistics (win rate, daily PnL, consecutive losses) are populated for subsequent risk context assembly.
 25. As a developer, I want `CandidateJournal` records to be immutable inserts — never updated after creation — so that the exact indicator snapshot and market context that produced the candidate is preserved for audit and RAG.
 26. As a developer, I want `RiskContext` records to be immutable inserts, so that the exact portfolio state at decision time is preserved and cannot be overwritten by later portfolio changes.
@@ -318,18 +424,20 @@ PF ||--o{ TO : "paper_fill_id"
 29. As a developer, I want a `TradeOutcome` record written when a paper position is closed, containing entry price, exit price, quantity, gross PnL, fees, and net PnL, so that strategy performance statistics can be computed from the journal.
 30. As a developer, I want all journal records linked by a `candidate_id` foreign key chain (`candidate → risk_context → risk_decision → order → fill → trade_outcome`), so that the complete lifecycle of any trade is reconstructable from a single candidate ID.
 31. As a developer, I want all journal tables to use `ON CONFLICT DO NOTHING` on their natural business key, so that idempotent re-processing never creates duplicate records.
-32. As a developer, I want a `CandidatePipeline` struct that orchestrates portfolio snapshot → risk context → hard gate → paper execution → journal, so that `runPipeline` stays thin and the pipeline is independently testable.
-33. As a developer, I want `runPipeline` to call `CandidatePipeline.Process(ctx, ct)` after `repo.Save(ctx, ct)`, so that pipeline failure is non-fatal and does not prevent the candidate from being persisted.
+32. As a developer, I want a `processcandidatetrade` handler (`internal/application/candidatetrade/process/handler.go`) that orchestrates portfolio snapshot → risk context → hard gate → paper execution → journal, so that `runPipeline` stays thin and the pipeline is independently testable.
+33. As a developer, I want `runPipeline` to call `processHandler.Handle(ctx, Command{TradeId})` after `findHandler.Handle()` returns a non-empty `TradeId`, so that pipeline failure is non-fatal and does not prevent the candidate from being persisted.
 34. As a developer, I want structured `slog` log events emitted at each pipeline stage (risk_context_created, risk_decision_created, paper_order_filled, trade_outcome_created) with `candidate_id` in every event, so that the full lifecycle is traceable in logs.
 35. As a developer, I want the portfolio sync to be non-fatal on startup failure — proceeding with an empty portfolio snapshot — so that the bot continues to paper-trade even if KuCoin is temporarily unreachable.
 36. As a developer, I want spot trading only in Week 3–4 (no leverage, no margin, no futures), so that the `Position` model stays simple and the risk calculations have no liquidation complexity.
-37. As a developer, I want all new packages (`portfolio`, `risk`, `journal`, `papertrading`, `pipeline`) to be internal to the `trading_bot` module with no cross-package database writes, so that data ownership is explicit and the system remains a single deployable binary.
+37. As a developer, I want all new packages (`portfolio`, `risk`) to be internal to the `trading_bot` module, with all DB writes going through `generated.Queries` directly (no intermediate repository or engine wrapper), so that data ownership is explicit and the system remains a single deployable binary.
 
 ---
 
 ## Implementation Decisions
 
-- **One binary, application handler pattern**: All business operations follow the `app.Handler[Command, Result]` pattern in `internal/application/{feature}/{operation}/handler.go`. No separate services, no separate adapters — all KuCoin HTTP goes through `internal/services/kucoin/kucoin.go`. No new binaries, no gRPC, no HTTP between components.
+- **One binary, application handler pattern**: All business operations invoked directly from `runPipeline` follow the `app.Handler[Command, Result]` pattern in `internal/application/{feature}/{operation}/handler.go`. All KuCoin HTTP goes through `internal/services/kucoin/` (package `kucoin`). No new binaries, no gRPC, no HTTP between components.
+
+- **Non-handler domain packages**: `internal/risk/` (`HardRiskGate`, `RiskContextService`) are the only domain packages injected as dependencies of `process.handler`. There is no `JournalRepository`, no `PaperTradingEngine`, and no `getsnapshot.handler` — all three are eliminated as unnecessary layers. Paper trade execution is a private method (`executePaperTrade`) on `process.handler`, portfolio snapshot computation is a private function (`computeSnapshotInput`) in the same package, and all DB writes go directly through `generated.Queries`.
 
 - **KuCoin is source of truth**: The internal DB is a synchronized mirror. On startup, `syncportfolio.handler` populates `account_balances` from KuCoin. Phase 2 (WebSocket) and Phase 3 (REST interval) are out of scope for Week 3–4.
 
@@ -356,7 +464,7 @@ PF ||--o{ TO : "paper_fill_id"
 
 - **`RiskContext` raw storage**: `risk_contexts` table stores the full assembled `RiskContext` as a JSON column alongside the structured foreign key to `candidate_id` and `portfolio_snapshot_id`. This enables the future LLM to receive a pre-serialized context without re-assembling it.
 
-- **`CandidatePipeline` wiring in `cmd/main.go`**: `CandidatePipeline` is instantiated once at startup and passed into `runPipeline`. After `h.Handle()` returns a non-empty `Result.TradeId`, `runPipeline` calls `pipeline.Process(ctx, tradeId)`. `handler.Handle()` is not modified — it continues to own candle fetching, indicator calculation, strategy evaluation, deduplication, and DB persistence. Pipeline failure is logged but does not halt the process.
+- **`processcandidatetrade` handler wiring in `cmd/main.go`**: `processcandidatetrade.handler` is instantiated once at startup alongside `find.handler` and passed into `runPipeline`. After `findHandler.Handle()` returns a non-empty `Result.TradeId`, `runPipeline` calls `processHandler.Handle(ctx, processcandidatetrade.Command{TradeId: result.TradeId})`. `find.handler.Handle()` is not modified — it continues to own candle fetching, indicator calculation, strategy evaluation, deduplication, and DB persistence. Process handler failure is logged but does not halt the process.
 
 - **Config additions**: `cfg.KuCoin` is typed as `kucoin.Config` (API key, secret, passphrase — base URL is hardcoded in the kucoin package). `cfg.RiskLimits` (all six thresholds) is also added to the existing JSON config struct. Defaults:
   ```
@@ -384,17 +492,17 @@ A good test verifies observable behavior at the highest testable seam. Tests mus
 - Verify `RiskDecision.Decision` and `RiskDecision.Reasons` for every case.
 - Prior art: `internal/strategy/divergence/strategy_test.go` (same pattern — construct context struct, call method, assert output).
 
-**Seam 2 — `CandidatePipeline.Process(ctx, *CandidateTrade)`**
-- Use stub implementations of `PortfolioService`, `RiskContextService`, `PaperTradingEngine`, and `JournalRepository` interfaces.
+**Seam 2 — `processcandidatetrade.handler.Handle(ctx, Command{TradeId})`**
+- Use a stub `generated.Queries` (hand-written, backed by an in-memory map) for DB calls, and a stub `RiskContextService` (hand-written). No `PaperTradingEngine`, `getsnapshot.handler`, or `JournalRepository` — all eliminated.
 - Required cases: REJECT path (hard gate fires, paper engine not called, rejection journaled); APPROVE path (gate passes, paper engine called, lifecycle journaled).
 - Verify that the paper engine is not called when the gate rejects.
 - Verify that all journal writes receive the correct `candidate_id`.
-- Prior art: no direct prior art in this repo; use standard Go interface mocking with hand-written stubs (no mock generation framework).
+- Prior art: no direct prior art in this repo; use standard Go interface mocking with hand-written stubs.
 
 **Seam 3 — Full integration with real DB**
 - Spin up a real PostgreSQL instance (testcontainers, matching the pattern in `auth` and `email_consumer` controller tests).
 - Use a stub `kucoin.Service` (via `httptest.Server`) that returns hardcoded balances and no open orders.
-- Run the full `CandidatePipeline.Process()` with a constructed `CandidateTrade`.
+- Run the full `processcandidatetrade.handler.Handle()` with a constructed `CandidateTrade` ID.
 - Verify that rows exist in `risk_contexts`, `risk_decisions`, `paper_orders`, `paper_fills` tables.
 - Verify that all rows share the same `candidate_id`.
 - Verify that re-processing the same `CandidateTrade` produces exactly the same number of rows (idempotency).
@@ -440,38 +548,38 @@ No business logic. No KuCoin calls. No structs beyond what sqlc generates.
 
 ### Slice 2 — Portfolio handlers and KuCoin account methods
 
-Deliverable: Two application handlers and two new KuCoin service methods provide portfolio sync and snapshot retrieval.
+Deliverable: One application handler and two new KuCoin service methods provide portfolio sync on startup.
 
 New files:
 - `internal/application/portfolio/sync/handler.go` — `SyncFromExchange` handler
-- `internal/application/portfolio/getsnapshot/handler.go` — `GetSnapshot` handler
-- `internal/application/portfolio/getsnapshot/handler_test.go` — unit tests
-- `internal/services/kucoin/kucoin.go` — extended with `Config` type, `GetBalances`, `GetOpenOrders`; single `NewService(cfg Config)` constructor
+- `internal/services/kucoin/` package — split into `config.go` (`Config`), `balance.go` (`Balance`), `open_order.go` (`OpenOrder`), `service.go` (`Service`, `NewService(cfg Config)`, `GetClosedCandles`, `GetBalances`, `GetOpenOrders`)
+
+There is no `getsnapshot` handler. Portfolio state is read directly in `process.handler` via `generated.Queries` and computed with the `computeSnapshotInput()` pure function (in `process/snapshot_test.go`).
 
 Done when:
 - `kucoin.Service.GetBalances(ctx)` fetches spot account balances from KuCoin using V2 Signature authentication
 - `kucoin.Service.GetOpenOrders(ctx)` fetches active spot orders from KuCoin
 - `syncportfolio.handler.Handle(ctx, Command{})` deletes all account balances and upserts fresh ones from KuCoin; open orders are fetched for observability but not persisted separately
-- `getportfoliosnapshot.handler.Handle(ctx, Command{})` reads `account_balances` and `positions` from DB and returns a `Result` with equity, available cash, total exposure, unrealized PnL, and open position count
-- Exposure calculated as `Σ(position.CurrentPrice × position.Quantity)` — pure function `computeSnapshot()` in the getsnapshot package
 - Startup sync failure is non-fatal: `cmd/main.go` calls sync handler, logs error, continues
 - `kucoin.Balance` and `kucoin.OpenOrder` types are defined in the kucoin package
-- Unit tests cover `computeSnapshot`: single position, multiple positions, empty portfolio, no-USDT-balance cases
 
 No risk logic. No journal writes. No pipeline.
 
 ---
 
-### Slice 3 — Journal package
+### Slice 3 — Journal SQL queries and sqlc codegen
 
-Deliverable: All journal structs exist with correct immutability contracts, and the `JournalRepository` can persist every record type.
+Deliverable: All journal SQL queries exist and sqlc generates typed functions for every insert/update operation.
+
+No `JournalRepository` wrapper. `RiskContextService` and `process.handler` call `generated.Queries` directly — the sqlc-generated code is the data-access layer.
 
 Done when:
-- `JournalRepository` has INSERT-only methods for `risk_contexts`, `risk_decisions`, `paper_fills`, `trade_outcomes` (no UPDATE methods on these types)
-- `JournalRepository` has INSERT + UPDATE methods for `paper_orders` and `positions`
-- All INSERT methods use `ON CONFLICT DO NOTHING` on their natural business key
-- `candidate_id` is present on every record type and correctly threaded through repository calls
-- Struct definitions exist for `RiskContext`, `RiskDecision`, `PaperOrder`, `Fill`, `Position`, `TradeOutcome`
+- SQL files define INSERT-only queries for `risk_contexts`, `risk_decisions`, `paper_fills`, `trade_outcomes` (no UPDATE queries on these types)
+- SQL files define INSERT + UPDATE queries for `paper_orders` and `positions`
+- All INSERT queries use `ON CONFLICT DO NOTHING` on their natural business key
+- `candidate_id` is present on every table and correctly threaded through query params
+- `generated.Queries` has typed methods: `InsertRiskContext`, `InsertRiskDecision`, `InsertPaperOrder`, `UpdatePaperOrderStatus`, `InsertPaperFill`, `UpsertPosition`, `InsertTradeOutcome`, `GetDailyPnL`, `GetRecentTradeOutcomes`
+- `go build ./...` passes with zero errors
 
 No business logic. No pipeline. No KuCoin calls.
 
@@ -480,6 +588,8 @@ No business logic. No pipeline. No KuCoin calls.
 ### Slice 4 — HardRiskGate
 
 Deliverable: `HardRiskGate.Evaluate(RiskContext) RiskDecision` enforces all six hard risk rules as a pure function.
+
+New file: `internal/risk/gate.go` (package `risk`) — same pattern as `internal/strategy/divergence/`: pure domain function, no DB, no network. Not a handler.
 
 Done when:
 - REJECT on `DailyPnL <= -MaxDailyLoss` with reason `DAILY_LOSS_LIMIT_EXCEEDED`
@@ -500,6 +610,8 @@ No pipeline. No journal writes.
 
 Deliverable: `RiskContextService.Build(ctx, candidate)` assembles a complete `RiskContext` from portfolio and journal data and persists it as an immutable record.
 
+New file: `internal/risk/context.go` (package `risk`) — service struct with DB side effects (calls `generated.Queries.InsertRiskContext()` directly). Not a handler; injected into the `process` handler.
+
 Done when:
 - `Build()` retrieves `PortfolioSnapshot`, derives `PositionRiskContext` (existing exposure per symbol, open position count), and derives `TradingHistoryContext` (daily PnL, consecutive losses, win rate) from `trade_outcomes` in the journal
 - `MarketRiskContext` is populated from `CandidateTrade.Indicators`
@@ -509,9 +621,11 @@ Done when:
 
 ---
 
-### Slice 6 — PaperTradingEngine
+### Slice 6 — Paper trade execution (inlined into process handler)
 
-Deliverable: `PaperTradingEngine.Execute(ctx, decision, candidate)` generates a synthetic fill and writes the complete paper trade lifecycle to the journal.
+Deliverable: `process.handler.executePaperTrade` generates a synthetic fill and writes the complete paper trade lifecycle directly via `generated.Queries`.
+
+No separate package. `executePaperTrade` is a private method on `process.handler` — it is only ever called from one place and belongs there.
 
 Done when:
 - A `paper_orders` row is created with status `OPEN`, then immediately updated to `FILLED`
@@ -523,16 +637,31 @@ Done when:
 
 ---
 
-### Slice 7 — CandidatePipeline and binary wiring
+### Slice 7 — Process handler and binary wiring
 
-Deliverable: `CandidatePipeline.Process()` orchestrates all prior slices end-to-end, and `runPipeline` in `cmd/main.go` calls it after persisting the candidate.
+Deliverable: `processcandidatetrade.handler` orchestrates all prior slices end-to-end, and `runPipeline` in `cmd/main.go` calls it after persisting the candidate.
+
+New file: `internal/application/candidatetrade/process/handler.go` (package `processcandidatetrade`) — follows the standard handler pattern:
+```go
+type Command struct { TradeId string }
+type Result struct { Decision string; Approved bool }
+type handler struct {
+    queries *generated.Queries
+    riskSvc *risk.RiskContextService
+    gate    *risk.HardRiskGate
+    limits  risk.RiskLimits
+    logger  *slog.Logger
+}
+func NewHandler(...) app.Handler[Command, Result]
+// private helpers: executePaperTrade, computeSnapshotInput, baseAsset
+```
 
 Done when:
-- `CandidatePipeline.Process(ctx, tradeId)` runs: portfolio snapshot → risk context → hard gate → (if APPROVE) paper execution
-- REJECT path: `RiskDecision` is journaled, paper engine is not called, structured log `risk_decision_rejected` emitted
-- APPROVE path: `RiskDecision` journaled, paper engine called, full lifecycle written
-- `runPipeline` calls `pipeline.Process(ctx, result.TradeId)` when `result.TradeId != ""`; `handler.Handle()` is not modified; pipeline error is logged but non-fatal
-- `cmd/main.go` wires `kucoin.NewService(cfg.KuCoin)`, `syncportfolio.NewHandler`, `getportfoliosnapshot.NewHandler`, `RiskContextService`, `HardRiskGate`, `PaperTradingEngine`, `JournalRepository`, and `CandidatePipeline` at startup
+- `processcandidatetrade.handler.Handle(ctx, Command{TradeId})` runs: portfolio snapshot → risk context → hard gate → (if APPROVE) paper execution
+- REJECT path: `RiskDecision` is journaled, `executePaperTrade` is not called, structured log `risk_decision_rejected` emitted
+- APPROVE path: `RiskDecision` journaled, `executePaperTrade` called, full lifecycle written
+- `runPipeline` calls `processHandler.Handle(ctx, processcandidatetrade.Command{TradeId: result.TradeId})` when `result.TradeId != ""`; `find.handler.Handle()` is not modified; process handler error is logged but non-fatal
+- `cmd/main.go` wires at startup: `kucoin.NewService(cfg.KuCoin)`, `syncportfolio.NewHandler`, `risk.NewRiskContextService(queries, cfg.RiskLimits)`, `risk.NewHardRiskGate()`, `processcandidatetrade.NewHandler(queries, riskSvc, gate, cfg.RiskLimits, logger)`
 - KuCoin credentials and risk limits loaded from JSON config
 - End-to-end manual test: start the binary, observe `risk_context_created`, `risk_decision_created`, and `paper_order_filled` log events and matching DB rows
 
@@ -544,14 +673,14 @@ Deliverable: All three test seams are covered and passing.
 
 Done when:
 - **Seam 1**: `HardRiskGate` unit tests pass for all 7 cases (6 reject + 1 approve) — no DB, no mocks
-- **Seam 2**: `CandidatePipeline` tests with hand-written stubs pass for REJECT path (paper engine not called) and APPROVE path (paper engine called, journal writes carry correct `candidate_id`)
+- **Seam 2**: `processcandidatetrade.handler` tests with hand-written stubs pass for REJECT path (`executePaperTrade` not called) and APPROVE path (`executePaperTrade` called, all DB writes carry the correct `candidate_id`)
 - **Seam 3**: Integration test with testcontainers PostgreSQL passes — rows exist in `risk_contexts`, `risk_decisions`, `paper_orders`, `paper_fills` after `Process()`; all rows share the same `candidate_id`; re-processing the same candidate produces no additional rows (idempotency)
 
 ---
 
 ## Further Notes
 
-- The `CandidatePipeline` is designed so that replacing `PaperTradingEngine` with a real `KuCoinExecutionEngine` in a future week requires no changes to `Portfolio`, `Risk`, `Journal`, or `runPipeline`.
+- When live execution is introduced in a future week, `executePaperTrade` becomes `executeRealTrade` — a method swap inside `process.handler`. No changes needed to `runPipeline`, `RiskContextService`, or `HardRiskGate`.
 - The double-gate architecture (HardRiskGate before and after LLM) is the permanent enforcement boundary. When the LLM is introduced in Week 7–8, it is inserted between the two gate passes — it does not replace either pass.
 - `TradingHistoryContext` statistics derived from `trade_outcomes` will initially reflect paper trades only. This is intentional: the statistics accumulate over time and will be meaningful after several days of paper trading.
 - The `RiskContext` JSON column in `risk_contexts` is the primary input the LLM will receive in Week 7–8. Storing it now ensures the schema is stable before the LLM integration begins.

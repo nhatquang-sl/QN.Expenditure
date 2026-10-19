@@ -4,7 +4,7 @@
 
 Every business operation is a `handler.go` file inside `internal/application/{feature}/{operation}/`.
 
-All KuCoin HTTP communication goes through `internal/services/kucoin/kucoin.go` — never in application handlers directly.
+All KuCoin HTTP communication goes through the `internal/services/kucoin/` package — never in application handlers directly.
 
 ### Handler anatomy
 
@@ -32,20 +32,30 @@ func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) { ...
 | Feature | Operation | Package | Key dependencies |
 |---|---|---|---|
 | `candidatetrade` | `find` | `application/candidatetrade/find` | `kucoin.Service`, `indicator.Engine`, `strategy.Strategy`, `generated.Queries` |
+| `candidatetrade` | `process` | `application/candidatetrade/process` | `risk.RiskContextService`, `risk.HardRiskGate`, `papertrading.PaperTradingEngine`, `generated.Queries` |
 | `portfolio` | `sync` | `application/portfolio/sync` | `kucoin.Service`, `generated.Queries` |
-| `portfolio` | `getsnapshot` | `application/portfolio/getsnapshot` | `generated.Queries` |
 
 ### KuCoin service
 
-`internal/services/kucoin/kucoin.go` owns all KuCoin API communication:
+`internal/services/kucoin/` owns all KuCoin API communication (split into `config.go`, `balance.go`, `open_order.go`, `service.go` — all `package kucoin`):
 
-- `NewService(baseURL)` — unauthenticated, for public market data (candles)
-- `NewAuthenticatedService(baseURL, apiKey, apiSecret, passphrase)` — V2 signature auth for account endpoints
+- `NewService(cfg Config)` — single constructor; pass populated `Config` for authenticated use, empty `Config{}` for public-only use
 - `GetClosedCandles(ctx, symbol, timeframe, limit)` — fetches candles; reverses to oldest-first
-- `GetBalances(ctx)` — spot account balances via `/api/v1/accounts?type=trade`
-- `GetOpenOrders(ctx)` — active orders via `/api/v1/orders?status=active&tradeType=TRADE`
+- `GetBalances(ctx)` — spot account balances via `/api/v1/accounts?type=trade` (V2 Signature auth)
+- `GetOpenOrders(ctx)` — active orders via `/api/v1/orders?status=active&tradeType=TRADE` (V2 Signature auth)
 
-Domain types defined in `kucoin` package: `Balance`, `OpenOrder`, `Candle` (via `marketdata`).
+Domain types defined in `kucoin` package: `Config`, `Balance`, `OpenOrder`, `Candle` (via `marketdata`).
+
+### Non-handler domain packages
+
+Components used as *dependencies of handlers* (not invoked directly from `runPipeline`) live as plain packages under `internal/`. This mirrors `internal/indicator/` and `internal/strategy/`:
+
+| Package | File | Role |
+|---|---|---|
+| `risk` | `internal/risk/gate.go` | `HardRiskGate` — pure function; no DB, no network |
+| `risk` | `internal/risk/context.go` | `RiskContextService` — assembles `RiskContext`, persists via `generated.Queries` directly |
+
+There is no `JournalRepository` and no `PaperTradingEngine`. Paper trade execution (`executePaperTrade`) is a private method on `process.handler` — it is only ever called from one place and belongs there. All DB writes go directly through `generated.Queries`.
 
 ## Domain Model
 

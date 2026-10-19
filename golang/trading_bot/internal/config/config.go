@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"trading_bot/internal/indicator"
+	"trading_bot/internal/risk"
 	"trading_bot/internal/services/kucoin"
 
 	sharedconfig "qn.expenditure/shared/config"
@@ -16,7 +17,8 @@ type AppConfig struct {
 	ConnectionStrings struct {
 		PGTrading string
 	}
-	KuCoin kucoin.Config
+	KuCoin     kucoin.Config
+	RiskLimits risk.RiskLimits
 	TradingBot struct {
 		Symbols             []string
 		Timeframes          []string
@@ -77,6 +79,25 @@ func LoadJSONConfig() AppConfig {
 		}
 		if cfg.TradingBot.Indicator.Divergence.LookbackCandles == 0 {
 			cfg.TradingBot.Indicator.Divergence.LookbackCandles = 20
+		}
+		defaults := risk.DefaultLimits()
+		if cfg.RiskLimits.MaxDailyLossUsdt == 0 {
+			cfg.RiskLimits.MaxDailyLossUsdt = defaults.MaxDailyLossUsdt
+		}
+		if cfg.RiskLimits.MaxPortfolioExposureUsdt == 0 {
+			cfg.RiskLimits.MaxPortfolioExposureUsdt = defaults.MaxPortfolioExposureUsdt
+		}
+		if cfg.RiskLimits.MaxSymbolExposureUsdt == 0 {
+			cfg.RiskLimits.MaxSymbolExposureUsdt = defaults.MaxSymbolExposureUsdt
+		}
+		if cfg.RiskLimits.MaxOpenPositions == 0 {
+			cfg.RiskLimits.MaxOpenPositions = defaults.MaxOpenPositions
+		}
+		if cfg.RiskLimits.MaxConsecutiveLosses == 0 {
+			cfg.RiskLimits.MaxConsecutiveLosses = defaults.MaxConsecutiveLosses
+		}
+		if cfg.RiskLimits.MinOrderSizeUsdt == 0 {
+			cfg.RiskLimits.MinOrderSizeUsdt = defaults.MinOrderSizeUsdt
 		}
 	})
 }

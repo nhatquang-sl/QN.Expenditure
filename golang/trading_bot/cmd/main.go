@@ -14,11 +14,14 @@ import (
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 
-	"trading_bot/internal/application/candidatetrade/find"
+	findcandidatetrade "trading_bot/internal/application/candidatetrade/find"
+	processcandidatetrade "trading_bot/internal/application/candidatetrade/process"
+	syncportfolio "trading_bot/internal/application/portfolio/sync"
 	"trading_bot/internal/config"
 	tradingbotdb "trading_bot/internal/database"
 	"trading_bot/internal/database/generated"
 	"trading_bot/internal/indicator"
+	"trading_bot/internal/risk"
 	"trading_bot/internal/services/kucoin"
 	"trading_bot/internal/strategy/divergence"
 
@@ -63,13 +66,34 @@ func main() {
 		os.Exit(1)
 	}
 
-	indCfg := cfg.IndicatorConfig()
-	eng := indicator.NewEngine(indCfg)
-	strat := divergence.New()
+	// --- Dependency wiring ---
+
 	queries := generated.New(db)
 	kucoinSvc := kucoin.NewService(cfg.KuCoin)
 
-	h := findcandidatetrade.NewHandler(kucoinSvc, eng, strat, queries, logger)
+	// Portfolio sync from exchange on startup (non-fatal).
+	syncHandler := syncportfolio.NewHandler(kucoinSvc, queries, logger)
+	if _, err := syncHandler.Handle(ctx, syncportfolio.Command{}); err != nil {
+		logger.Warn("portfolio sync failed on startup, continuing with empty portfolio",
+			slog.Any("error", err))
+	}
+
+	// Candidate find handler
+	indCfg := cfg.IndicatorConfig()
+	eng := indicator.NewEngine(indCfg)
+	strat := divergence.New()
+	findHandler := findcandidatetrade.NewHandler(kucoinSvc, eng, strat, queries, logger)
+
+	// Risk and process handler
+	riskSvc := risk.NewRiskContextService(queries, cfg.RiskLimits)
+	gate := risk.NewHardRiskGate()
+	processHandler := processcandidatetrade.NewHandler(
+		queries,
+		riskSvc,
+		gate,
+		cfg.RiskLimits,
+		logger,
+	)
 
 	interval := time.Duration(cfg.TradingBot.PollIntervalSeconds) * time.Second
 	logger.Info("trading bot started",
@@ -84,12 +108,12 @@ func main() {
 	defer tick.Stop()
 
 	// Run immediately on startup, then on each tick.
-	runPipeline(ctx, logger, cfg, h)
+	runPipeline(ctx, logger, cfg, findHandler, processHandler, queries)
 
 	for {
 		select {
 		case <-tick.C:
-			runPipeline(ctx, logger, cfg, h)
+			runPipeline(ctx, logger, cfg, findHandler, processHandler, queries)
 		case <-ctx.Done():
 			logger.Info("shutting down")
 			return
@@ -101,7 +125,9 @@ func runPipeline(
 	ctx context.Context,
 	logger *slog.Logger,
 	cfg config.AppConfig,
-	h app.Handler[findcandidatetrade.Command, findcandidatetrade.Result],
+	findHandler app.Handler[findcandidatetrade.Command, findcandidatetrade.Result],
+	processHandler app.Handler[processcandidatetrade.Command, processcandidatetrade.Result],
+	queries *generated.Queries,
 ) {
 	var wg sync.WaitGroup
 	for _, symbol := range cfg.TradingBot.Symbols {
@@ -109,14 +135,32 @@ func runPipeline(
 			wg.Add(1)
 			go func(sym, tf string) {
 				defer wg.Done()
-				if _, err := h.Handle(ctx, findcandidatetrade.Command{
+
+				findResult, err := findHandler.Handle(ctx, findcandidatetrade.Command{
 					Symbol:      sym,
 					Timeframe:   tf,
 					CandleLimit: candleLimit,
-				}); err != nil {
-					logger.ErrorContext(ctx, "pipeline error",
+				})
+				if err != nil {
+					logger.ErrorContext(ctx, "find pipeline error",
 						slog.String("symbol", sym),
 						slog.String("timeframe", tf),
+						slog.Any("error", err),
+					)
+					return
+				}
+
+				if findResult.TradeId == "" {
+					return // no new candidate — nothing to process
+				}
+
+				if _, err := processHandler.Handle(ctx, processcandidatetrade.Command{
+					TradeId: findResult.TradeId,
+				}); err != nil {
+					logger.ErrorContext(ctx, "process pipeline error",
+						slog.String("symbol", sym),
+						slog.String("timeframe", tf),
+						slog.String("trade_id", findResult.TradeId),
 						slog.Any("error", err),
 					)
 				}

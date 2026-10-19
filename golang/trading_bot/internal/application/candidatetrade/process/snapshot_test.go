@@ -1,4 +1,4 @@
-package getportfoliosnapshot
+package processcandidatetrade
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"trading_bot/internal/database/generated"
 )
 
-func TestComputeSnapshot_ExposureAndEquity(t *testing.T) {
+func TestComputeSnapshotInput_ExposureAndEquity(t *testing.T) {
 	balances := []generated.AccountBalance{
 		{Id: "1", Asset: "USDT", Total: 5000, Available: 5000, Locked: 0, UpdatedAt: time.Now()},
 		{Id: "2", Asset: "BTC", Total: 0.5, Available: 0.5, Locked: 0, UpdatedAt: time.Now()},
@@ -16,12 +16,12 @@ func TestComputeSnapshot_ExposureAndEquity(t *testing.T) {
 		{
 			Id: "p1", CandidateId: "c1", Symbol: "BTCUSDT", Asset: "BTC",
 			Quantity: 0.5, AvgEntryPrice: 40000, CurrentPrice: 45000,
-			UnrealizedPnl: 2500, // (45000-40000)*0.5
-			CreatedAt: time.Now(), UpdatedAt: time.Now(),
+			UnrealizedPnl: 2500,
+			CreatedAt:     time.Now(), UpdatedAt: time.Now(),
 		},
 	}
 
-	snap := computeSnapshot(balances, positions)
+	snap := computeSnapshotInput(balances, positions)
 
 	// TotalExposure = 0.5 × 45000 = 22500
 	if snap.TotalExposure != 22500 {
@@ -42,7 +42,7 @@ func TestComputeSnapshot_ExposureAndEquity(t *testing.T) {
 	}
 }
 
-func TestComputeSnapshot_MultiplePositions(t *testing.T) {
+func TestComputeSnapshotInput_MultiplePositions(t *testing.T) {
 	balances := []generated.AccountBalance{
 		{Id: "1", Asset: "USDT", Total: 1000, Available: 1000, Locked: 0, UpdatedAt: time.Now()},
 	}
@@ -59,7 +59,7 @@ func TestComputeSnapshot_MultiplePositions(t *testing.T) {
 		},
 	}
 
-	snap := computeSnapshot(balances, positions)
+	snap := computeSnapshotInput(balances, positions)
 
 	// TotalExposure = (0.1 × 50000) + (2.0 × 3000) = 5000 + 6000 = 11000
 	if snap.TotalExposure != 11000 {
@@ -78,8 +78,8 @@ func TestComputeSnapshot_MultiplePositions(t *testing.T) {
 	}
 }
 
-func TestComputeSnapshot_EmptyPortfolio(t *testing.T) {
-	snap := computeSnapshot(nil, nil)
+func TestComputeSnapshotInput_EmptyPortfolio(t *testing.T) {
+	snap := computeSnapshotInput(nil, nil)
 
 	if snap.Equity != 0 {
 		t.Errorf("Equity: got %.2f, want 0", snap.Equity)
@@ -95,7 +95,7 @@ func TestComputeSnapshot_EmptyPortfolio(t *testing.T) {
 	}
 }
 
-func TestComputeSnapshot_NoUSDTBalance(t *testing.T) {
+func TestComputeSnapshotInput_NoUSDTBalance(t *testing.T) {
 	balances := []generated.AccountBalance{
 		{Id: "1", Asset: "BTC", Total: 1.0, Available: 1.0, Locked: 0, UpdatedAt: time.Now()},
 	}
@@ -107,7 +107,7 @@ func TestComputeSnapshot_NoUSDTBalance(t *testing.T) {
 		},
 	}
 
-	snap := computeSnapshot(balances, positions)
+	snap := computeSnapshotInput(balances, positions)
 
 	if snap.AvailableCash != 0 {
 		t.Errorf("AvailableCash: got %.2f, want 0", snap.AvailableCash)
