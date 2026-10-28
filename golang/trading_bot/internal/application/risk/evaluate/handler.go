@@ -60,6 +60,7 @@ func NewHandler(
 
 func (h *handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	// 1. Fetch the candidate trade from DB.
+	h.logger.InfoContext(ctx, "risk_evaluation_started", slog.String("candidate_id", cmd.TradeId))
 	ct, err := h.queries.GetCandidateTrade(ctx, cmd.TradeId)
 	if err != nil {
 		return Result{}, fmt.Errorf("risk/evaluate: fetching candidate trade %s: %w", cmd.TradeId, err)
