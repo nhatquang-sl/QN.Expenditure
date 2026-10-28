@@ -77,12 +77,8 @@ func main() {
 	queries := generated.New(db)
 	kucoinSvc := kucoin.NewService(cfg.KuCoin)
 
-	// Portfolio sync from exchange on startup (non-fatal).
+	// Portfolio sync handler — runs at the start of every pipeline tick.
 	syncHandler := syncportfolio.NewHandler(kucoinSvc, queries, logger)
-	if _, err := syncHandler.Handle(ctx, syncportfolio.Command{}); err != nil {
-		logger.Warn("portfolio sync failed on startup, continuing with empty portfolio",
-			slog.Any("error", err))
-	}
 
 	// Candidate find handler.
 	indCfg := cfg.IndicatorConfig()
@@ -117,12 +113,12 @@ func main() {
 	defer tick.Stop()
 
 	// Run immediately on startup, then on each tick.
-	runPipeline(ctx, logger, cfg, findHandler, riskEvalHandler, orderCreateHandler, orderFillHandler)
+	runPipeline(ctx, logger, cfg, syncHandler, findHandler, riskEvalHandler, orderCreateHandler, orderFillHandler)
 
 	for {
 		select {
 		case <-tick.C:
-			runPipeline(ctx, logger, cfg, findHandler, riskEvalHandler, orderCreateHandler, orderFillHandler)
+			runPipeline(ctx, logger, cfg, syncHandler, findHandler, riskEvalHandler, orderCreateHandler, orderFillHandler)
 		case <-ctx.Done():
 			logger.Info("shutting down")
 			return
@@ -134,11 +130,18 @@ func runPipeline(
 	ctx context.Context,
 	logger *slog.Logger,
 	cfg config.AppConfig,
+	syncHandler app.Handler[syncportfolio.Command, syncportfolio.Result],
 	findHandler app.Handler[findcandidatetrade.Command, findcandidatetrade.Result],
 	riskEvalHandler app.Handler[riskevaluate.Command, riskevaluate.Result],
 	orderCreateHandler app.Handler[ordercreate.Command, ordercreate.Result],
 	orderFillHandler app.Handler[orderfill.Command, orderfill.Result],
 ) {
+	// Sync portfolio from exchange first — keeps balances and positions fresh.
+	if _, err := syncHandler.Handle(ctx, syncportfolio.Command{}); err != nil {
+		logger.WarnContext(ctx, "portfolio sync failed, continuing with stale data",
+			slog.Any("error", err))
+	}
+
 	// Per symbol×timeframe: find candidate → risk evaluate.
 	var wg sync.WaitGroup
 	for _, symbol := range cfg.TradingBot.Symbols {
