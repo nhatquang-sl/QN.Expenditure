@@ -1,7 +1,9 @@
-package risk
+package riskevaluate
 
 import (
 	"testing"
+
+	riskshared "trading_bot/internal/application/risk/shared"
 )
 
 // baseCtx returns a RiskContext that passes all hard limits.
@@ -23,7 +25,7 @@ func baseCtx() RiskContext {
 				"BTCUSDT": 500,
 			},
 		},
-		TradingHistory: TradingHistoryContext{
+		TradingHistory: TradingHistoryInfo{
 			DailyPnL:          50,
 			ConsecutiveLosses: 1,
 		},
@@ -35,7 +37,7 @@ func TestHardRiskGate_Approve(t *testing.T) {
 	gate := NewHardRiskGate()
 	decision := gate.Evaluate(baseCtx())
 
-	if decision.Decision != DecisionApprove {
+	if decision.Decision != riskshared.DecisionApprove {
 		t.Errorf("expected APPROVE, got %s (reasons: %v)", decision.Decision, decision.Reasons)
 	}
 	if len(decision.Reasons) != 0 {
@@ -53,11 +55,11 @@ func TestHardRiskGate_Reject_DailyLossLimitExceeded(t *testing.T) {
 	gate := NewHardRiskGate()
 	decision := gate.Evaluate(ctx)
 
-	if decision.Decision != DecisionReject {
+	if decision.Decision != riskshared.DecisionReject {
 		t.Errorf("expected REJECT, got %s", decision.Decision)
 	}
-	if !contains(decision.Reasons, ReasonDailyLossLimitExceeded) {
-		t.Errorf("expected reason %s, got %v", ReasonDailyLossLimitExceeded, decision.Reasons)
+	if !contains(decision.Reasons, riskshared.ReasonDailyLossLimitExceeded) {
+		t.Errorf("expected reason %s, got %v", riskshared.ReasonDailyLossLimitExceeded, decision.Reasons)
 	}
 }
 
@@ -69,11 +71,11 @@ func TestHardRiskGate_Reject_PortfolioExposureExceeded(t *testing.T) {
 	gate := NewHardRiskGate()
 	decision := gate.Evaluate(ctx)
 
-	if decision.Decision != DecisionReject {
+	if decision.Decision != riskshared.DecisionReject {
 		t.Errorf("expected REJECT, got %s", decision.Decision)
 	}
-	if !contains(decision.Reasons, ReasonPortfolioExposureExceeded) {
-		t.Errorf("expected reason %s, got %v", ReasonPortfolioExposureExceeded, decision.Reasons)
+	if !contains(decision.Reasons, riskshared.ReasonPortfolioExposureExceeded) {
+		t.Errorf("expected reason %s, got %v", riskshared.ReasonPortfolioExposureExceeded, decision.Reasons)
 	}
 }
 
@@ -85,11 +87,11 @@ func TestHardRiskGate_Reject_SymbolExposureExceeded(t *testing.T) {
 	gate := NewHardRiskGate()
 	decision := gate.Evaluate(ctx)
 
-	if decision.Decision != DecisionReject {
+	if decision.Decision != riskshared.DecisionReject {
 		t.Errorf("expected REJECT, got %s", decision.Decision)
 	}
-	if !contains(decision.Reasons, ReasonSymbolExposureExceeded) {
-		t.Errorf("expected reason %s, got %v", ReasonSymbolExposureExceeded, decision.Reasons)
+	if !contains(decision.Reasons, riskshared.ReasonSymbolExposureExceeded) {
+		t.Errorf("expected reason %s, got %v", riskshared.ReasonSymbolExposureExceeded, decision.Reasons)
 	}
 }
 
@@ -100,11 +102,11 @@ func TestHardRiskGate_Reject_MaxOpenPositionsReached(t *testing.T) {
 	gate := NewHardRiskGate()
 	decision := gate.Evaluate(ctx)
 
-	if decision.Decision != DecisionReject {
+	if decision.Decision != riskshared.DecisionReject {
 		t.Errorf("expected REJECT, got %s", decision.Decision)
 	}
-	if !contains(decision.Reasons, ReasonMaxOpenPositionsReached) {
-		t.Errorf("expected reason %s, got %v", ReasonMaxOpenPositionsReached, decision.Reasons)
+	if !contains(decision.Reasons, riskshared.ReasonMaxOpenPositionsReached) {
+		t.Errorf("expected reason %s, got %v", riskshared.ReasonMaxOpenPositionsReached, decision.Reasons)
 	}
 }
 
@@ -115,11 +117,11 @@ func TestHardRiskGate_Reject_ConsecutiveLossesExceeded(t *testing.T) {
 	gate := NewHardRiskGate()
 	decision := gate.Evaluate(ctx)
 
-	if decision.Decision != DecisionReject {
+	if decision.Decision != riskshared.DecisionReject {
 		t.Errorf("expected REJECT, got %s", decision.Decision)
 	}
-	if !contains(decision.Reasons, ReasonConsecutiveLossesExceeded) {
-		t.Errorf("expected reason %s, got %v", ReasonConsecutiveLossesExceeded, decision.Reasons)
+	if !contains(decision.Reasons, riskshared.ReasonConsecutiveLossesExceeded) {
+		t.Errorf("expected reason %s, got %v", riskshared.ReasonConsecutiveLossesExceeded, decision.Reasons)
 	}
 }
 
@@ -130,11 +132,11 @@ func TestHardRiskGate_Reject_InsufficientBalance(t *testing.T) {
 	gate := NewHardRiskGate()
 	decision := gate.Evaluate(ctx)
 
-	if decision.Decision != DecisionReject {
+	if decision.Decision != riskshared.DecisionReject {
 		t.Errorf("expected REJECT, got %s", decision.Decision)
 	}
-	if !contains(decision.Reasons, ReasonInsufficientBalance) {
-		t.Errorf("expected reason %s, got %v", ReasonInsufficientBalance, decision.Reasons)
+	if !contains(decision.Reasons, riskshared.ReasonInsufficientBalance) {
+		t.Errorf("expected reason %s, got %v", riskshared.ReasonInsufficientBalance, decision.Reasons)
 	}
 }
 

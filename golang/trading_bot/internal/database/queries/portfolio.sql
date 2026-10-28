@@ -31,6 +31,12 @@ FROM positions
 WHERE quantity > 0
 ORDER BY symbol;
 
+-- name: ClosePosition :exec
+UPDATE positions
+SET quantity   = 0,
+    updated_at = $2
+WHERE symbol = $1;
+
 -- name: UpsertPosition :exec
 INSERT INTO positions (id, candidate_id, symbol, asset, quantity, avg_entry_price, current_price, unrealized_pnl, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

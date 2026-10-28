@@ -3,8 +3,8 @@ package config
 import (
 	"os"
 
+	riskevaluate "trading_bot/internal/application/risk/evaluate"
 	"trading_bot/internal/indicator"
-	"trading_bot/internal/risk"
 	"trading_bot/internal/services/kucoin"
 
 	sharedconfig "qn.expenditure/shared/config"
@@ -18,11 +18,12 @@ type AppConfig struct {
 		PGTrading string
 	}
 	KuCoin     kucoin.Config
-	RiskLimits risk.RiskLimits
+	RiskLimits riskevaluate.RiskLimits
 	TradingBot struct {
 		Symbols             []string
 		Timeframes          []string
 		PollIntervalSeconds int
+		APIPort             int
 		Indicator           struct {
 			RSIPeriod      int
 			BBPeriod       int
@@ -59,6 +60,9 @@ func LoadJSONConfig() AppConfig {
 		if cfg.TradingBot.PollIntervalSeconds == 0 {
 			cfg.TradingBot.PollIntervalSeconds = 300
 		}
+		if cfg.TradingBot.APIPort == 0 {
+			cfg.TradingBot.APIPort = 8080
+		}
 		if cfg.TradingBot.Indicator.RSIPeriod == 0 {
 			cfg.TradingBot.Indicator.RSIPeriod = 14
 		}
@@ -80,7 +84,7 @@ func LoadJSONConfig() AppConfig {
 		if cfg.TradingBot.Indicator.Divergence.LookbackCandles == 0 {
 			cfg.TradingBot.Indicator.Divergence.LookbackCandles = 20
 		}
-		defaults := risk.DefaultLimits()
+		defaults := riskevaluate.DefaultLimits()
 		if cfg.RiskLimits.MaxDailyLossUsdt == 0 {
 			cfg.RiskLimits.MaxDailyLossUsdt = defaults.MaxDailyLossUsdt
 		}

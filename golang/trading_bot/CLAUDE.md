@@ -190,3 +190,40 @@ end note
 
 @enduml
 ```
+
+### risk/evaluate Handler — DB Table Access
+
+```plantuml
+@startuml risk_evaluate_db
+
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+
+package "candidate_trades.sql" {
+  database candidate_trades
+}
+
+package "portfolio.sql" {
+  database account_balances
+  database positions
+  database portfolio_snapshots
+}
+
+package "journal.sql" {
+  database risk_contexts
+  database risk_decisions
+  database trade_outcomes
+}
+
+component "risk/evaluate\nhandler" as handler
+
+handler --> candidate_trades   : READ GetCandidateTrade
+handler --> account_balances   : READ GetAccountBalances
+handler --> positions          : READ GetOpenPositions\n(×2: snapshot + symbol exposure)
+handler --> portfolio_snapshots : WRITE InsertPortfolioSnapshot
+handler --> trade_outcomes     : READ GetDailyPnL\nGetRecentTradeOutcomes
+handler --> risk_contexts      : WRITE InsertRiskContext
+handler --> risk_decisions     : WRITE InsertRiskDecision
+
+@enduml
+```

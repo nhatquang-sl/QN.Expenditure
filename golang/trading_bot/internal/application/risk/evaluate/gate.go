@@ -1,21 +1,6 @@
-package risk
+package riskevaluate
 
-// Decision constants.
-const (
-	DecisionApprove = "APPROVE"
-	DecisionReject  = "REJECT"
-	DecisionReduce  = "REDUCE"
-)
-
-// Rejection reason constants.
-const (
-	ReasonDailyLossLimitExceeded    = "DAILY_LOSS_LIMIT_EXCEEDED"
-	ReasonPortfolioExposureExceeded = "PORTFOLIO_EXPOSURE_EXCEEDED"
-	ReasonSymbolExposureExceeded    = "SYMBOL_EXPOSURE_EXCEEDED"
-	ReasonMaxOpenPositionsReached   = "MAX_OPEN_POSITIONS_REACHED"
-	ReasonConsecutiveLossesExceeded = "CONSECUTIVE_LOSSES_EXCEEDED"
-	ReasonInsufficientBalance       = "INSUFFICIENT_BALANCE"
-)
+import riskshared "trading_bot/internal/application/risk/shared"
 
 // RiskLimits holds all configurable risk thresholds.
 type RiskLimits struct {
@@ -56,8 +41,8 @@ type PortfolioInfo struct {
 	SymbolExposure map[string]float64 // current USDT exposure per symbol
 }
 
-// TradingHistoryContext holds recent trade performance statistics.
-type TradingHistoryContext struct {
+// TradingHistoryInfo holds recent trade performance statistics.
+type TradingHistoryInfo struct {
 	DailyPnL          float64
 	ConsecutiveLosses int
 	RecentWinRate     float64
@@ -69,7 +54,7 @@ type TradingHistoryContext struct {
 type RiskContext struct {
 	Candidate      CandidateInfo
 	Portfolio      PortfolioInfo
-	TradingHistory TradingHistoryContext
+	TradingHistory TradingHistoryInfo
 	Limits         RiskLimits
 }
 
@@ -95,30 +80,30 @@ func (g *HardRiskGate) Evaluate(ctx RiskContext) RiskDecision {
 	var reasons []string
 
 	if ctx.TradingHistory.DailyPnL <= -ctx.Limits.MaxDailyLossUsdt {
-		reasons = append(reasons, ReasonDailyLossLimitExceeded)
+		reasons = append(reasons, riskshared.ReasonDailyLossLimitExceeded)
 	}
 	if ctx.Portfolio.TotalExposure+ctx.Candidate.EstimatedExposure > ctx.Limits.MaxPortfolioExposureUsdt {
-		reasons = append(reasons, ReasonPortfolioExposureExceeded)
+		reasons = append(reasons, riskshared.ReasonPortfolioExposureExceeded)
 	}
 	symbolExposure := ctx.Portfolio.SymbolExposure[ctx.Candidate.Symbol]
 	if symbolExposure+ctx.Candidate.EstimatedExposure > ctx.Limits.MaxSymbolExposureUsdt {
-		reasons = append(reasons, ReasonSymbolExposureExceeded)
+		reasons = append(reasons, riskshared.ReasonSymbolExposureExceeded)
 	}
 	if ctx.Portfolio.OpenPositions >= ctx.Limits.MaxOpenPositions {
-		reasons = append(reasons, ReasonMaxOpenPositionsReached)
+		reasons = append(reasons, riskshared.ReasonMaxOpenPositionsReached)
 	}
 	if ctx.TradingHistory.ConsecutiveLosses >= ctx.Limits.MaxConsecutiveLosses {
-		reasons = append(reasons, ReasonConsecutiveLossesExceeded)
+		reasons = append(reasons, riskshared.ReasonConsecutiveLossesExceeded)
 	}
 	if ctx.Portfolio.AvailableCash < ctx.Limits.MinOrderSizeUsdt {
-		reasons = append(reasons, ReasonInsufficientBalance)
+		reasons = append(reasons, riskshared.ReasonInsufficientBalance)
 	}
 
 	if len(reasons) > 0 {
-		return RiskDecision{Decision: DecisionReject, Reasons: reasons}
+		return RiskDecision{Decision: riskshared.DecisionReject, Reasons: reasons}
 	}
 	return RiskDecision{
-		Decision:     DecisionApprove,
+		Decision:     riskshared.DecisionApprove,
 		PositionSize: ctx.Candidate.EstimatedExposure,
 	}
 }
