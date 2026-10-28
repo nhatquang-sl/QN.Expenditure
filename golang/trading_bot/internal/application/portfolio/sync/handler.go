@@ -64,6 +64,12 @@ func (h *handler) Handle(ctx context.Context, _ Command) (Result, error) {
 		}); err != nil {
 			return Result{}, fmt.Errorf("syncportfolio: upserting balance for %s: %w", b.Asset, err)
 		}
+		h.logger.InfoContext(ctx, "balance_synced",
+			slog.String("asset", b.Asset),
+			slog.Float64("total", b.Total),
+			slog.Float64("available", b.Available),
+			slog.Float64("locked", b.Locked),
+		)
 	}
 
 	// Fetch open orders for observability. They are not separately persisted —

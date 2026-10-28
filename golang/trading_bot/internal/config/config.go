@@ -17,7 +17,7 @@ type AppConfig struct {
 	ConnectionStrings struct {
 		PGTrading string
 	}
-	KuCoin     kucoin.Config
+	KuCoin     kucoin.Config `json:"KuCoinConfig"`
 	RiskLimits riskevaluate.RiskLimits
 	TradingBot struct {
 		Symbols             []string
