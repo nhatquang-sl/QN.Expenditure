@@ -1,11 +1,3 @@
--- name: GetCandidateTrade :one
-SELECT id, symbol, timeframe, side, entry_price,
-       strategy_name, strategy_version,
-       rsi, bb_upper, bb_middle, bb_lower, bb_width, bb_percent_b, rsi_slope,
-       divergence_type, score, reasons, idempotency_key, created_at
-FROM candidate_trades
-WHERE id = $1;
-
 -- name: InsertCandidateTrade :execresult
 INSERT INTO candidate_trades (
     id, symbol, timeframe, side, entry_price,
