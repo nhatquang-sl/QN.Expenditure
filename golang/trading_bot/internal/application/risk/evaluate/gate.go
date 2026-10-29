@@ -105,5 +105,6 @@ func (g *HardRiskGate) Evaluate(ctx RiskContext) RiskDecision {
 	return RiskDecision{
 		Decision:     riskshared.DecisionApprove,
 		PositionSize: ctx.Candidate.EstimatedExposure,
+		Reasons:      []string{},
 	}
 }
